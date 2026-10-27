@@ -330,8 +330,48 @@
     { id: 'canteen', ico: 'canteen', name: 'Canteen card', desc: 'Lunch packs worth +25 more points per level', max: 2, price: [800, 2400] },
     { id: 'life', ico: 'health', name: 'Health insurance', desc: 'Start every shift with an extra life', max: 1, price: [7000] },
     { id: 'pocket', ico: 'autoreply', name: 'Auto-reply in your pocket', desc: 'Start your next shift holding an Auto-reply. Stack up to 3', max: 3, price: [350, 350, 350], consumable: true },
+    { id: 'pos', ico: 'pos', name: 'POS terminal', desc: 'Pulls nearby salary, lunch and data towards you. Level 2 pulls from further away', max: 2, price: [2500, 6000] },
+    { id: 'danfo', ico: 'danfo', name: 'Danfo pass', desc: 'Commute delays cost 7 minutes instead of 10 (5 at level 2)', max: 2, price: [1200, 3000] },
+    { id: 'coffee', ico: 'coffee', name: 'Strong coffee', desc: 'Walk 20% faster for the first 20 seconds in the office (35s at level 2)', max: 2, price: [1500, 3500] },
+    { id: 'sick', ico: 'sick', name: 'Sick leave', desc: 'Out of lives? The doctor signs you back in with 1 life, once per shift. Stack up to 2', max: 2, price: [2500, 2500], consumable: true },
   ];
-  const OUTFIT_PRICES = { ankara: 1500, senator: 2500, suit: 3000, jersey: 3000, native: 4000, agbada: 6000, legend: 12000 };
+  const OUTFIT_PRICES = { ankara: 1500, senator: 2500, suit: 3000, jersey: 3000, native: 4000, agbada: 6000, legend: 12000,
+    hoodie: 2200, fanjersey: 2800, banker: 3500, kaftan: 3800, isiagu: 5000, babban: 5500, asoebi: 7000, christmas: 4500 };
+
+  // Skin tones are free. Hair, accessories and extras are bought in the staff shop.
+  const SKIN_TONES = ['#f1c27d', '#d9a066', '#b9773f', '#8d5524', '#7a4521', '#5c3519', '#3f2312'];
+  const LOOKS = [
+    { id: 'fade', slot: 'hair', name: 'Fade with part line', price: 800 },
+    { id: 'afro', slot: 'hair', name: 'Big afro', price: 1200 },
+    { id: 'locs', slot: 'hair', name: 'Locs', price: 1800 },
+    { id: 'braids', slot: 'hair', name: 'Braids', price: 1800 },
+    { id: 'bald', slot: 'hair', name: 'Clean bald', price: 600 },
+    { id: 'hijab', slot: 'hair', name: 'Hijab', price: 1200 },
+    { id: 'glasses', slot: 'eyes', name: 'Reading glasses', price: 700 },
+    { id: 'shades', slot: 'eyes', name: 'Big boss shades', price: 2500 },
+    { id: 'headphones', slot: 'head', name: 'Headphones', price: 1800 },
+    { id: 'facecap', slot: 'head', name: 'Face cap', price: 1200 },
+    { id: 'backpack', slot: 'back', name: 'Laptop backpack', price: 2000 },
+    { id: 'coffeecup', slot: 'hand', name: 'Coffee cup', price: 900 },
+    { id: 'phone', slot: 'hand', name: 'Phone in hand', price: 1100 },
+    { id: 'goldtag', slot: 'neck', name: 'Gold staff ID', price: 3500 },
+  ];
+  const LOOK_SLOTS = [['hair', 'Hair'], ['eyes', 'Glasses'], ['head', 'Headwear'], ['back', 'Bag'], ['hand', 'In hand'], ['neck', 'Staff ID']];
+  // Job titles show on your ID card and on league boards. Keep in sync with TITLES in netlify/functions/league.mjs.
+  const TITLES = [
+    { id: 'dodger', name: 'Senior Oga-Dodger', price: 1500 },
+    { id: 'latecomer', name: 'Professional Latecomer', price: 2000 },
+    { id: 'gist', name: 'Chief Gist Officer', price: 2500 },
+    { id: 'wahala', name: 'Head of Wahala', price: 4000 },
+    { id: 'vibes', name: 'Director of Vibes', price: 6000 },
+    { id: 'smallchops', name: 'Minister of Small Chops', price: 9000 },
+    { id: 'ogatrain', name: 'Oga in Training', price: 12000 },
+    { id: 'legend', name: 'Office Legend', price: 20000 },
+  ];
+  const EXTRAS = [
+    { id: 'trail', ico: 'trail', name: 'Money rain trail', desc: 'Naira notes fly behind you as you walk', price: 6000 },
+    { id: 'gold', ico: 'crown', name: 'Gold name', desc: 'Your name shows in gold on your ID card and on league boards', price: 8000 },
+  ];
 
   // Career mode: a five-day week; goals get harder every week (w = week number)
   const CAREER_DAYS = [
@@ -379,6 +419,15 @@
     { id: 'agbada', name: 'Agbada & fila', unlock: 'bigboss', p: { shirt: '#2d5bd1', pants: '#2d5bd1', robe: '#2d5bd1', trim: '#f5d061', cap: 'fila', capColor: '#1e3f99' } },
     { id: 'native', name: 'Gele & iro', nameM: 'Native & fila', unlock: 'nepa', p: { shirt: 'pattern:ankara2', pants: 'pattern:ankara2', cap: 'gele', capColor: '#e0457b' } },
     { id: 'legend', name: 'Gold legend', unlock: 'legend', p: { shirt: '#f5b301', pants: '#17203a', suit: true, tie: '#008751', glow: true } },
+    // v5: staff-shop outfits (bought with naira)
+    { id: 'hoodie', name: 'Yaba tech-bro hoodie', buy: true, p: { shirt: '#2d3446', pants: '#1f2937', hoodie: '#3b4459', text: 'YABA', textColor: '#19c37d' } },
+    { id: 'fanjersey', name: 'Naija fan jersey', buy: true, p: { shirt: '#ffffff', sleeve: '#008751', pants: '#008751', number: '9', numberColor: '#008751' } },
+    { id: 'banker', name: 'Banker suit', buy: true, p: { shirt: '#1d3a6b', pants: '#16294b', suit: true, tie: '#5ab0ff', stripes: true } },
+    { id: 'kaftan', name: 'Kaftan', buy: true, p: { shirt: '#7b3f1d', pants: '#7b3f1d', long: true, trim: '#f5d061' } },
+    { id: 'isiagu', name: 'Isiagu & red cap', buy: true, p: { shirt: 'pattern:isiagu', pants: '#141414', cap: 'okpu', capColor: '#c8102e' } },
+    { id: 'babban', name: 'Babban riga & hula', buy: true, p: { shirt: '#f3efe6', pants: '#f3efe6', robe: '#f3efe6', trim: '#2f8f5b', cap: 'hula' } },
+    { id: 'asoebi', name: 'Aso-ebi party', buy: true, p: { shirt: 'pattern:aso', pants: 'pattern:aso', cap: 'gele', capColor: 'pattern:aso' } },
+    { id: 'christmas', name: 'Christmas party', buy: true, p: { shirt: '#c62828', sleeve: '#c62828', pants: '#1b5e20', xmas: true, cap: 'santa' } },
   ];
 
   const RANKS = [
@@ -484,11 +533,12 @@
     commute: store.get('ow_commute', '1') !== '0',
     ogaName: '',
     wallet: Math.max(0, parseInt(store.get('ow_wallet', '0'), 10) || 0),
-    upg: Object.assign({ chair: 0, stab: 0, canteen: 0, life: 0, pocket: 0 }, store.json('ow_upg', {})),
+    upg: Object.assign({ chair: 0, stab: 0, canteen: 0, life: 0, pocket: 0, pos: 0, danfo: 0, coffee: 0, sick: 0 }, store.json('ow_upg', {})),
     owned: new Set(store.json('ow_owned', [])),
     career: Object.assign({ week: 1, day: 0 }, store.json('ow_career', {})),
-    leagues: (store.json('ow_leagues', []) || []).filter((l) => l && /^[A-HJ-NP-Z2-9]{6}$/.test(l.code)).slice(0, 3),
+    leagues: (store.json('ow_leagues', []) || []).filter((l) => l && /^[A-HJ-NP-Z2-9]{6}$/.test(l.code)).slice(0, 5),
     playerId: store.get('ow_pid', ''),
+    look: Object.assign({ skin: '', hair: '', eyes: '', head: '', back: '', hand: '', neck: '', trail: false, gold: false, title: '' }, store.json('ow_look', {})),
   };
   if (!/^[a-z0-9]{12,40}$/.test(S.playerId)) {
     S.playerId = Array.from({ length: 20 }, () => 'abcdefghijklmnopqrstuvwxyz0123456789'[(Math.random() * 36) | 0]).join('');
@@ -500,15 +550,53 @@
     owned() { store.set('ow_owned', JSON.stringify([...S.owned])); },
     career() { store.set('ow_career', JSON.stringify(S.career)); },
     leagues() { store.set('ow_leagues', JSON.stringify(S.leagues)); },
+    look() { store.set('ow_look', JSON.stringify(S.look)); },
   };
   const t = (k) => (STR[S.lang][k] !== undefined ? STR[S.lang][k] : STR.en[k]);
   const msgs = () => MESSAGES[S.lang];
+
+  // ---- Leagues v2 words ----
+  Object.assign(STR.en, {
+    leagueMax: 'You can be in up to 5 leagues.', leagueEmpty: 'No scores yet this round. Press Play to get on the board!',
+    lgStarts: (when, left) => `Starts ${when} (in ${left})`, lgEnded: 'Round ended', lgOpen: (left, weekly) => `Open · ${left} left${weekly ? ' (resets Monday)' : ''}`,
+    lgWeekly: 'Weekly league', lgTournament: 'Tournament', lgShift: (s) => (s % 60 ? (s / 60).toFixed(1) : s / 60) + '-min shifts', lgNoLimit: 'No time limit',
+    lgTries: (n) => (n === 1 ? '1 try' : n + ' tries'), lgTriesAny: 'Unlimited tries', lgTotal: 'Total of all tries', lgBest: 'Best score wins',
+    lgSame: 'Same office for everyone', lgNoUpg: 'No shop upgrades', lgUpg: 'Allow shop upgrades', lgCommute: 'Morning commute', lgNoCommute: 'No commute',
+    lgKicked: 'The admin removed you from this league.', lgNotYet: 'This league has not started yet.', lgNoTries: 'No tries left this round.',
+    lgRank: (r, n, sc) => `You: #${r} of ${n} (${sc})`, lgNoScore: 'You have no score yet', lgTriesLeft: (n) => (n === 1 ? '1 try left' : n + ' tries left'),
+    lgLeader: (n, sc) => `Leader: ${n} ${sc}`, lgPlay: 'Play', lgBoard: 'Board', lgPlayFor: 'Play for this league',
+    lgType: 'Type', lgWeeklyHelp: 'Runs every week, resets Monday', lgTournamentHelp: 'You pick the start and end time',
+    lgStart: 'Starts', lgEnd: 'Ends', lgShiftLen: 'Shift length', lgTriesLabel: 'Tries per round', lgWinner: 'Winner',
+    lgBestLong: 'Best single shift', lgTotalLong: 'Total of all shifts added up', lgSameHelp: 'Same obstacles in the same order. Pure skill.',
+    lgUpgHelp: 'Off = everyone plays with the same speed and lives', lgCommuteHelp: 'Start each shift with the Lagos road dash',
+    lgPrize: 'Prize (optional)', lgPrizeEg: 'e.g. Winner gets lunch on Friday', lgBadCode: 'That code is not valid. It has 6 letters and numbers.',
+    lgNeedLeagueName: 'Give your league a name.', lgNeedPin: 'Choose an admin PIN of 4 to 6 digits.',
+    lgPlays: (n) => (n === 1 ? '1 shift' : n + ' shifts'), lgBestShort: (b) => 'best ' + b, lgSurvived: (tm, lv, n) => `Survived ${tm} · level ${lv}` + (n > 1 ? ` · ${n} shifts` : ''),
+    lgRemove: 'Remove', lgRound: (n) => 'Round ' + n, lgNobody: 'No scores', lgManage: 'Manage league', lgAdminLogin: 'Admin login',
+    lgPrizeLine: (p) => 'Prize: ' + p, lgTapAgain: 'Tap again to confirm', lgUnlocked: 'Admin unlocked on this phone.', lgSaved: 'Rules saved.',
+    lgEndedOk: 'Round ended. Winners saved to Past winners.', lgNewOk: 'New round started. Everyone\'s tries are reset.', lgRemoved: 'Player removed.',
+    lgSubmitting: 'Sending your score to the league…', lgSubmitted: (r, n, sc) => `Rank #${r} of ${n} · your score ${sc}`, lgViewBoard: 'View league board',
+    lgStartToast: (n, lim) => `${n}: ` + (lim ? `${lim % 60 ? (lim / 60).toFixed(1) : lim / 60}-minute shift. Go!` : 'this shift counts for the league. Go!'),
+    lgTimeUp: 'Time up!', lgTimeUpStamp: 'Time up',
+    sickBack: 'Sick leave! The doctor signed you back in with 1 life.',
+    skinTone: 'Skin tone', skinDefault: 'Default skin tone', hairDefault: 'Your usual hair', wearing: 'Wearing', wear: 'Wear', takeOff: 'Take off',
+    turnOn: 'Turn on', turnOff: 'Turn off', useTitle: 'Use title', jobTitles: 'Job titles', shopOnly: 'Staff shop', orBadge: (b) => `Or unlock free with the "${b}" badge`,
+    titlesHelp: 'Your title shows on your staff ID and next to your name on league boards.',
+  });
+  Object.assign(STR.pcm, {
+    leagueMax: 'You fit join only 5 leagues.', leagueEmpty: 'No score yet for this round. Press Play make you enter board!',
+    lgEnded: 'Round don end', lgOpen: (left, weekly) => `E dey open · ${left} remain${weekly ? ' (e go reset Monday)' : ''}`,
+    lgKicked: 'Admin don remove you from this league.', lgNotYet: 'This league never start.', lgNoTries: 'Your tries don finish for this round.',
+    lgNoScore: 'You never get score', lgTriesLeft: (n) => (n === 1 ? '1 try remain' : n + ' tries remain'), lgPlayFor: 'Play for this league',
+    lgSubmitting: 'We dey send your score go league…', lgTimeUp: 'Time don reach!', lgTimeUpStamp: 'Time up',
+    lgStartToast: (n, lim) => `${n}: ` + (lim ? `${lim % 60 ? (lim / 60).toFixed(1) : lim / 60}-minute shift. Oya go!` : 'this shift go count for league. Oya go!'),
+  });
 
   const STATS_DEFAULT = { games: 0, lunch: 0, escapes: 0, blackouts: 0, maxLevel: 0, maxScore: 0, maxStreak: 0, near: 0, fridays: 0, maxTime: 0, challenges: 0, dailies: 0, bossKeys: 0, ontime: 0, tasks: 0, weeks: 0, buys: 0, events: 0 };
   const stats = Object.assign({}, STATS_DEFAULT, store.json('ow_stats', {}));
   const unlocked = new Set(store.json('ow_badges', []));
   function saveProgress() { store.set('ow_stats', JSON.stringify(stats)); store.set('ow_badges', JSON.stringify([...unlocked])); }
-  const outfitUnlocked = (o) => !o.unlock || unlocked.has(o.unlock) || S.owned.has(o.id);
+  const outfitUnlocked = (o) => (!o.unlock && !o.buy) || unlocked.has(o.unlock) || S.owned.has(o.id);
   if (!OUTFITS.some((o) => o.id === S.outfit && outfitUnlocked(o))) S.outfit = 'standard';
 
   let quality = S.gfx === 'low' ? 'low' : 'high';
@@ -611,6 +699,20 @@
       x.fillStyle = '#2b1a10';
       x.beginPath(); x.moveTo(18, 2); x.lineTo(22, 6); x.lineTo(18, 10); x.lineTo(14, 6); x.closePath(); x.fill();
       x.beginPath(); x.moveTo(6, 14); x.lineTo(10, 18); x.lineTo(6, 22); x.lineTo(2, 18); x.closePath(); x.fill();
+    } else if (name === 'isiagu') {
+      x.fillStyle = '#c8102e'; x.fillRect(0, 0, 24, 24);
+      x.strokeStyle = '#f5d061'; x.lineWidth = 1;
+      for (const [px, py] of [[6, 6], [18, 18]]) {
+        x.fillStyle = '#141414'; circle(x, px, py, 3.6); x.fill(); circle(x, px, py, 3.6); x.stroke();
+      }
+      x.fillStyle = '#141414';
+      x.fillRect(16.5, 4.5, 3, 3); x.fillRect(4.5, 16.5, 3, 3);
+    } else if (name === 'aso') {
+      x.fillStyle = '#5b2a86'; x.fillRect(0, 0, 24, 24);
+      x.strokeStyle = 'rgba(255,255,255,.22)'; x.lineWidth = 1;
+      for (let i = -24; i < 48; i += 6) { x.beginPath(); x.moveTo(i, 0); x.lineTo(i + 24, 24); x.stroke(); }
+      x.fillStyle = '#f5d061';
+      for (const [px, py] of [[6, 6], [18, 18], [18, 6], [6, 18]]) { circle(x, px, py, 1.5); x.fill(); }
     } else {
       x.fillStyle = '#6c2bb3'; x.fillRect(0, 0, 24, 24);
       x.strokeStyle = '#ffcf3f'; x.lineWidth = 2;
@@ -648,6 +750,7 @@
     c.fillStyle = '#111827';
     rr(c, -10, 19 + lg, 9, 4, 2); c.fill();
     rr(c, 1, 19 - lg, 9, 4, 2); c.fill();
+    if (p.backpack) { c.fillStyle = '#334155'; rr(c, -13, -15, 26, 10, 4); c.fill(); }
     // arms
     c.fillStyle = fillOf(c, p.sleeve || p.robe || p.shirt);
     rr(c, -17.5, -7 + lg * 0.6, 6, 16, 3); c.fill();
@@ -677,7 +780,7 @@
       c.strokeStyle = 'rgba(255,255,255,.18)'; c.lineWidth = 1.2;
       c.beginPath(); c.moveTo(-6, -9); c.lineTo(-1, 6); c.moveTo(6, -9); c.lineTo(1, 6); c.stroke();
     } else if (p.number) {
-      c.fillStyle = '#ffffff';
+      c.fillStyle = p.numberColor || '#ffffff';
       c.fillRect(-5, -10, 10, 2);
       c.font = '900 9px system-ui, Arial, sans-serif';
       c.textAlign = 'center'; c.textBaseline = 'middle';
@@ -686,6 +789,27 @@
       c.fillStyle = '#ffffff';
       c.beginPath(); c.moveTo(-6.5, -10); c.lineTo(0, -4); c.lineTo(6.5, -10); c.closePath(); c.fill();
     }
+    if (p.stripes) {
+      c.strokeStyle = 'rgba(255,255,255,.14)'; c.lineWidth = 0.7;
+      c.beginPath(); for (const sx of [-9, -6, 6, 9]) { c.moveTo(sx, -8); c.lineTo(sx, 10); } c.stroke();
+    }
+    if (p.xmas) {
+      c.fillStyle = '#ffffff'; rr(c, -12.5, 7.5, 25, 3.6, 1.8); c.fill();
+      c.fillStyle = '#111827'; c.fillRect(-12, 2, 24, 2.4);
+      c.fillStyle = '#f5d061'; c.fillRect(-2, 1.6, 4, 3.2);
+    }
+    if (p.hoodie) {
+      c.fillStyle = p.hoodie;
+      c.beginPath(); c.ellipse(0, -10.5, 11.5, 4.2, 0, 0, TAU); c.fill();
+      c.strokeStyle = '#e2e8f0'; c.lineWidth = 0.9; c.lineCap = 'round';
+      c.beginPath(); c.moveTo(-3, -8); c.lineTo(-3.2, -4.5); c.moveTo(3, -8); c.lineTo(3.2, -4.5); c.stroke();
+      c.fillStyle = 'rgba(0,0,0,.2)'; rr(c, -7, 4.5, 14, 5, 2); c.fill();
+      if (p.text) { c.fillStyle = p.textColor || '#fff'; c.font = '900 4.6px system-ui, Arial, sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText(p.text, 0, 1); }
+    }
+    if (p.backpack) {
+      c.strokeStyle = '#1e293b'; c.lineWidth = 2.4; c.lineCap = 'round';
+      c.beginPath(); c.moveTo(-7.5, -10); c.lineTo(-8.5, 6); c.moveTo(7.5, -10); c.lineTo(8.5, 6); c.stroke();
+    }
     if (p.tie) {
       c.fillStyle = p.tie;
       c.beginPath(); c.moveTo(0, -5); c.lineTo(-2.6, -1.5); c.lineTo(0, 8); c.lineTo(2.6, -1.5); c.closePath(); c.fill();
@@ -693,8 +817,8 @@
     if (p.badge) {
       c.strokeStyle = p.badge; c.lineWidth = 1.2;
       c.beginPath(); c.moveTo(-5, -9); c.lineTo(-6, 2); c.moveTo(5, -9); c.lineTo(-4, 2); c.stroke();
-      c.fillStyle = '#fff'; rr(c, -9, 1, 7, 8, 1.5); c.fill();
-      c.fillStyle = '#008751'; c.fillRect(-8, 2.5, 5, 1.8);
+      c.fillStyle = p.badgeCard || '#fff'; rr(c, -9, 1, 7, 8, 1.5); c.fill();
+      c.fillStyle = p.badgeCard ? '#7a5200' : '#008751'; c.fillRect(-8, 2.5, 5, 1.8);
     }
     if (p.papers) {
       for (let i = 0; i < 4; i++) {
@@ -717,6 +841,13 @@
       c.strokeStyle = '#f5b301'; c.lineWidth = 1.2; circle(c, 15, 12 - lg * 0.6, 2.4); c.stroke();
       c.fillStyle = '#cbd5e1'; c.fillRect(16, 13 - lg * 0.6, 4, 1.6);
     }
+    if (p.coffeecup) {
+      const cy = 4 + lg * 0.6;
+      c.fillStyle = '#f8fafc'; rr(c, -18, cy, 7, 8, 1.5); c.fill();
+      c.fillStyle = '#8b5a2b'; c.fillRect(-18, cy + 2.5, 7, 2.6);
+      c.strokeStyle = 'rgba(255,255,255,.55)'; c.lineWidth = 0.9;
+      c.beginPath(); c.moveTo(-15.5, cy - 1); c.quadraticCurveTo(-17, cy - 3.5, -15, cy - 5.5); c.stroke();
+    }
     if (p.phone) {
       c.fillStyle = '#0f172a'; rr(c, 12, 2 - lg * 0.6, 6, 10, 1.5); c.fill();
       c.fillStyle = '#5ad1ff'; c.fillRect(13, 3.5 - lg * 0.6, 4, 6);
@@ -726,10 +857,40 @@
     circle(c, -10, -19, 2.6); c.fill();
     circle(c, 10, -19, 2.6); c.fill();
     circle(c, 0, -20, 10.5); c.fill();
-    if (p.earrings) { c.fillStyle = '#f5b301'; circle(c, -10.3, -15.5, 1.6); c.fill(); circle(c, 10.3, -15.5, 1.6); c.fill(); }
+    if (p.earrings && p.hair !== 'hijab') { c.fillStyle = '#f5b301'; circle(c, -10.3, -15.5, 1.6); c.fill(); circle(c, 10.3, -15.5, 1.6); c.fill(); }
     // hair
     c.fillStyle = p.hairColor || '#141414';
-    if (p.hair === 'puff' && !p.cap) {
+    const hairCap = (h) => { c.beginPath(); c.arc(0, -21, h, Math.PI * 1.02, Math.PI * 1.98); c.closePath(); c.fill(); };
+    if (p.hair === 'hijab') {
+      c.fillStyle = fillOf(c, p.hijab || '#2f6b5e');
+      c.beginPath(); c.arc(0, -22, 13, Math.PI * 0.92, Math.PI * 2.08); c.lineTo(13, -6); c.quadraticCurveTo(0, -1, -13, -6); c.closePath(); c.fill();
+      c.fillStyle = p.skin;
+      c.beginPath(); c.ellipse(0, -18.5, 8.6, 9.6, 0, 0, TAU); c.fill();
+      c.strokeStyle = 'rgba(255,255,255,.18)'; c.lineWidth = 1;
+      c.beginPath(); c.arc(0, -19, 10.6, Math.PI * 1.1, Math.PI * 1.9); c.stroke();
+    } else if (p.hair === 'bald') {
+      c.fillStyle = 'rgba(255,255,255,.22)'; c.beginPath(); c.ellipse(-3.5, -27, 3.4, 1.6, -0.4, 0, TAU); c.fill();
+    } else if (p.hair === 'afro' && !p.cap) {
+      circle(c, 0, -26, 14.5); c.fill();
+      c.fillStyle = p.skin; c.beginPath(); c.ellipse(0, -18, 9.6, 8.6, 0, 0, TAU); c.fill();
+    } else if (p.hair === 'locs') {
+      hairCap(11.2);
+      c.strokeStyle = p.hairColor || '#1c140d'; c.lineWidth = 2.6; c.lineCap = 'round';
+      c.beginPath();
+      for (const lx of [-10.5, -8.5, 8.5, 10.5]) { c.moveTo(lx, -24); c.lineTo(lx * 1.06, -9 + Math.abs(lx) * 0.2); }
+      c.stroke();
+      c.strokeStyle = '#f5b301'; c.lineWidth = 1.2; c.beginPath(); c.moveTo(-11.5, -12); c.lineTo(-9.5, -12); c.moveTo(9.5, -11); c.lineTo(11.5, -11); c.stroke();
+    } else if (p.hair === 'braids') {
+      hairCap(11);
+      c.strokeStyle = 'rgba(255,255,255,.18)'; c.lineWidth = 0.8;
+      c.beginPath(); for (const bx of [-6, -2, 2, 6]) { c.moveTo(bx, -30.5); c.lineTo(bx * 1.2, -22.5); } c.stroke();
+      c.fillStyle = p.hairColor || '#141414';
+      for (const sd of [-1, 1]) for (let k = 0; k < 4; k++) { circle(c, sd * 11.2, -20 + k * 3.4, 1.9); c.fill(); }
+    } else if (p.hair === 'fade') {
+      hairCap(10.8);
+      c.fillStyle = 'rgba(255,255,255,.35)'; c.fillRect(-6, -30, 4, 1.2);
+      c.fillStyle = 'rgba(141,85,36,.45)'; c.beginPath(); c.arc(0, -21, 10.8, Math.PI * 1.02, Math.PI * 1.1); c.lineTo(-9, -21); c.fill();
+    } else if (p.hair === 'puff' && !p.cap) {
       circle(c, 0, -31, 7.5); c.fill();
       c.beginPath(); c.arc(0, -21, 11, Math.PI * 1.02, Math.PI * 1.98); c.closePath(); c.fill();
       c.fillStyle = '#f5b301'; c.fillRect(-4, -26, 8, 2.2);
@@ -747,6 +908,20 @@
       c.beginPath(); c.arc(0, -24, 10.6, Math.PI, 0); c.closePath(); c.fill();
       rr(c, -12, -25, 24, 3.5, 1.5); c.fill();
       c.fillStyle = '#f5b301'; c.fillRect(-2.5, -31, 5, 3);
+    } else if (p.cap === 'okpu') {
+      c.fillStyle = p.capColor || '#c8102e';
+      rr(c, -9.5, -37, 19, 11, 2); c.fill();
+      c.fillStyle = '#141414'; c.fillRect(-9.5, -33, 19, 1.6); c.fillRect(-9.5, -29.5, 19, 1.6);
+    } else if (p.cap === 'hula') {
+      c.fillStyle = '#f8f5ee';
+      c.beginPath(); c.arc(0, -26, 10.8, Math.PI, 0); c.closePath(); c.fill();
+      c.fillStyle = '#2f8f5b';
+      for (let k = -2; k <= 2; k++) { circle(c, k * 3.8, -30 + Math.abs(k) * 1.2, 1.1); c.fill(); }
+      c.fillRect(-10.5, -27, 21, 1.4);
+    } else if (p.cap === 'santa') {
+      c.fillStyle = '#c62828';
+      c.beginPath(); c.moveTo(-11, -27); c.quadraticCurveTo(0, -46, 12, -38); c.lineTo(10, -27); c.closePath(); c.fill();
+      c.fillStyle = '#ffffff'; rr(c, -12, -29, 24, 4.5, 2.2); c.fill(); circle(c, 12.5, -38, 3); c.fill();
     } else if (p.cap === 'gele') {
       c.fillStyle = fillOf(c, p.capColor || '#e0457b');
       c.beginPath(); c.ellipse(0, -28, 13.5, 6.5, 0, Math.PI, 0); c.fill();
@@ -755,6 +930,12 @@
       }
       c.strokeStyle = 'rgba(255,255,255,.35)'; c.lineWidth = 1;
       c.beginPath(); c.moveTo(-12, -27); c.quadraticCurveTo(0, -31, 12, -27); c.stroke();
+    }
+    if (p.headphones) {
+      c.strokeStyle = '#111827'; c.lineWidth = 2.4;
+      c.beginPath(); c.arc(0, -21, 12.4, Math.PI * 1.05, Math.PI * 1.95); c.stroke();
+      c.fillStyle = '#111827'; rr(c, -14.5, -23.5, 5, 9, 2.2); c.fill(); rr(c, 9.5, -23.5, 5, 9, 2.2); c.fill();
+      c.fillStyle = '#19c37d'; c.fillRect(-13.6, -20.5, 3.2, 2.6); c.fillRect(10.4, -20.5, 3.2, 2.6);
     }
     // face
     const lx = clamp(p.lookX || 0, -1, 1) * 1.3;
@@ -768,6 +949,12 @@
       c.strokeStyle = '#1f2937'; c.lineWidth = 1.2;
       circle(c, -3.9, -19, 3.4); c.stroke(); circle(c, 3.9, -19, 3.4); c.stroke();
       c.beginPath(); c.moveTo(-0.6, -19.4); c.lineTo(0.6, -19.4); c.stroke();
+    }
+    if (p.shades && p.mood !== 'cool') {
+      c.fillStyle = '#0f172a';
+      rr(c, -8.2, -21.8, 7.4, 4.6, 1.8); c.fill(); rr(c, 0.8, -21.8, 7.4, 4.6, 1.8); c.fill();
+      c.fillRect(-1, -20.6, 2, 1.2);
+      c.fillStyle = 'rgba(255,255,255,.35)'; c.fillRect(-7, -21, 2.2, 1); c.fillRect(2, -21, 2.2, 1);
     }
     if (p.lashes) {
       c.strokeStyle = '#111'; c.lineWidth = 1;
@@ -795,11 +982,26 @@
     c.restore();
   }
 
-  function playerParams(charId, outfitId, extra) {
+  function playerParams(charId, outfitId, extra, look) {
     const ch = CHARACTERS[charId] || CHARACTERS.emeka;
     const of = (OUTFITS.find((o) => o.id === outfitId) || OUTFITS[0]).p;
+    const L = look || S.look;
     const p = Object.assign({ skin: ch.skin, hair: ch.hair, earrings: ch.earrings, lashes: charId === 'ada' }, of, extra || {});
     if (p.cap === 'gele' && charId !== 'ada') p.cap = 'fila';
+    if (L) {
+      if (L.skin && SKIN_TONES.includes(L.skin)) p.skin = L.skin;
+      if (L.hair) p.hair = L.hair;
+      if (L.eyes === 'glasses') p.glasses = true;
+      if (L.eyes === 'shades') p.shades = true;
+      if (L.head === 'headphones') p.headphones = true;
+      if (L.head === 'facecap') { p.cap = 'peak'; p.capColor = '#008751'; }
+      if (L.back === 'backpack') p.backpack = true;
+      if (L.hand === 'coffeecup') p.coffeecup = true;
+      if (L.hand === 'phone') p.phone = true;
+      if (L.neck === 'goldtag') { p.badge = '#f5b301'; p.badgeCard = '#f5d061'; }
+      if (p.hair === 'hijab') { p.cap = ''; p.hijab = typeof of.shirt === 'string' && of.shirt.startsWith('pattern:') ? of.shirt : '#2f6b5e'; }
+      if (p.hair === 'bald' && p.cap === 'gele') p.cap = 'fila';
+    }
     return p;
   }
 
@@ -807,7 +1009,7 @@
     player(c, tm, o = {}) {
       drawPerson(c, playerParams(o.char || S.char, o.outfit || S.outfit, {
         walk: o.walk !== undefined ? o.walk : tm * 10, mood: o.mood || 'happy', lookX: o.lookX, lookY: o.lookY, s: o.s || 1,
-      }));
+      }, o.look));
     },
     boss(c, tm, o = {}) {
       drawPerson(c, {
@@ -1152,7 +1354,12 @@
   function newRound(mode) {
     G.mode = mode || 'normal';
     G.dailyKey = todayKey();
-    rng = G.mode === 'daily' ? mulberry32(strHash('office-wahala:' + G.dailyKey)) : Math.random;
+    G.league = G.mode === 'league' ? LG.run : null;
+    const LR = G.league ? G.league.rules : null;
+    rng = G.mode === 'daily' ? mulberry32(strHash('office-wahala:' + G.dailyKey))
+      : G.league && G.league.seed ? mulberry32(strHash('league:' + G.league.seed)) : Math.random;
+    G.limit = LR && LR.shiftSecs ? LR.shiftSecs : 0;
+    G.timeUp = false;
     G.friday = isFridayNow();
     G.time = 0;
     G.scoreF = 0;
@@ -1191,16 +1398,16 @@
     G.submitted = false;
     G.badgeCheckT = 1;
     G.shareBlob = null;
-    G.upg = G.mode === 'daily' ? {} : S.upg;
+    G.upg = G.mode === 'daily' || (LR && !LR.upgrades) ? {} : S.upg;
     G.lives = CONFIG.START_LIVES + (G.upg.life ? 1 : 0);
-    G.phase = S.commute ? 'commute' : 'office';
+    G.phase = (LR ? LR.commute : S.commute) ? 'commute' : 'office';
     G.commute = { t: 0, late: 0, dur: DIFFICULTY.commuteSeconds };
     if (G.phase === 'commute') G.spawnT = 1.0;
     G.event = null; G.lastEvent = null;
     G.eventT = rand(DIFFICULTY.eventEvery[0], DIFFICULTY.eventEvery[1]) * 0.7;
     G.task = null;
     G.taskT = G.mode === 'career' && careerDay().type === 'tasks' ? 6 : rand(DIFFICULTY.taskEvery[0], DIFFICULTY.taskEvery[1]) * 0.7;
-    G.held = null; G.calm = 0; G.frozen = 0; G.fade = 0; G.alertT = 0;
+    G.held = null; G.calm = 0; G.frozen = 0; G.fade = 0; G.alertT = 0; G.revived = false; G.trailT = 0;
     G.run = { lunch: 0, tasks: 0, escapes: 0, fridays: 0 };
     G.goalDone = false; G.goalEndT = 0; G.success = false; G.promoPending = null;
     if (G.mode === 'career' && careerDay().type === 'escapes') G.bossT = 8;
@@ -1258,7 +1465,7 @@
       }
     } else if (e.code === 'Enter' || e.code === 'NumpadEnter') {
       if (onButton || e.repeat) return;
-      if (G.state === 'menu' || G.state === 'over') { e.preventDefault(); startGame(G.state === 'over' ? G.mode : 'normal'); }
+      if (G.state === 'menu' || G.state === 'over') { e.preventDefault(); if (G.state === 'over') replay(); else startGame('normal'); }
       else if (G.state === 'paused') { e.preventDefault(); resumeGame(); }
       else if (G.state === 'board') { e.preventDefault(); closeBoard(); }
     } else if (e.code === 'Escape' || e.code === 'KeyP') {
@@ -1399,7 +1606,14 @@
     }
     const fr = G.frozen > 0;
     if (force || c.fr !== fr) { ui.frozen.hidden = !fr; c.fr = fr; }
-    const canSkip = G.phase === 'commute' && store.get('ow_commuted', '0') === '1';
+    const lgt = G.league ? G.league.name + (G.limit ? ' · ' + fmtTime(Math.max(0, Math.ceil(G.limit - G.time))) : '') : '';
+    if (force || c.lg !== lgt) {
+      const el = $('hud-league');
+      el.hidden = !lgt;
+      if (lgt) { el.innerHTML = ico('leagues'); el.append(lgt); el.classList.toggle('is-low', !!G.limit && G.limit - G.time <= 10); }
+      c.lg = lgt;
+    }
+    const canSkip = G.phase === 'commute' && G.mode !== 'league' && store.get('ow_commuted', '0') === '1';
     if (force || c.skip !== canSkip) { ui.skip.hidden = !canSkip; c.skip = canSkip; }
     updateUseBtn();
     const p = G.player;
@@ -1429,8 +1643,9 @@
     if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
     store.set('ow_played', '1');
     resize();
-    newRound(mode === 'daily' || mode === 'career' ? mode : 'normal');
-    if (G.mode !== 'daily' && S.upg.pocket > 0) { G.held = 'autoreply'; S.upg.pocket--; saveS.upg(); }
+    newRound(mode === 'daily' || mode === 'career' || (mode === 'league' && LG.run) ? mode : 'normal');
+    if (G.upg === S.upg && S.upg.pocket > 0) { G.held = 'autoreply'; S.upg.pocket--; saveS.upg(); }
+    $('btn-restart').hidden = G.mode === 'league';
     if (Voice) Voice.lang = S.lang;
     keys.clear();
     drag.active = false;
@@ -1440,13 +1655,15 @@
     updateHud(true);
     Sound.wake();
     Sound.play('start');
-    if (Music && Sound.musicOn) { Music.setLevel(1); Music.muffle(false); Music.start('game'); Music.setMode('game'); }
+    if (Music) { if (Music.next) Music.next(); Music.mode = 'game'; Music.setLevel(1); }
+    if (Music && Sound.musicOn) { Music.muffle(false); Music.start('game'); Music.setMode('game'); }
     const coarse = window.matchMedia && window.matchMedia('(pointer: coarse)').matches;
     G.startedAt = performance.now();
     ADS.seen = new Set(); ADS.views = 0;
     T('game_start', { mode: G.mode, commute: G.phase === 'commute', held: G.held || '' });
     if (G.phase === 'commute') { toast(t('commuteStart'), 'info', 2600); say('commute'); }
     else if (G.mode === 'career') toast(t('days')[S.career.day] + ': ' + t('goalText')(careerDay().type, goalTarget()), 'info', 2800);
+    else if (G.mode === 'league') toast(t('lgStartToast')(G.league.name, G.limit), 'info', 2800);
     else toast(G.mode === 'daily' ? t('dailyStart') : coarse ? t('clockInTouch') : t('clockIn'), 'info', 2400);
     lastFrame = performance.now();
   }
@@ -1459,6 +1676,12 @@
     if (Music) Music.stop(0.2);
     if (Voice) Voice.stop();
     showScreen('pause');
+    syncNowPlaying();
+  }
+  function syncNowPlaying() {
+    const np = $('now-playing');
+    np.hidden = !(Music && Sound.musicOn && Music.songName);
+    if (!np.hidden) $('np-name').textContent = Music.songName;
   }
 
   function resumeGame() {
@@ -1538,8 +1761,9 @@
       level: G.level, cause: G.success ? 'goal' : (G.lastHit || 'unknown'), items: G.collected, streak: G.maxStreak, near: G.nearMisses,
       late: G.commute ? G.commute.late : 0, pay, success: !!G.success });
     if (G.mode === 'career') T('career_day', { day: careerWon ? (S.career.day + 4) % 5 : S.career.day, week: careerWon && S.career.day === 0 ? S.career.week - 1 : S.career.week, success: careerWon });
-    recordWeekBest(score, Math.max(1, Math.floor(G.time)), G.level);
-    submitLeagues({ score, duration: Math.max(1, Math.floor(G.time)), level: G.level });
+    $('btn-again').hidden = false;
+    if (G.mode === 'league') submitLeagueRun({ score, duration: Math.max(1, Math.floor(G.time)), level: G.level });
+    else $('over-league').hidden = true;
     stats.games++;
     liveStats();
     checkBadges(false);
@@ -1559,7 +1783,7 @@
     const beatOld = isBest && prevBest > 0;
     G.verdict = beatOld ? m.newBest + ' ' + tier.text : tier.text;
     ui.overMsg.textContent = G.verdict;
-    G.stampText = beatOld ? t('newBestStamp') : prevBest === 0 ? t('firstShift') : t('shiftOver');
+    G.stampText = G.timeUp ? t('lgTimeUpStamp') : beatOld ? t('newBestStamp') : prevBest === 0 ? t('firstShift') : t('shiftOver');
     if (careerWon) G.stampText = t('dayStamp');
     ui.overStamp.textContent = G.stampText;
     ui.overStamp.classList.toggle('is-best', beatOld || careerWon);
@@ -1819,11 +2043,12 @@
   }
   function hitCommute(o) {
     const p = G.player;
-    G.commute.late += 10;
+    const lateStep = [10, 7, 5][Math.min(2, (G.upg && G.upg.danfo) || 0)];
+    G.commute.late += lateStep;
     p.invuln = 1.1;
     G.shake = 9; G.flash = 0.15;
     o.hitDone = true;
-    toast(t('commuteHit')[o.type] || '+10 mins late', 'bad', 1700);
+    toast(String(t('commuteHit')[o.type] || '+10 mins late').replace('+10', '+' + lateStep), 'bad', 1700);
     if (o.type === 'agbero') say('agbero'); else if (o.type === 'okada') say('okada');
     Sound.play('hit');
     burst(p.x, p.y, COLORS.gold, 12, 170);
@@ -2232,31 +2457,146 @@
   }
 
   /* ---------- Staff shop ---------- */
+  let SHOPTAB = 'upgrades';
+  const ownedKey = (kind, id) => kind + ':' + id;
+  const ownsLook = (kind, id) => S.owned.has(ownedKey(kind, id));
+  function shopCard(opts) {
+    const card = document.createElement('div');
+    card.className = 'shop-card' + (opts.cls ? ' ' + opts.cls : '');
+    if (opts.preview) {
+      const cv = document.createElement('canvas');
+      cv.className = 's-preview'; cv.width = 84; cv.height = 96; cv.setAttribute('aria-hidden', 'true');
+      card.appendChild(cv);
+      requestAnimationFrame(() => drawPortrait(cv, S.char, opts.preview.outfit || S.outfit, false, opts.preview.look || S.look));
+    } else {
+      const ic = document.createElement('span'); ic.className = 's-ico'; ic.setAttribute('aria-hidden', 'true'); ic.innerHTML = ico(opts.icon || 'gift');
+      card.appendChild(ic);
+    }
+    const nm = document.createElement('span'); nm.className = 's-name'; nm.textContent = opts.name; card.appendChild(nm);
+    if (opts.desc) { const d = document.createElement('span'); d.className = 's-desc'; d.textContent = opts.desc; card.appendChild(d); }
+    if (opts.level) { const l = document.createElement('span'); l.className = 's-level'; l.textContent = opts.level; card.appendChild(l); }
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'btn ' + (opts.btnCls || 'btn-gold');
+    btn.textContent = opts.btn;
+    btn.disabled = !!opts.disabled;
+    for (const [k, v] of Object.entries(opts.data || {})) btn.dataset[k] = v;
+    card.appendChild(btn);
+    return card;
+  }
+  function sectionTitle(grid, text, icon) {
+    const h = document.createElement('h3'); h.className = 'shop-sec';
+    h.innerHTML = icon ? ico(icon) : ''; h.append(text);
+    grid.appendChild(h);
+  }
   function renderShop() {
     $('shop-wallet').textContent = '₦' + fmtNum(S.wallet);
+    document.querySelectorAll('.shop-tabs [data-tab]').forEach((b) => b.setAttribute('aria-selected', String(b.dataset.tab === SHOPTAB)));
     const grid = $('shop-grid');
     grid.innerHTML = '';
-    for (const it of SHOP_ITEMS) {
-      const lvl = S.upg[it.id] || 0;
-      const maxed = lvl >= it.max;
-      const price = maxed ? 0 : it.price[lvl];
-      const card = document.createElement('div');
-      card.className = 'shop-card' + (maxed ? ' is-max' : '');
-      card.innerHTML = '<span class="s-ico" aria-hidden="true"></span><span class="s-name"></span><span class="s-desc"></span><span class="s-level"></span>';
-      card.querySelector('.s-ico').innerHTML = ico(it.ico);
-      card.querySelector('.s-name').textContent = it.name;
-      card.querySelector('.s-desc').textContent = it.desc;
-      card.querySelector('.s-level').textContent = it.consumable ? `In pocket: ${lvl}/${it.max}` : `Level ${lvl}/${it.max}`;
-      const btn = document.createElement('button');
-      btn.type = 'button';
-      btn.className = 'btn ' + (maxed ? 'btn-ghost' : 'btn-gold');
-      btn.dataset.buy = it.id;
-      btn.textContent = maxed ? (it.consumable ? 'Pocket full' : 'Maxed') : 'Buy ₦' + fmtNum(price);
-      btn.disabled = maxed || S.wallet < price;
-      card.appendChild(btn);
-      grid.appendChild(card);
+    grid.dataset.tab = SHOPTAB;
+    const buyTxt = (p) => 'Buy ₦' + fmtNum(p);
+    if (SHOPTAB === 'upgrades') {
+      for (const it of SHOP_ITEMS) {
+        const lvl = S.upg[it.id] || 0, maxed = lvl >= it.max, price = maxed ? 0 : it.price[lvl];
+        grid.appendChild(shopCard({ icon: it.ico, name: it.name, desc: it.desc, cls: maxed ? 'is-max' : '',
+          level: it.consumable ? `In pocket: ${lvl}/${it.max}` : `Level ${lvl}/${it.max}`,
+          btn: maxed ? (it.consumable ? 'Pocket full' : 'Maxed') : buyTxt(price), btnCls: maxed ? 'btn-ghost' : 'btn-gold',
+          disabled: maxed || S.wallet < price, data: { buy: it.id } }));
+      }
+      return;
+    }
+    if (SHOPTAB === 'looks') {
+      sectionTitle(grid, t('skinTone'), 'palette');
+      const sk = document.createElement('div'); sk.className = 'skin-pick span-all'; grid.appendChild(sk); paintSkinPick(sk);
+      for (const [slot, label] of LOOK_SLOTS) {
+        sectionTitle(grid, label, slot === 'hair' ? 'hair' : slot === 'eyes' ? 'specs' : slot === 'head' ? 'headphones' : slot === 'neck' ? 'id-badge' : slot === 'hand' ? 'coffee' : 'bag');
+        if (slot === 'hair') {
+          const cur = !S.look.hair;
+          grid.appendChild(shopCard({ preview: { look: Object.assign({}, S.look, { hair: '' }) }, name: t('hairDefault'), cls: cur ? 'is-on' : '',
+            btn: cur ? t('wearing') : t('wear'), btnCls: cur ? 'btn-ghost' : 'btn-primary', disabled: cur, data: { look: 'hair', id: '' } }));
+        }
+        for (const L of LOOKS.filter((x) => x.slot === slot)) {
+          const own = ownsLook('look', L.id), on = S.look[slot] === L.id;
+          grid.appendChild(shopCard({ preview: { look: Object.assign({}, S.look, { [slot]: L.id }) }, name: L.name, cls: on ? 'is-on' : '',
+            btn: !own ? buyTxt(L.price) : on ? (slot === 'hair' ? t('wearing') : t('takeOff')) : t('wear'),
+            btnCls: !own ? 'btn-gold' : on ? 'btn-ghost' : 'btn-primary', disabled: (!own && S.wallet < L.price) || (own && on && slot === 'hair'),
+            data: own ? { look: slot, id: on ? '' : L.id } : { buylook: 'look', id: L.id } }));
+        }
+      }
+      return;
+    }
+    if (SHOPTAB === 'outfits') {
+      for (const o of OUTFITS) {
+        const open = outfitUnlocked(o), on = S.outfit === o.id, price = OUTFIT_PRICES[o.id];
+        const b = o.unlock ? BADGES.find((x) => x.id === o.unlock) : null;
+        grid.appendChild(shopCard({ preview: { outfit: o.id }, name: S.char === 'emeka' && o.nameM ? o.nameM : o.name, cls: on ? 'is-on' : '',
+          desc: open ? '' : b ? t('orBadge')(b.name) : '',
+          btn: open ? (on ? t('wearing') : t('wear')) : buyTxt(price), btnCls: open ? (on ? 'btn-ghost' : 'btn-primary') : 'btn-gold',
+          disabled: open ? on : S.wallet < price, data: open ? { outfit: o.id } : { buyoutfit: o.id } }));
+      }
+      return;
+    }
+    // extras
+    for (const x of EXTRAS) {
+      const own = ownsLook('extra', x.id), on = !!S.look[x.id];
+      grid.appendChild(shopCard({ icon: x.ico, name: x.name, desc: x.desc, cls: on ? 'is-on' : '',
+        btn: !own ? buyTxt(x.price) : on ? t('turnOff') : t('turnOn'), btnCls: !own ? 'btn-gold' : on ? 'btn-ghost' : 'btn-primary',
+        disabled: !own && S.wallet < x.price, data: own ? { extra: x.id } : { buylook: 'extra', id: x.id } }));
+    }
+    sectionTitle(grid, t('jobTitles'), 'title');
+    const help = document.createElement('p'); help.className = 'setting-help span-all'; help.textContent = t('titlesHelp'); grid.appendChild(help);
+    for (const ti of TITLES) {
+      const own = ownsLook('title', ti.id), on = S.look.title === ti.id;
+      grid.appendChild(shopCard({ icon: 'title', name: ti.name, cls: 'is-title' + (on ? ' is-on' : ''),
+        btn: !own ? buyTxt(ti.price) : on ? t('takeOff') : t('useTitle'), btnCls: !own ? 'btn-gold' : on ? 'btn-ghost' : 'btn-primary',
+        disabled: !own && S.wallet < ti.price, data: own ? { title: on ? '' : ti.id } : { buylook: 'title', id: ti.id } }));
     }
   }
+  function paintSkinPick(box) {
+    box.innerHTML = '';
+    box.setAttribute('role', 'radiogroup');
+    const ch = CHARACTERS[S.char] || CHARACTERS.emeka;
+    const tones = [['', ch.skin]].concat(SKIN_TONES.filter((x) => x !== ch.skin).map((x) => [x, x]));
+    tones.forEach(([v, col], i) => {
+      const b = document.createElement('button');
+      b.type = 'button'; b.className = 'skin-opt'; b.dataset.skin = v;
+      b.setAttribute('role', 'radio'); b.setAttribute('aria-checked', String((S.look.skin || '') === v));
+      b.setAttribute('aria-label', i === 0 ? t('skinDefault') : t('skinTone') + ' ' + i);
+      b.style.background = col;
+      box.appendChild(b);
+    });
+  }
+  function setLook(slot, id) {
+    S.look[slot] = id;
+    saveS.look();
+    T('setting', { k: 'look_' + slot, v: id || 'none' });
+    afterLookChange();
+  }
+  function afterLookChange() {
+    if (G.state === 'shop') renderShop();
+    if (G.state === 'wardrobe') renderWardrobe();
+    refreshMenu();
+    Sound.play('click');
+  }
+  function buyLook(kind, id) {
+    const item = kind === 'look' ? LOOKS.find((x) => x.id === id) : kind === 'title' ? TITLES.find((x) => x.id === id) : EXTRAS.find((x) => x.id === id);
+    if (!item || ownsLook(kind, id)) return;
+    if (S.wallet < item.price) { toast(t('cantAfford'), 'info', 2000); return; }
+    S.wallet -= item.price; S.owned.add(ownedKey(kind, id));
+    saveS.wallet(); saveS.owned();
+    stats.buys++; checkBadges(true); saveProgress();
+    if (kind === 'look') S.look[item.slot] = id;
+    else if (kind === 'title') S.look.title = id;
+    else S.look[id] = true;
+    saveS.look();
+    T('look_buy', { kind, id, price: item.price });
+    toast(t('bought') + ' ' + item.name, 'good', 1800);
+    afterLookChange();
+    Sound.play('coin');
+  }
+  const myTitle = () => { const ti = TITLES.find((x) => x.id === S.look.title && ownsLook('title', x.id)); return ti ? ti.name : ''; };
+  const myFlair = () => ({ gold: !!(S.look.gold && ownsLook('extra', 'gold')), title: myTitle() ? S.look.title : '' });
   function buyItem(id) {
     const it = SHOP_ITEMS.find((x) => x.id === id);
     if (!it) return;
@@ -2281,13 +2621,14 @@
     stats.buys++; checkBadges(true); saveProgress();
     S.outfit = id; store.set('ow_outfit', id);
     T('outfit_buy', { id, price });
-    renderWardrobe();
+    if (G.state === 'shop') renderShop(); else renderWardrobe();
+    refreshMenu();
     toast(t('bought'), 'good', 1800);
     Sound.play('coin');
   }
 
-  /* ---------- Office leagues (Netlify Function) ---------- */
-  const LG = { available: false, invite: null, current: null };
+  /* ---------- Office leagues v2 (Netlify Function) ---------- */
+  const LG = { available: false, invite: null, current: null, boards: {}, run: null, pins: {}, confirm: '' };
   function weekKeyLocal(now = Date.now()) {
     const d = new Date(now + 3600 * 1000);
     const day = (d.getUTCDay() + 6) % 7;
@@ -2297,13 +2638,14 @@
     return d.getUTCFullYear() + '-W' + String(week).padStart(2, '0');
   }
   function api(path, opts) {
-    return fetch(CONFIG.LEAGUE_API + path, Object.assign({ headers: { 'content-type': 'application/json' } }, opts || {}))
+    return fetch(CONFIG.LEAGUE_API + path, Object.assign({ headers: { 'content-type': 'application/json' }, cache: 'no-store' }, opts || {}))
       .then(async (r) => {
         const j = await r.json().catch(() => ({}));
-        if (!r.ok) throw new Error(j.error || ('Error ' + r.status));
+        if (!r.ok) { const e = new Error(j.error || ('Error ' + r.status)); e.status = r.status; throw e; }
         return j;
       });
   }
+  const post = (path, body) => api(path, { method: 'POST', body: JSON.stringify(body) });
   function probeLeagues() {
     if (!/^https?:$/.test(location.protocol)) return;
     api('/health').then((j) => {
@@ -2316,120 +2658,413 @@
       }
     }).catch(() => {});
   }
-  function recordWeekBest(score, duration, level) {
-    const wk = weekKeyLocal();
-    const wb = store.json('ow_weekbest', null);
-    if (!wb || wb.week !== wk || score > wb.score) store.set('ow_weekbest', JSON.stringify({ week: wk, score, duration, level }));
-  }
-  function postScore(code, run) {
-    return api('/' + code + '/score', { method: 'POST', body: JSON.stringify({ playerId: S.playerId, name: S.name, score: run.score, duration: run.duration, level: run.level }) });
-  }
-  async function submitLeagues(run) {
-    if (!LG.available || !S.name || !S.leagues.length || run.score <= 0) return;
-    for (const l of S.leagues) { try { await postScore(l.code, run); } catch (e) { /* keep playing */ } }
-  }
   function leagueStatus(msg, kind) { const el = $('league-status'); el.textContent = msg || ''; el.className = 'lb-status' + (kind ? ' ' + kind : ''); }
+  function adminStatus(msg, kind) { const el = $('admin-status'); el.textContent = msg || ''; el.className = 'lb-status' + (kind ? ' ' + kind : ''); }
   function needName() {
     if (S.name) return false;
     const inp = $('league-player');
     saveNameFrom(inp);
     if (S.name) return false;
+    renderLeagueHome();
     $('league-name-need').hidden = false;
     leagueStatus(t('leagueNeedName'), 'err');
     inp.focus();
     return true;
   }
+
+  // ----- formatting -----
+  function fmtLeft(ms) {
+    const m = Math.max(0, Math.round(ms / 60000));
+    if (m < 60) return m + 'm';
+    const h = Math.floor(m / 60);
+    if (h < 48) return h + 'h ' + (m % 60) + 'm';
+    return Math.floor(h / 24) + 'd ' + (h % 24) + 'h';
+  }
+  const fmtWhen = (ts) => new Date(ts).toLocaleString(undefined, { weekday: 'short', day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' });
+  function roundText(b) {
+    const r = b.round, now = Date.now();
+    if (!r) return '';
+    if (r.status === 'upcoming') return t('lgStarts')(fmtWhen(r.start), fmtLeft(r.start - now));
+    if (r.status === 'ended') return t('lgEnded');
+    return t('lgOpen')(fmtLeft(r.end - now), b.rules.schedule === 'week');
+  }
+  function ruleChips(rules) {
+    const c = [];
+    c.push(rules.schedule === 'week' ? ['daily', t('lgWeekly')] : ['calendar', t('lgTournament')]);
+    c.push(['stopwatch', rules.shiftSecs ? t('lgShift')(rules.shiftSecs) : t('lgNoLimit')]);
+    c.push(['again', rules.tries ? t('lgTries')(rules.tries) : t('lgTriesAny')]);
+    c.push(['trophy', rules.scoring === 'total' ? t('lgTotal') : t('lgBest')]);
+    if (rules.sameOffice) c.push(['leagues', t('lgSame')]);
+    if (!rules.upgrades) c.push(['lock', t('lgNoUpg')]);
+    c.push(['bus', rules.commute ? t('lgCommute') : t('lgNoCommute')]);
+    return c;
+  }
+  function chipsHtml(rules, max) {
+    return ruleChips(rules).slice(0, max || 99).map(([i, txt]) => '<li>' + ico(i) + esc(txt) + '</li>').join('');
+  }
+  function canPlay(b) {
+    if (!b || !b.round) return { ok: true, why: '' };
+    if (b.me && b.me.kicked) return { ok: false, why: t('lgKicked') };
+    if (b.round.status === 'upcoming') return { ok: false, why: t('lgNotYet') };
+    if (b.round.status === 'ended') return { ok: false, why: t('lgEnded') };
+    if (b.me && b.me.triesLeft === 0) return { ok: false, why: t('lgNoTries') };
+    return { ok: true, why: '' };
+  }
+  function mineText(b) {
+    if (!b || !b.me) return '';
+    const m = b.me, parts = [];
+    if (m.rank) parts.push(t('lgRank')(m.rank, b.players.length, fmtNum(b.rules.scoring === 'total' ? m.total : m.best)));
+    else parts.push(t('lgNoScore'));
+    if (m.triesLeft !== null && m.triesLeft !== undefined) parts.push(t('lgTriesLeft')(m.triesLeft));
+    return parts.join(' · ');
+  }
+  const fetchBoard = (code) => api('/' + code + '?me=' + encodeURIComponent(S.playerId)).then((b) => { LG.boards[code] = b; return b; });
+
+  // ----- rules form (shared by create + admin) -----
+  function toLocalInput(ts) { const d = new Date(ts - new Date(ts).getTimezoneOffset() * 60000); return d.toISOString().slice(0, 16); }
+  function renderRulesFields(box, rules) {
+    const r = Object.assign({ schedule: 'week', shiftSecs: 0, tries: 0, scoring: 'best', sameOffice: false, upgrades: true, commute: true, prize: '' }, rules || {});
+    const id = box.dataset.rules;
+    const now = Date.now();
+    const start = r.start || Math.ceil(now / 900000) * 900000, end = r.end || start + 2 * 3600 * 1000;
+    const opt = (list, cur) => list.map(([v, l]) => `<option value="${v}"${String(v) === String(cur) ? ' selected' : ''}>${esc(l)}</option>`).join('');
+    box.innerHTML = `
+      <fieldset class="rule-type"><legend>${esc(t('lgType'))}</legend>
+        <label><input type="radio" name="${id}-schedule" value="week"${r.schedule === 'week' ? ' checked' : ''}><span><b>${esc(t('lgWeekly'))}</b><small>${esc(t('lgWeeklyHelp'))}</small></span></label>
+        <label><input type="radio" name="${id}-schedule" value="custom"${r.schedule === 'custom' ? ' checked' : ''}><span><b>${esc(t('lgTournament'))}</b><small>${esc(t('lgTournamentHelp'))}</small></span></label>
+      </fieldset>
+      <div class="rule-dates"${r.schedule === 'custom' ? '' : ' hidden'}>
+        <label>${esc(t('lgStart'))}<input type="datetime-local" data-r="start" value="${toLocalInput(start)}"></label>
+        <label>${esc(t('lgEnd'))}<input type="datetime-local" data-r="end" value="${toLocalInput(end)}"></label>
+      </div>
+      <div class="rule-grid">
+        <label>${esc(t('lgShiftLen'))}<select data-r="shiftSecs">${opt([[0, t('lgNoLimit')], [60, t('lgShift')(60)], [90, t('lgShift')(90)], [120, t('lgShift')(120)], [180, t('lgShift')(180)], [300, t('lgShift')(300)]], r.shiftSecs)}</select></label>
+        <label>${esc(t('lgTriesLabel'))}<select data-r="tries">${opt([[0, t('lgTriesAny')], [1, t('lgTries')(1)], [2, t('lgTries')(2)], [3, t('lgTries')(3)], [5, t('lgTries')(5)], [10, t('lgTries')(10)], [20, t('lgTries')(20)]], r.tries)}</select></label>
+        <label class="span2">${esc(t('lgWinner'))}<select data-r="scoring">${opt([['best', t('lgBestLong')], ['total', t('lgTotalLong')]], r.scoring)}</select></label>
+      </div>
+      <div class="rule-checks">
+        <label><input type="checkbox" data-r="sameOffice"${r.sameOffice ? ' checked' : ''}><span><b>${esc(t('lgSame'))}</b><small>${esc(t('lgSameHelp'))}</small></span></label>
+        <label><input type="checkbox" data-r="upgrades"${r.upgrades ? ' checked' : ''}><span><b>${esc(t('lgUpg'))}</b><small>${esc(t('lgUpgHelp'))}</small></span></label>
+        <label><input type="checkbox" data-r="commute"${r.commute ? ' checked' : ''}><span><b>${esc(t('lgCommute'))}</b><small>${esc(t('lgCommuteHelp'))}</small></span></label>
+      </div>
+      <label>${esc(t('lgPrize'))}<input type="text" data-r="prize" maxlength="80" placeholder="${esc(t('lgPrizeEg'))}" value="${esc(r.prize || '')}"></label>`;
+    box.querySelectorAll(`input[name="${id}-schedule"]`).forEach((el) => el.addEventListener('change', () => {
+      box.querySelector('.rule-dates').hidden = box.querySelector(`input[name="${id}-schedule"]:checked`).value !== 'custom';
+    }));
+  }
+  function readRules(box) {
+    const id = box.dataset.rules;
+    const v = (k) => box.querySelector(`[data-r="${k}"]`);
+    const r = {
+      schedule: box.querySelector(`input[name="${id}-schedule"]:checked`).value,
+      shiftSecs: +v('shiftSecs').value, tries: +v('tries').value, scoring: v('scoring').value,
+      sameOffice: v('sameOffice').checked, upgrades: v('upgrades').checked, commute: v('commute').checked, prize: v('prize').value.trim(),
+    };
+    if (r.schedule === 'custom') { r.start = new Date(v('start').value).getTime(); r.end = new Date(v('end').value).getTime(); }
+    return r;
+  }
+
+  // ----- my leagues -----
+  function leagueCard(l) {
+    const b = LG.boards[l.code];
+    const li = document.createElement('li');
+    li.className = 'league-card';
+    li.dataset.code = l.code;
+    const cp = canPlay(b);
+    const leader = b && b.players && b.players[0];
+    li.innerHTML = `
+      <div class="lc-head"><strong class="lc-name"></strong><span class="lc-code">${esc(l.code)}</span></div>
+      <p class="lc-round ${b && b.round ? 'is-' + b.round.status : ''}">${b ? esc(roundText(b)) : esc(t('leagueLoading'))}</p>
+      ${b && b.rules ? '<ul class="rule-chips is-small">' + chipsHtml(b.rules, 4) + '</ul>' : ''}
+      ${b && b.rules && b.rules.prize ? '<p class="lc-prize">' + ico('trophy') + esc(b.rules.prize) + '</p>' : ''}
+      <p class="lc-mine">${esc(mineText(b))}${leader ? ' · ' + esc(t('lgLeader')(leader.name, fmtNum(leader.score))) : ''}</p>
+      <div class="lc-actions">
+        <button class="btn btn-primary btn-small" type="button" data-play="${esc(l.code)}"${cp.ok ? '' : ' disabled'}>${ico('play')}<span>${esc(t('lgPlay'))}</span></button>
+        <button class="btn btn-ghost btn-small" type="button" data-board="${esc(l.code)}">${ico('trophy')}<span>${esc(t('lgBoard'))}</span></button>
+      </div>
+      ${!cp.ok && b ? '<p class="lc-why">' + esc(cp.why) + '</p>' : ''}`;
+    li.querySelector('.lc-name').textContent = (b && b.name) || l.name;
+    return li;
+  }
+  function paintLeagueList() {
+    const list = $('league-list');
+    list.innerHTML = '';
+    for (const l of S.leagues) list.appendChild(leagueCard(l));
+    $('league-none').hidden = S.leagues.length > 0;
+  }
   function renderLeagueHome() {
+    LG.current = null;
     $('league-home').hidden = false;
     $('league-board').hidden = true;
     $('league-name-need').hidden = !!S.name;
     $('league-player').value = S.name;
-    const list = $('league-list');
-    list.innerHTML = '';
+    const box = document.querySelector('[data-rules="create"]');
+    if (!box.firstElementChild) renderRulesFields(box, null);
+    $('league-create-box').open = !S.leagues.length && $('league-create-box').open;
+    paintLeagueList();
     for (const l of S.leagues) {
-      const li = document.createElement('li');
-      const b = document.createElement('button');
-      b.type = 'button'; b.dataset.code = l.code;
-      const n = document.createElement('span'); n.textContent = l.name;
-      const c = document.createElement('small'); c.textContent = l.code;
-      b.append(n, c); li.appendChild(b); list.appendChild(li);
+      fetchBoard(l.code).then((b) => {
+        if (b.name !== l.name) { l.name = b.name; saveS.leagues(); }
+        if (!$('league-home').hidden) paintLeagueList();
+      }).catch((e) => { if (e.status === 404) { LG.boards[l.code] = null; } });
     }
   }
   async function joinLeague(code, silent) {
     code = String(code || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
-    if (!/^[A-HJ-NP-Z2-9]{6}$/.test(code)) { leagueStatus('That code is not valid. It has 6 letters and numbers.', 'err'); return false; }
+    if (!/^[A-HJ-NP-Z2-9]{6}$/.test(code)) { leagueStatus(t('lgBadCode'), 'err'); return false; }
     if (S.leagues.some((l) => l.code === code)) { leagueStatus(t('leagueAlready'), 'err'); openLeagueBoard(code); return true; }
-    if (S.leagues.length >= 3) { leagueStatus(t('leagueMax'), 'err'); return false; }
+    if (S.leagues.length >= 5) { leagueStatus(t('leagueMax'), 'err'); return false; }
     if (needName()) return false;
     try {
-      const b = await api('/' + code);
+      const b = await fetchBoard(code);
       S.leagues.push({ code, name: b.name }); saveS.leagues();
       T('league_join');
-      const wb = store.json('ow_weekbest', null);
-      if (wb && wb.week === weekKeyLocal() && wb.score > 0) await postScore(code, wb).catch(() => {});
       if (!silent) toast(t('leagueJoined')(b.name), 'good', 2000);
+      $('league-code').value = '';
       openLeagueBoard(code);
       return true;
     } catch (e) { leagueStatus(e.message || t('leagueOffline'), 'err'); return false; }
   }
-  async function createLeague(name) {
-    if (S.leagues.length >= 3) { leagueStatus(t('leagueMax'), 'err'); return; }
+  async function createLeague() {
+    const name = $('league-new').value.trim();
+    const pin = $('league-pin').value.trim();
+    if (S.leagues.length >= 5) { leagueStatus(t('leagueMax'), 'err'); return; }
     if (needName()) return;
+    if (name.length < 2) { leagueStatus(t('lgNeedLeagueName'), 'err'); $('league-new').focus(); return; }
+    if (!/^\d{4,6}$/.test(pin)) { leagueStatus(t('lgNeedPin'), 'err'); $('league-pin').focus(); return; }
+    const rules = readRules(document.querySelector('[data-rules="create"]'));
+    leagueStatus(t('leagueLoading'));
     try {
-      const r = await api('', { method: 'POST', body: JSON.stringify({ name, playerId: S.playerId }) });
+      const r = await post('', { name, playerId: S.playerId, pin, rules });
       S.leagues.push({ code: r.code, name: r.name }); saveS.leagues();
-      T('league_create');
-      const wb = store.json('ow_weekbest', null);
-      if (wb && wb.week === weekKeyLocal() && wb.score > 0) await postScore(r.code, wb).catch(() => {});
+      T('league_create', { schedule: r.rules.schedule, tries: r.rules.tries, shift: r.rules.shiftSecs });
       toast(t('leagueCreated')(r.code), 'good', 2600);
-      $('league-new').value = '';
+      $('league-new').value = ''; $('league-pin').value = '';
+      $('league-create-box').open = false;
+      leagueStatus('');
       openLeagueBoard(r.code);
     } catch (e) { leagueStatus(e.message || t('leagueOffline'), 'err'); }
   }
-  async function openLeagueBoard(code) {
-    LG.current = code;
-    $('league-home').hidden = true;
-    $('league-board').hidden = false;
-    const l = S.leagues.find((x) => x.code === code);
-    $('lb-name').textContent = l ? l.name : code;
+
+  // ----- one league -----
+  function paintBoard(b) {
+    const code = b.code;
+    $('lb-name').textContent = b.name;
     $('lb-code').textContent = code;
+    $('lb-round').textContent = roundText(b);
+    $('lb-round').className = 'is-' + b.round.status;
+    $('lb-prize').hidden = !b.rules.prize;
+    if (b.rules.prize) $('lb-prize').innerHTML = ico('trophy') + '<span></span>', $('lb-prize').lastChild.textContent = b.rules.prize;
+    $('lb-rules').innerHTML = chipsHtml(b.rules);
+    const cp = canPlay(b);
+    $('btn-league-play').disabled = !cp.ok;
+    $('btn-league-play').lastElementChild.textContent = t('lgPlayFor');
+    $('lb-mine').textContent = cp.ok ? mineText(b) : cp.why + (mineText(b) ? ' · ' + mineText(b) : '');
+    const admin = !b.legacy && (b.me && b.me.isOwner || LG.pins[code]);
     const rows = $('league-rows');
     rows.innerHTML = '';
-    const st = $('league-board-status');
-    st.textContent = t('leagueLoading') || 'Loading…';
-    try {
-      const b = await api('/' + code);
-      if (LG.current !== code) return;
-      $('lb-name').textContent = b.name;
-      st.textContent = b.players.length ? '' : t('leagueEmpty');
-      for (const r of b.players) {
-        const li = document.createElement('li');
-        if (r.name === S.name) li.className = 'is-me';
-        const n = document.createElement('span'); n.className = 'n'; n.textContent = r.name;
-        const s = document.createElement('span'); s.className = 's'; s.textContent = fmtNum(r.score);
-        const tt = document.createElement('span'); tt.className = 't'; tt.textContent = 'Survived ' + fmtTime(r.duration) + ' · level ' + r.level;
-        li.append(n, s, tt);
-        rows.appendChild(li);
+    for (const r of b.players) {
+      const li = document.createElement('li');
+      if (b.me && r.pid === b.me.pid) li.className = 'is-me';
+      const n = document.createElement('span'); n.className = 'n' + (r.gold ? ' is-gold' : ''); n.textContent = r.name;
+      if (r.gold) n.insertAdjacentHTML('afterbegin', ico('crown') + ' ');
+      if (r.title) { const ti = document.createElement('small'); ti.className = 'ttl'; ti.textContent = r.title; n.appendChild(ti); }
+      const s = document.createElement('span'); s.className = 's'; s.textContent = fmtNum(r.score);
+      const tt = document.createElement('span'); tt.className = 't';
+      tt.textContent = (b.rules.scoring === 'total' ? t('lgPlays')(r.plays) + ' · ' + t('lgBestShort')(fmtNum(r.best)) : t('lgSurvived')(fmtTime(r.duration || 0), r.level || 1, r.plays));
+      li.append(n, s, tt);
+      if (admin && !(b.me && r.pid === b.me.pid)) {
+        const k = document.createElement('button');
+        k.type = 'button'; k.className = 'kick-btn'; k.dataset.kick = r.pid; k.setAttribute('aria-label', t('lgRemove') + ' ' + r.name);
+        k.innerHTML = ico('close');
+        li.appendChild(k);
       }
-    } catch (e) { st.textContent = e.message || t('leagueOffline'); }
+      rows.appendChild(li);
+    }
+    $('league-board-status').textContent = b.players.length ? '' : (b.round.status === 'upcoming' ? t('lgNotYet') : t('leagueEmpty'));
+    const h = b.history || [];
+    $('lb-history-box').hidden = !h.length;
+    $('lb-history').innerHTML = h.map((x) => `<li><span class="h-round">${esc(t('lgRound')(x.n))} · ${esc(new Date(x.end).toLocaleDateString(undefined, { day: 'numeric', month: 'short' }))}</span>` +
+      (x.winners.length ? x.winners.map((w, i) => `<span class="h-win h-${i + 1}">${i === 0 ? ico('crown') : ''}${esc(w.name)} <b>${fmtNum(w.score)}</b></span>`).join('') : `<span class="h-win">${esc(t('lgNobody'))}</span>`) + '</li>').join('');
+    $('btn-league-admin').hidden = !!b.legacy;
+    $('btn-league-admin').lastElementChild.textContent = admin ? t('lgManage') : t('lgAdminLogin');
+  }
+  async function openLeagueBoard(code, keepAdmin) {
+    LG.current = code;
+    LG.confirm = '';
+    $('league-home').hidden = true;
+    $('league-board').hidden = false;
+    if (!keepAdmin) $('league-admin').hidden = true;
+    const l = S.leagues.find((x) => x.code === code);
+    const cached = LG.boards[code];
+    if (cached) paintBoard(cached);
+    else {
+      $('lb-name').textContent = l ? l.name : code; $('lb-code').textContent = code; $('lb-round').textContent = '';
+      $('lb-prize').hidden = true; $('lb-rules').innerHTML = ''; $('league-rows').innerHTML = ''; $('lb-mine').textContent = ''; $('lb-history-box').hidden = true;
+      $('league-board-status').textContent = t('leagueLoading');
+    }
+    try {
+      const b = await fetchBoard(code);
+      if (LG.current !== code) return;
+      paintBoard(b);
+    } catch (e) { if (LG.current === code) $('league-board-status').textContent = e.message || t('leagueOffline'); }
   }
   async function inviteLeague() {
     T('share', { kind: 'league' });
     const code = LG.current;
+    const b = LG.boards[code];
     const l = S.leagues.find((x) => x.code === code);
     const base = shareBase();
     let url = '';
     if (base) { try { const u = new URL(base); u.search = ''; u.searchParams.set('league', code); url = u.toString(); } catch (e) { url = ''; } }
-    const text = t('leagueInviteText')(l ? l.name : code, code, url);
+    let text = t('leagueInviteText')(b ? b.name : l ? l.name : code, code, url);
+    if (b && b.rules && b.rules.prize) text += '\n' + t('lgPrizeLine')(b.rules.prize);
     if (navigator.share) { try { await navigator.share({ title: CONFIG.TITLE, text }); return; } catch (e) { if (e && e.name === 'AbortError') return; } }
     const ok = await copyText(text);
     toast(ok ? t('leagueCopied') : text, 'good', 2600);
   }
   function leaveLeague() {
+    if (LG.confirm !== 'leave') { LG.confirm = 'leave'; $('btn-league-leave').lastElementChild.textContent = t('lgTapAgain'); return; }
+    LG.confirm = '';
+    $('btn-league-leave').lastElementChild.textContent = t('leave_league') || 'Leave league';
     S.leagues = S.leagues.filter((l) => l.code !== LG.current);
     saveS.leagues();
     renderLeagueHome();
     leagueStatus(t('leagueLeft'), 'ok');
+  }
+
+  // ----- admin -----
+  function adminBody(action, extra) { return Object.assign({ playerId: S.playerId, pin: LG.pins[LG.current] || '', action }, extra || {}); }
+  function openAdmin() {
+    const b = LG.boards[LG.current];
+    if (!b || b.legacy) return;
+    const box = $('league-admin');
+    box.hidden = !box.hidden;
+    adminStatus('');
+    if (box.hidden) return;
+    const owner = (b.me && b.me.isOwner) || LG.pins[LG.current];
+    $('admin-pin-form').hidden = !!owner;
+    $('admin-form').hidden = !owner;
+    if (owner) fillAdmin(b);
+    else $('admin-pin').focus();
+    T('league_admin', { action: 'open' });
+    setTimeout(() => box.scrollIntoView({ behavior: 'smooth', block: 'start' }), 30);
+  }
+  function fillAdmin(b) {
+    $('admin-name').value = b.name;
+    renderRulesFields(document.querySelector('[data-rules="admin"]'), b.rules);
+    $('btn-admin-end').disabled = b.round.status === 'ended';
+    $('btn-admin-end').lastElementChild.textContent = t('end_round') || 'End round now';
+    $('btn-admin-new').lastElementChild.textContent = t('new_round') || 'Start new round';
+  }
+  async function adminUnlock(e) {
+    e.preventDefault();
+    const pin = $('admin-pin').value.trim();
+    if (!/^\d{4,6}$/.test(pin)) { adminStatus(t('lgNeedPin'), 'err'); return; }
+    try {
+      await post('/' + LG.current + '/admin', { playerId: S.playerId, pin, action: 'check' });
+      LG.pins[LG.current] = pin;
+      $('admin-pin').value = '';
+      $('admin-pin-form').hidden = true;
+      $('admin-form').hidden = false;
+      const b = await fetchBoard(LG.current);
+      paintBoard(b); fillAdmin(b);
+      adminStatus(t('lgUnlocked'), 'ok');
+    } catch (err) { adminStatus(err.message, 'err'); }
+  }
+  async function adminSave(e) {
+    e.preventDefault();
+    const rules = readRules(document.querySelector('[data-rules="admin"]'));
+    adminStatus(t('leagueLoading'));
+    try {
+      const r = await post('/' + LG.current + '/admin', adminBody('rules', { name: $('admin-name').value.trim(), rules }));
+      T('league_admin', { action: 'rules' });
+      const b = await fetchBoard(LG.current);
+      const l = S.leagues.find((x) => x.code === LG.current); if (l) { l.name = b.name; saveS.leagues(); }
+      paintBoard(b); fillAdmin(b);
+      adminStatus(r.note || t('lgSaved'), 'ok');
+    } catch (err) { adminStatus(err.message, 'err'); }
+  }
+  async function adminAction(action) {
+    const btn = action === 'end' ? $('btn-admin-end') : $('btn-admin-new');
+    if (LG.confirm !== action) { LG.confirm = action; btn.lastElementChild.textContent = t('lgTapAgain'); return; }
+    LG.confirm = '';
+    const extra = {};
+    if (action === 'new') {
+      const r = readRules(document.querySelector('[data-rules="admin"]'));
+      if (r.schedule === 'custom') { extra.start = r.start; extra.end = r.end; }
+    }
+    try {
+      await post('/' + LG.current + '/admin', adminBody(action, extra));
+      T('league_admin', { action });
+      const b = await fetchBoard(LG.current);
+      paintBoard(b); fillAdmin(b);
+      adminStatus(action === 'end' ? t('lgEndedOk') : t('lgNewOk'), 'ok');
+    } catch (err) { adminStatus(err.message, 'err'); fillAdmin(LG.boards[LG.current]); }
+  }
+  async function kickPlayer(pid, btn) {
+    if (LG.confirm !== 'kick:' + pid) { LG.confirm = 'kick:' + pid; btn.classList.add('is-armed'); btn.title = t('lgTapAgain'); return; }
+    LG.confirm = '';
+    try {
+      await post('/' + LG.current + '/admin', adminBody('kick', { pid }));
+      T('league_admin', { action: 'kick' });
+      paintBoard(await fetchBoard(LG.current));
+      adminStatus(t('lgRemoved'), 'ok');
+    } catch (err) { adminStatus(err.message, 'err'); }
+  }
+
+  // ----- playing for a league -----
+  async function playLeague(code) {
+    if (!S.name) {
+      if (G.state !== 'leagues') openSide('leagues');
+      needName();
+      return;
+    }
+    const st = G.state === 'leagues' ? leagueStatus : (m, k) => toast(m, k === 'err' ? 'bad' : 'info', 2600);
+    st(t('leagueLoading'));
+    try {
+      const r = await post('/' + code + '/start', Object.assign({ playerId: S.playerId, name: S.name }, myFlair()));
+      const b = LG.boards[code];
+      LG.run = { code, name: b ? b.name : (S.leagues.find((l) => l.code === code) || {}).name || code, runId: r.runId, seed: r.seed, rules: r.rules, triesLeft: r.triesLeft, end: r.round && r.round.end };
+      if (G.state === 'leagues') leagueStatus('');
+      T('league_play', { shift: r.rules.shiftSecs, tries: r.rules.tries });
+      startGame('league');
+    } catch (e) {
+      st(e.message || t('leagueOffline'), 'err');
+      if (LG.boards[code]) fetchBoard(code).then(() => { if (G.state === 'leagues') { if (LG.current) paintBoard(LG.boards[code]); else paintLeagueList(); } }).catch(() => {});
+    }
+  }
+  async function submitLeagueRun(run) {
+    const L = G.league;
+    const box = $('over-league');
+    if (!L) { box.hidden = true; return; }
+    box.hidden = false;
+    box.className = 'over-league';
+    box.innerHTML = '<strong></strong><span class="ol-msg"></span><div class="ol-actions"></div>';
+    box.firstChild.textContent = L.name;
+    const msg = box.querySelector('.ol-msg');
+    msg.textContent = t('lgSubmitting');
+    $('btn-again').hidden = false;
+    try {
+      const r = await post('/' + L.code + '/score', Object.assign({ playerId: S.playerId, name: S.name, score: run.score, duration: run.duration, level: run.level, runId: L.runId }, myFlair()));
+      msg.textContent = t('lgSubmitted')(r.rank, r.players, fmtNum(L.rules.scoring === 'total' ? r.total : r.best)) + (r.triesLeft !== null && r.triesLeft !== undefined ? ' · ' + t('lgTriesLeft')(r.triesLeft) : '');
+      box.classList.add(r.rank === 1 ? 'is-first' : 'is-ok');
+      L.triesLeft = r.triesLeft;
+      if (r.triesLeft === 0) $('btn-again').hidden = true;
+      LG.boards[L.code] = null;
+    } catch (e) {
+      msg.textContent = e.message || t('leagueOffline');
+      box.classList.add('is-err');
+    }
+    const a = box.querySelector('.ol-actions');
+    const vb = document.createElement('button');
+    vb.type = 'button'; vb.className = 'btn btn-ghost btn-small'; vb.innerHTML = ico('trophy') + '<span></span>'; vb.lastChild.textContent = t('lgViewBoard');
+    vb.addEventListener('click', () => { openSide('leagues'); openLeagueBoard(L.code); });
+    a.appendChild(vb);
+  }
+  function replay() {
+    if (G.mode === 'league' && G.league) playLeague(G.league.code);
+    else startGame(G.mode);
   }
 
   /* ---------- Analytics helper ---------- */
@@ -2696,7 +3331,12 @@
     if (keys.has('R')) ax += 1;
     if (keys.has('U')) ay -= 1;
     if (keys.has('D')) ay += 1;
-    const spd = CONFIG.PLAYER_SPEED * (p.fuel > 0 ? 1.45 : 1) * (1 + 0.05 * ((G.upg && G.upg.chair) || 0));
+    const coffeeT = [0, 20, 35][Math.min(2, (G.upg && G.upg.coffee) || 0)];
+    const spd = CONFIG.PLAYER_SPEED * (p.fuel > 0 ? 1.45 : 1) * (1 + 0.05 * ((G.upg && G.upg.chair) || 0)) * (G.phase === 'office' && G.time < coffeeT ? 1.2 : 1);
+    if (S.look.trail && G.state === 'playing' && Math.hypot(p.vx, p.vy) > 60) {
+      G.trailT = (G.trailT || 0) - (1 / 60);
+      if (G.trailT <= 0) { G.trailT = hiQ() ? 0.09 : 0.2; if (G.particles.length < 300) G.particles.push({ x: p.x + frand(-8, 8), y: p.y + 16, vx: frand(-30, 30), vy: frand(10, 50), life: 0.7, max: 0.7, color: '#7fd18b', size: 3, text: '₦' }); }
+    }
     if (ax || ay) {
       const len = Math.hypot(ax, ay);
       const tvx = (ax / len) * spd, tvy = (ay / len) * spd;
@@ -2747,6 +3387,13 @@
     if (o.type === 'boss') say('boss_caught');
     Sound.play('hit');
     if (navigator.vibrate) { try { navigator.vibrate(o.type === 'boss' ? [60, 40, 90] : 60); } catch (e) { /* ignore */ } }
+    if (G.lives <= 0 && !G.revived && G.upg === S.upg && S.upg.sick > 0) {
+      G.revived = true; S.upg.sick--; saveS.upg();
+      G.lives = 1; p.invuln = 2.6; G.flash = 0;
+      T('powerup_use', { id: 'sick' });
+      setTimeout(() => { if (G.state === 'playing') { toast(t('sickBack'), 'good', 2600); confetti(24); } }, 250);
+      return;
+    }
     if (G.lives <= 0) die();
   }
 
@@ -2915,6 +3562,11 @@
       it.t += dt;
       it.y += it.vy * dt;
       it.x += Math.sin(it.t * 2 + it.wob) * 12 * dt;
+      const posL = (G.upg && G.upg.pos) || 0;
+      if (posL && G.state === 'playing' && ITEMS[it.type] && ITEMS[it.type].pts > 0) {
+        const dx = p.x - it.x, dy = p.y - it.y, d = Math.hypot(dx, dy), reach = posL > 1 ? 120 : 75;
+        if (d < reach && d > 1) { const pull = (posL > 1 ? 420 : 300) * dt; it.x += (dx / d) * pull; it.y += (dy / d) * pull; }
+      }
       if (it.y > H + 40) { G.items.splice(i, 1); continue; }
       if (G.state !== 'playing') continue;
       if (Math.hypot(it.x - p.x, it.y - p.y) < it.r + p.r + 6) {
@@ -3001,6 +3653,14 @@
       perf.sample(dt);
     } else if (G.state === 'playing') {
       G.time += dt;
+      if (G.limit && G.time >= G.limit) {
+        G.time = G.limit; G.timeUp = true; G.lastHit = 'timeup';
+        if (G.black) endBlackout(true);
+        if (Music) Music.stop(0.6);
+        banner(t('lgTimeUp'));
+        gameOver();
+        return;
+      }
       const newLevel = 1 + Math.floor(G.time / CONFIG.LEVEL_SECONDS);
       if (newLevel > G.level) {
         G.level = newLevel;
@@ -3846,7 +4506,7 @@
   /* ==================== Menu, wardrobe, settings ==================== */
   function rankFor(score) { let r = RANKS[0][1]; for (const [min, name] of RANKS) if (score >= min) r = name; return r; }
 
-  function drawPortrait(cv, charId, outfitId, zoomed) {
+  function drawPortrait(cv, charId, outfitId, zoomed, look) {
     const r = Math.min(window.devicePixelRatio || 1, 3);
     const w = cv.clientWidth || parseInt(cv.getAttribute('width'), 10) || 64;
     const h = cv.clientHeight || parseInt(cv.getAttribute('height'), 10) || 76;
@@ -3858,11 +4518,11 @@
     if (zoomed) {
       const s = h / 46;
       c.translate(w / 2, h * 0.5 + 22 * s);
-      SPRITES.player(c, 0, { char: charId, outfit: outfitId, walk: 0, mood: 'happy', s, lookY: 0.2 });
+      SPRITES.player(c, 0, { char: charId, outfit: outfitId, walk: 0, mood: 'happy', s, lookY: 0.2, look });
     } else {
-      const s = h / 76;
-      c.translate(w / 2, h * 0.6);
-      SPRITES.player(c, 0, { char: charId, outfit: outfitId, walk: 0, mood: 'happy', s, lookY: 0.2 });
+      const s = h / 80;
+      c.translate(w / 2, h * 0.62);
+      SPRITES.player(c, 0, { char: charId, outfit: outfitId, walk: 0, mood: 'happy', s, lookY: 0.2, look });
     }
     c.restore();
   }
@@ -3871,7 +4531,8 @@
     ui.menuBest.textContent = fmtNum(G.best);
     ui.menuName.textContent = S.name || t('newStaff');
     const ri = Math.max(RANKS.findIndex((r) => r[1] === rankFor(G.best)), stats.weeks > 0 ? Math.min(RANKS.length - 1, stats.weeks + 1) : 0);
-    ui.menuRank.textContent = RANKS[ri][1];
+    ui.menuRank.textContent = myTitle() || RANKS[ri][1];
+    ui.menuName.classList.toggle('is-gold', myFlair().gold);
     ui.menuBadges.textContent = unlocked.size + '/' + BADGES.length;
     $('menu-wallet').textContent = '₦' + fmtNum(S.wallet);
     $('career-sub').textContent = t('careerSub')(S.career.week, t('days')[S.career.day]) + ': ' + t('goalText')(careerDay().type, goalTarget());
@@ -3888,6 +4549,7 @@
   }
 
   function renderWardrobe() {
+    paintSkinPick($('skin-pick'));
     document.querySelectorAll('.char-opt').forEach((b) => {
       b.setAttribute('aria-checked', String(b.dataset.char === S.char));
       drawPortrait(b.querySelector('canvas'), b.dataset.char, S.outfit, false);
@@ -3908,7 +4570,7 @@
       const hint = document.createElement('small');
       if (!open) {
         const b = BADGES.find((x) => x.id === o.unlock);
-        hint.innerHTML = ico('lock'); hint.append(' ' + (b ? b.desc : t('locked')));
+        hint.innerHTML = ico(o.buy ? 'shop' : 'lock'); hint.append(' ' + (b ? b.desc : o.buy ? t('shopOnly') : t('locked')));
         btn.setAttribute('aria-disabled', 'true');
       }
       btn.append(cv, label, hint);
@@ -4076,8 +4738,9 @@
   /* ==================== Wire up ==================== */
   $('btn-play').addEventListener('click', () => startGame('normal'));
   $('btn-daily').addEventListener('click', () => startGame('daily'));
-  $('btn-again').addEventListener('click', () => { saveNameFrom(ui.playerName); startGame(G.mode); });
-  $('btn-restart').addEventListener('click', () => startGame(G.mode));
+  $('btn-next-song').addEventListener('click', () => { if (Music && Music.next) { Music.next(); syncNowPlaying(); T('setting', { k: 'next_song', v: Music.songName }); } });
+  $('btn-again').addEventListener('click', () => { saveNameFrom(ui.playerName); replay(); });
+  $('btn-restart').addEventListener('click', () => replay());
   $('btn-resume').addEventListener('click', resumeGame);
   $('btn-pause').addEventListener('click', () => { if (G.state === 'playing') pauseGame(); else if (G.state === 'paused') resumeGame(); });
   $('btn-menu-pause').addEventListener('click', toMenu);
@@ -4147,10 +4810,37 @@
   $('btn-leagues').addEventListener('click', () => openSide('leagues'));
   $('btn-use').addEventListener('click', (e) => { useHeld(); e.currentTarget.blur(); });
   $('btn-skip').addEventListener('click', (e) => { arrive(true); e.currentTarget.blur(); });
-  $('shop-grid').addEventListener('click', (e) => { const b = e.target.closest('[data-buy]'); if (b && !b.disabled) buyItem(b.dataset.buy); });
-  $('league-create').addEventListener('submit', (e) => { e.preventDefault(); createLeague($('league-new').value.trim()); });
+  $('shop-grid').addEventListener('click', (e) => {
+    const sk = e.target.closest('[data-skin]');
+    if (sk) { setLook('skin', sk.dataset.skin); return; }
+    const b = e.target.closest('button');
+    if (!b || b.disabled) return;
+    const d = b.dataset;
+    if (d.buy) buyItem(d.buy);
+    else if (d.buylook) buyLook(d.buylook, d.id);
+    else if (d.buyoutfit) buyOutfit(d.buyoutfit);
+    else if (d.look !== undefined) setLook(d.look, d.id || '');
+    else if (d.outfit) { S.outfit = d.outfit; store.set('ow_outfit', d.outfit); T('setting', { k: 'outfit', v: d.outfit }); afterLookChange(); }
+    else if (d.extra) setLook(d.extra, !S.look[d.extra]);
+    else if (d.title !== undefined) setLook('title', d.title);
+  });
+  document.querySelectorAll('.shop-tabs [data-tab]').forEach((b) => b.addEventListener('click', () => { SHOPTAB = b.dataset.tab; T('shop_tab', { tab: SHOPTAB }); renderShop(); $('shop-grid').scrollIntoView({ block: 'nearest' }); }));
+  $('skin-pick').addEventListener('click', (e) => { const sk = e.target.closest('[data-skin]'); if (sk) setLook('skin', sk.dataset.skin); });
+  $('btn-wardrobe-shop').addEventListener('click', () => { SHOPTAB = 'looks'; openSide('shop'); });
+  $('league-create').addEventListener('submit', (e) => { e.preventDefault(); createLeague(); });
   $('league-join').addEventListener('submit', (e) => { e.preventDefault(); joinLeague($('league-code').value); });
-  $('league-list').addEventListener('click', (e) => { const b = e.target.closest('[data-code]'); if (b) openLeagueBoard(b.dataset.code); });
+  $('league-list').addEventListener('click', (e) => {
+    const p = e.target.closest('[data-play]'); if (p) { playLeague(p.dataset.play); return; }
+    const b = e.target.closest('[data-board]'); if (b) { openLeagueBoard(b.dataset.board); return; }
+    const c = e.target.closest('.league-card'); if (c && !e.target.closest('button')) openLeagueBoard(c.dataset.code);
+  });
+  $('btn-league-play').addEventListener('click', () => playLeague(LG.current));
+  $('btn-league-admin').addEventListener('click', openAdmin);
+  $('admin-pin-form').addEventListener('submit', adminUnlock);
+  $('admin-form').addEventListener('submit', adminSave);
+  $('btn-admin-end').addEventListener('click', () => adminAction('end'));
+  $('btn-admin-new').addEventListener('click', () => adminAction('new'));
+  $('league-rows').addEventListener('click', (e) => { const k = e.target.closest('[data-kick]'); if (k) kickPlayer(k.dataset.kick, k); });
   $('league-player').addEventListener('change', (e) => { saveNameFrom(e.target); refreshMenu(); });
   $('btn-league-back').addEventListener('click', renderLeagueHome);
   $('btn-league-invite').addEventListener('click', inviteLeague);
@@ -4213,7 +4903,7 @@
     window.__OW = {
       G, S, stats, unlocked, CONFIG, DIFFICULTY, step, render, spawnBoss, spawnItem, spawnObstacle, startBlackout,
       startGame, pauseGame, resumeGame, toMenu, spawnOga, spawnDriver, spawnHR, spawnAunty, startEvent, useHeld, arrive,
-      renderShop, buyItem, LG, ADS, setAds, pickAd, T, Voice, careerDay, goalTarget, isRude, weekKeyLocal, makePromoImage, openPromo, shareText, challengeUrl, makeShareImage, openBossKey, closeBossKey,
+      renderShop, buyItem, buyLook, setLook, LOOKS, OUTFITS, TITLES, SKIN_TONES, drawPortrait, LG, playLeague, openLeagueBoard, renderLeagueHome, ADS, setAds, pickAd, T, Voice, careerDay, goalTarget, isRude, weekKeyLocal, makePromoImage, openPromo, shareText, challengeUrl, makeShareImage, openBossKey, closeBossKey,
       SPRITES, officeClock, setQuality, get quality() { return quality; }, Sound, Music,
     };
   }

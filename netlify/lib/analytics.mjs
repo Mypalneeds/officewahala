@@ -6,7 +6,7 @@ export const EVENTS = new Set([
   'page_view', 'visible_time', 'screen', 'js_error',
   'game_start', 'commute_end', 'level_up', 'boss', 'event_start', 'blackout', 'powerup_pick', 'powerup_use', 'task_done',
   'game_over', 'career_day', 'promotion', 'badge', 'boss_key',
-  'share', 'challenge_open', 'review_submit', 'league_create', 'league_join',
+  'share', 'challenge_open', 'review_submit', 'league_create', 'league_join', 'league_play', 'league_admin', 'shop_tab', 'look_buy',
   'shop_buy', 'outfit_buy', 'setting', 'install_prompt', 'install_click', 'install_done',
   'ad_view', 'ad_click',
 ]);
@@ -138,6 +138,7 @@ export function addBatch(a, b) {
       case 'share': inc(a.dims.share, p.kind); a.funnel.share[s] = 1; break;
       case 'shop_buy': inc(a.dims.shop, p.id); a.naira += p.price || 0; break;
       case 'outfit_buy': inc(a.dims.outfit, p.id); a.naira += p.price || 0; break;
+      case 'look_buy': inc(a.dims.outfit, (p.kind || 'look') + ': ' + p.id); a.naira += p.price || 0; break;
       case 'setting': inc(a.dims.setting, p.k + ': ' + p.v); break;
       case 'install_prompt': case 'install_click': case 'install_done': inc(a.dims.install, ev.n.replace('install_', '')); break;
       case 'ad_view': inc(a.dims.adv, p.id + '|' + (p.where || '?')); break;

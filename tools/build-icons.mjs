@@ -40,6 +40,11 @@ export const ICONS = {
   party: 'solid/champagne-glasses', stopwatch: 'solid/stopwatch', handshake: 'solid/handshake',
   calendar: 'solid/calendar-check', hide: 'solid/eye-slash', bus: 'solid/bus', chart: 'solid/chart-column',
   scroll: 'solid/scroll', bag: 'solid/bag-shopping', masks: 'solid/masks-theater',
+  // v5 shop
+  pos: 'solid/cash-register', danfo: 'solid/van-shuttle', coffee: 'solid/mug-hot', sick: 'solid/briefcase-medical',
+  trail: 'solid/sack-dollar', title: 'solid/user-tie', palette: 'solid/palette', hair: 'solid/scissors', specs: 'solid/glasses',
+  music: 'solid/music', 'next-song': 'solid/forward-step',
+  headphones: 'solid/headphones', gift: 'solid/gift', sparkle: 'solid/wand-magic-sparkles', coins: 'solid/coins',
 };
 
 function symbol(name, file) {

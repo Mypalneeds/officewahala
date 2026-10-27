@@ -10,7 +10,8 @@ Key facts:
 - Office time starts at 8:00am; every 20 seconds is one office hour and one level.
 - Bosses: Oga (level 2, costs two lives), MD's driver (level 3), HR lady with homing query letters (level 4), Aunty from Accounts who freezes salary pickups (level 5).
 - Shift events: Salary week, Audit, Oga is travelling, AGM day, Bank alert.
-- Modes: normal shift, daily shift (same pattern for everyone each day), career mode (Monday to Friday goals ending in a promotion letter), challenge links and private weekly office leagues.
+- Modes: normal shift, daily shift (same pattern for everyone each day), career mode (Monday to Friday goals ending in a promotion letter), challenge links and private office leagues (weekly or tournament, with rules set by the creator: shift length, tries, same office for everyone, upgrades on or off, prize).
+- Staff shop: upgrades, hairstyles, accessories, free skin tones, 16 outfits, job titles. Soundtrack: six original Afrobeats, Amapiano and highlife-style songs generated in code.
 - Privacy: no cookies; progress stays on the player's device; optional anonymous gameplay statistics.
 - Developer contact: +234 706 645 9689 (phone/WhatsApp), https://www.analaize.com.ng
 

@@ -7,13 +7,27 @@ Office Wahala is a free browser arcade game about surviving a chaotic Nigerian w
 - Free, no sign-up, no pop-up ads, no cookies. Roadside billboards you control from your own dashboard, and anonymous gameplay stats players can switch off
 - Plays on phones, tablets and desktops, and installs as an app that works offline
 - Plain HTML, CSS and JavaScript. The game itself has no dependencies; the optional Netlify Functions use one (`@netlify/blobs`)
-- Original Afrobeats/Amapiano-style soundtrack generated in code (no audio files, no licences)
+- Six original Afrobeats, Amapiano and highlife-style songs generated in code (no audio files, no licences) that change as you play
 - English and Pidgin
 - Personal best saved on the device. Optional global leaderboard with Supabase
 
 Built by **Mmadubuko Micheal**, CEO, [Analaize Limited](https://www.analaize.com.ng). Contact the developer: 07066459689.
 
 Live: https://officewahala.netlify.app
+
+## What's in version 5
+
+| Feature | What it does |
+|---|---|
+| Office leagues v2 | **Office leagues** on the menu lists every league you're in, with your rank, the leader, time left and tries left, and a **Play** button on each. A league shift counts only for that league (normal shifts no longer post to leagues). The top bar shows the league name and a countdown, and the appraisal shows your new rank. Up to 5 leagues each. |
+| League rules | The creator picks a **weekly league** (resets Monday, Lagos time) or a **tournament** with a start and end time, plus shift length (1–5 minutes or no limit), tries per round (1–20 or unlimited), winner by best single shift or total of all shifts, **same office for everyone** (same obstacles in the same order), shop upgrades on or off, commute on or off, and an optional prize. |
+| League admin | A 4–6 digit admin PIN. The creator's phone is admin automatically; the PIN unlocks admin on any other phone. Edit the name and rules, remove a player (tap the X on the board twice), end the round now, or start a new round. Winners of each round are kept under **Past winners**. |
+| Staff shop tabs | **Upgrades**, **Looks**, **Outfits**, **Extras**. Every look and outfit is previewed on your own character. |
+| New upgrades | POS terminal (pulls money towards you), Danfo pass (shorter commute delays), Strong coffee (faster start), Sick leave (one revive per shift). |
+| Looks | Free skin tones (also in the Wardrobe); hairstyles: fade, afro, locs, braids, bald, hijab; reading glasses, big boss shades, headphones, face cap, laptop backpack, coffee cup, phone, gold staff ID. |
+| New outfits | Yaba tech-bro hoodie, Naija fan jersey, banker suit, kaftan, Isiagu and red cap, Babban riga and hula, Aso-ebi party, Christmas party (16 outfits in total). |
+| Extras | Money-rain trail, gold name (on your ID card and league boards), and eight job titles from "Senior Oga-Dodger" to "Office Legend" that replace your position on the ID card and show under your name on league boards. |
+| Music | Six original songs (Office Amapiano, Lagos Traffic, Highlife Lunch Break, Owambe Saturday, Overtime Vibes, TGIF Piano). The song changes about every minute with a talking-drum transition, and every new shift starts a different one. The pause screen shows what's playing and has a **Next song** button. |
 
 ## What's in version 4
 
@@ -70,7 +84,7 @@ office-wahala/
 │                        leaderboard, boss-key spreadsheet
 ├── style.css            All styling and the colour palette
 ├── game.js              Game engine, sprites, sound effects, badges, sharing, settings
-├── music.js             The generated soundtrack (Web Audio sequencer)
+├── music.js             The six generated songs and their sequencer (Web Audio)
 ├── voice.js             Voice lines (single source of truth) + speaking engine
 ├── voices/              voices.json (+ MP3 clips once you run the generator)
 ├── tools/
@@ -223,11 +237,14 @@ The free plan includes 100 form submissions a month. On Vercel or GitHub Pages t
 Leagues need a tiny server. It lives in `netlify/functions/league.mjs` and stores data in Netlify Blobs, which is included on Netlify's free plan. No extra account, keys or database setup.
 
 - **It only runs when Netlify builds the site** (GitHub-linked or `netlify deploy` with the CLI). Drag-and-drop uploads skip functions; the game then hides the Leagues button and everything else works.
-- **What it stores:** league name and code; each player's weekly best (name, score, time, level) under a random player ID. No emails, phone numbers or IP addresses are stored. IP is only used briefly to rate-limit league creation.
-- **Checks:** names are cleaned and run through a word filter; scores must fit the time survived (one level per 20 s, at most ~900 points/s); one submission per player every 8 s; league creation limited per IP. Like any browser game, a determined cheater could still fake a believable score.
-- **Weeks** run Monday to Sunday, Lagos time. Old weeks stay in storage but aren't shown.
+- **How a league shift works:** pressing **Play** asks the server to start a shift. The server checks the round is open, the player hasn't been removed and has tries left, uses up one try, and hands back a one-time shift ID (and, for "same office for everyone", a shared seed). The score is only accepted with that ID, once, and only if the time survived fits the real time since the shift started and the league's shift length.
+- **What it stores:** league name, code and rules; the admin PIN as a salted hash (never the PIN itself); a hashed ID for the creator's phone; and for each round each player's name, best score, total, tries, time and level, plus any job title or gold name they bought, under a random player ID. No emails, phone numbers or IP addresses are stored. IP is only used briefly to rate-limit league creation. Wrong PINs are limited to 5 per 15 minutes.
+- **Checks:** names, league names and prizes are cleaned and run through a word filter; scores must fit the time survived (one level per 20 s, at most ~900 points/s). Like any browser game, a determined cheater could still fake a believable score.
+- **Rounds:** weekly leagues roll over every Monday, Lagos time, and the top three of the old round are saved under Past winners (the last 12 rounds). Tournaments end at their end time; the admin starts the next one with new dates.
+- **Leagues created before v5** keep working as weekly leagues with no rules or admin (older copies of the game can still post to them). Create a new league to use rules.
 - **Data:** Netlify dashboard → your site → **Blobs** → store `office-wahala`.
-- If you host somewhere other than Netlify, change `CONFIG.LEAGUE_API` in `game.js` to any server that implements the same four routes (listed at the top of `league.mjs`).
+- If you host somewhere other than Netlify, change `CONFIG.LEAGUE_API` in `game.js` to any server that implements the same routes (listed at the top of `league.mjs`).
+- Job titles are listed twice, in `TITLES` in `game.js` and in `league.mjs`; keep them in sync if you add one.
 
 ## Get it on Google (SEO) and AI answers (AEO)
 
@@ -362,6 +379,7 @@ The best score is saved in the browser's `localStorage` under these keys:
 | `ow_pid`, `ow_leagues`, `ow_weekbest` | Random league player ID, joined leagues, this week's best run |
 | `ow_vid`, `ow_last`, `ow_track` | Anonymous visitor ID, last activity time, stats on/off (see Analytics dashboard) |
 | `ow_ads` | Last billboard list, so ads still show offline |
+| `ow_look` | Skin tone, hairstyle, accessories, title and extras you're wearing (what you own is in `ow_owned`) |
 
 This data never leaves the device, except your name and weekly best score when you join an Office League, and the anonymous visitor ID sent with gameplay stats (unless switched off). Clearing site data resets it. In private browsing, or if storage is blocked, the game still works and just doesn't remember between visits.
 
@@ -412,12 +430,12 @@ Everything you'd want to change is at the top of `game.js`, plus the palette in 
 - `over`: game-over verdicts by score range, plus `newBest`
 
 **Music**
-- The generated soundtrack is in `music.js`: tempo (`bpm`, raised per level in `setLevel`), drum patterns (`KICK`, `CLAP`, `LOG`…) and chords (`CHORDS`).
+- The generated songs are in `SONGS` at the top of `music.js`. Each has a name, tempo (`bpm`, raised a little each level), loudness (`gain`), a chord progression (`prog`, one chord per bar), drum patterns from `P` (`kick`, `clap`, `log`, `keys`), and a lead: either a written `melody` (32 steps of chord-tone numbers, -1 = rest) or an `arp`. Songs marked `menu: true` also play on the menu. Copy a song and change its chords and melody to add a new one. A song plays for about 24 bars in a shift (`barDone`) before the next one starts.
 - To use real songs instead, put the audio files in a `music/` folder and list them in `game.js`:
   ```js
   MUSIC_TRACKS: ['music/track1.mp3', 'music/track2.mp3'],
   ```
-  They play in order and loop, and skip back to the generated groove if a file fails. **Only use tracks you have a licence for.** Commercial Nigerian songs need permission from the label or artist, and an unlicensed track can get the site taken down. Royalty-free sources such as Uppbeat or Pixabay Music, or a beat bought from a producer with a licence that covers games, are safe. Also add the files to `SHELL` in `sw.js` if they should play offline.
+  They play in turn (the pause screen's Next song skips ahead), and the game falls back to the generated songs if a file fails. **Only use tracks you have a licence for.** Commercial Nigerian songs need permission from the label or artist, and an unlicensed track can get the site taken down. Royalty-free sources such as Uppbeat or Pixabay Music, or a beat bought from a producer with a licence that covers games, are safe. Also add the files to `SHELL` in `sw.js` if they should play offline.
 
 **Credits and contact**
 - The credit block is at the bottom of the menu card in `index.html` (`<footer class="credits">`).
@@ -455,7 +473,7 @@ If you change `LEVEL_SECONDS` or the scoring, update the plausibility checks in 
 
 ## Updating the live game
 
-When you change any file, also bump `VERSION` at the top of `sw.js` (for example `ow-v4.0.1`). Players' phones then fetch the new files instead of the copy saved for offline play.
+When you change any file, also bump `VERSION` at the top of `sw.js` (for example `ow-v5.0.1`). Players' phones then fetch the new files instead of the copy saved for offline play.
 
 ## Browser support
 
