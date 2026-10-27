@@ -1,12 +1,13 @@
 /* Office Wahala service worker: makes the game work offline after the first visit.
    Bump VERSION whenever you deploy changes so players get the new files. */
-const VERSION = 'ow-v2.0.0';
+const VERSION = 'ow-v3.0.0';
 const SHELL = [
   './',
   'index.html',
   'style.css',
   'game.js',
   'music.js',
+  'voice.js',
   'manifest.webmanifest',
   'icons/icon-192.png',
   'icons/icon-512.png',
@@ -30,7 +31,7 @@ self.addEventListener('fetch', (event) => {
   if (req.method !== 'GET') return;                 // review form posts go straight to the network
   const url = new URL(req.url);
   if (url.origin !== self.location.origin) return;  // never cache other sites
-  if (url.pathname.startsWith('/.netlify/')) return;
+  if (url.pathname.startsWith('/.netlify/') || url.pathname.startsWith('/api/')) return;
 
   // Pages: network first so updates show up, cache when offline.
   if (req.mode === 'navigate') {

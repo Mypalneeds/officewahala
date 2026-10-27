@@ -57,11 +57,11 @@ begin
 
   -- Plausibility checks that match the game's rules:
   --   * level = 1 + floor(seconds / 20), so the level must fit the time survived
-  --   * real play peaks around 110 points per second; allow generous headroom
+  --   * v3 play (events, reports, bonuses) peaks well under ~150 points/second; allow headroom
   if p_level > (p_duration / 20) + 2 then
     raise exception 'Score does not match the time survived.';
   end if;
-  if p_score > (p_duration * 550) + 2000 then
+  if p_score > (p_duration * 900) + 4000 then
     raise exception 'Score does not match the time survived.';
   end if;
 

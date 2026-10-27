@@ -58,12 +58,22 @@
         <div id="hud-target" class="hud-chip hud-target" hidden></div>
         <div id="hud-daily" class="hud-chip hud-daily" hidden data-i18n="hud_daily">Daily shift</div>
         <div id="hud-streak" class="hud-chip hud-streak" hidden></div>
+        <div id="hud-event" class="hud-chip hud-event" hidden><span></span><i></i></div>
+        <div id="hud-goal" class="hud-chip hud-goal" hidden></div>
+        <div id="hud-frozen" class="hud-chip hud-frozen" hidden data-i18n="frozen">Salary frozen</div>
+        <button id="btn-skip" class="hud-chip hud-skip" type="button" hidden data-i18n="skip_commute">Skip commute</button>
         <div class="powerups">
           <div id="pu-leave" class="pu pu-leave" hidden><span data-i18n="pu_leave">On leave</span><i></i></div>
           <div id="pu-fuel" class="pu pu-fuel" hidden><span data-i18n="pu_fuel">Gen fuel</span><i></i></div>
         </div>
       </div>
     </header>
+
+    <button id="btn-use" class="use-btn" type="button" hidden aria-label="Use power-up">
+      <canvas id="use-icon" width="40" height="40" aria-hidden="true"></canvas>
+      <span id="use-label">Use</span>
+      <kbd class="use-key">E</kbd>
+    </button>
 
     <div id="toast" class="toast" role="status" aria-live="polite"></div>
     <div id="banner" class="banner" aria-hidden="true"></div>
@@ -89,11 +99,25 @@
             <button id="btn-challenge-clear" class="link-btn" type="button" data-i18n="challenge_clear">Remove challenge</button>
           </div>
 
+          <div id="invite-card" class="challenge-card invite-card" hidden>
+            <p id="invite-text"></p>
+            <div class="invite-actions">
+              <button id="btn-invite-join" class="btn btn-primary btn-small" type="button" data-i18n="join_league">Join league</button>
+              <button id="btn-invite-dismiss" class="link-btn" type="button" data-i18n="not_now">Not now</button>
+            </div>
+          </div>
+
           <button id="btn-play" class="btn btn-primary btn-play" type="button" data-i18n="play">Clock in &amp; play</button>
-          <button id="btn-daily" class="btn btn-daily" type="button">
+          <div class="mode-row">
+            <button id="btn-career" class="btn btn-mode btn-career" type="button">
+              <span data-i18n="career">Career mode</span>
+              <small id="career-sub">Week 1 · Monday</small>
+            </button>
+          <button id="btn-daily" class="btn btn-mode btn-daily" type="button">
             <span data-i18n="daily">Today's daily shift</span>
             <small id="daily-sub">Same office for everyone today</small>
           </button>
+          </div>
 
           <div class="id-body">
             <canvas id="id-photo" class="id-photo" width="88" height="104" aria-label="Your worker"></canvas>
@@ -101,13 +125,15 @@
               <div><dt data-i18n="name_label">Name</dt><dd id="menu-name">New staff</dd></div>
               <div><dt data-i18n="position">Position</dt><dd id="menu-rank">Intern</dd></div>
               <div><dt data-i18n="best">Personal best</dt><dd id="menu-best" class="num-green">0</dd></div>
-              <div><dt data-i18n="badges">Badges</dt><dd id="menu-badges">0 / 14</dd></div>
+              <div><dt data-i18n="wallet">Wallet</dt><dd id="menu-wallet" class="num-gold">₦0</dd></div>
             </dl>
           </div>
           <p id="friday-note" class="friday-note" hidden data-i18n="friday_note">It's Friday. TGIF bonuses show up twice as often today.</p>
 
           <nav class="menu-nav" aria-label="More">
-            <button id="btn-wardrobe" class="nav-btn" type="button"><span class="nav-ico" aria-hidden="true">👔</span><span data-i18n="nav_wardrobe">Wardrobe &amp; badges</span></button>
+            <button id="btn-shop" class="nav-btn" type="button"><span class="nav-ico" aria-hidden="true">🛒</span><span data-i18n="nav_shop">Shop &amp; upgrades</span></button>
+            <button id="btn-wardrobe" class="nav-btn" type="button"><span class="nav-ico" aria-hidden="true">👔</span><span><span data-i18n="nav_wardrobe">Wardrobe &amp; badges</span> <small id="menu-badges" class="nav-count">0/19</small></span></button>
+            <button id="btn-leagues" class="nav-btn" type="button" hidden><span class="nav-ico" aria-hidden="true">🏢</span><span data-i18n="nav_leagues">Office leagues</span></button>
             <button id="btn-settings" class="nav-btn" type="button"><span class="nav-ico" aria-hidden="true">⚙️</span><span data-i18n="nav_settings">Settings</span></button>
             <button id="btn-review" class="nav-btn" type="button"><span class="nav-ico" aria-hidden="true">⭐</span><span data-i18n="nav_review">Drop a review</span></button>
             <button id="btn-board-menu" class="nav-btn" type="button" hidden><span class="nav-ico" aria-hidden="true">🏆</span><span data-i18n="nav_board">Leaderboard</span></button>
@@ -122,7 +148,7 @@
                 <div class="control">
                   <h3 data-i18n="on_computer">On a computer</h3>
                   <p><kbd>←</kbd><kbd>↑</kbd><kbd>↓</kbd><kbd>→</kbd> <span data-i18n="or">or</span> <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> <span data-i18n="to_move">to move</span></p>
-                  <p><kbd>Space</kbd> <span data-i18n="k_pause">pause</span> · <kbd>Enter</kbd> <span data-i18n="k_start">start</span> · <kbd>M</kbd> <span data-i18n="k_sound">sound</span> · <kbd>B</kbd> <span data-i18n="k_boss">boss key</span></p>
+                  <p><kbd>Space</kbd> <span data-i18n="k_pause">pause</span> · <kbd>Enter</kbd> <span data-i18n="k_start">start</span> · <kbd>M</kbd> <span data-i18n="k_sound">sound</span> · <kbd>B</kbd> <span data-i18n="k_boss">boss key</span> · <kbd>E</kbd> <span data-i18n="k_use">use power-up</span></p>
                 </div>
                 <div class="control">
                   <h3 data-i18n="on_phone">On a phone</h3>
@@ -139,6 +165,8 @@
                     <li><canvas class="icon" data-sprite="leave"></canvas><span data-i18n="i_leave">Leave approval: nothing can touch you</span></li>
                     <li><canvas class="icon" data-sprite="fuel"></canvas><span data-i18n="i_fuel">Generator fuel: speed boost, and light during blackouts</span></li>
                     <li><canvas class="icon" data-sprite="friday"></canvas><span data-i18n="i_friday">Friday bonus +500, rare, and a life back</span></li>
+                    <li><canvas class="icon" data-sprite="autoreply"></canvas><span data-i18n="i_held">Keep-for-later power-ups: auto-reply, fake call, puff-puff. Tap Use or press E</span></li>
+                    <li><canvas class="icon" data-sprite="taskdesk"></canvas><span data-i18n="i_task">Glowing desk: stand on it for 3 seconds to submit a report, +300</span></li>
                   </ul>
                 </div>
                 <div class="legend-col">
@@ -151,6 +179,9 @@
                     <li><canvas class="icon" data-sprite="network"></canvas><span data-i18n="o_network">Network outages</span></li>
                     <li><canvas class="icon" data-sprite="printer"></canvas><span data-i18n="o_printer">Runaway printers</span></li>
                     <li><canvas class="icon" data-sprite="colleague"></canvas><span data-i18n="o_colleague">The colleague with "one small task"</span></li>
+                    <li><canvas class="icon" data-sprite="driver"></canvas><span data-i18n="o_driver">MD's driver: dashes across, watch the warning</span></li>
+                    <li><canvas class="icon" data-sprite="hr"></canvas><span data-i18n="o_hr">HR lady: her query letters follow you</span></li>
+                    <li><canvas class="icon" data-sprite="aunty"></canvas><span data-i18n="o_aunty">Aunty from Accounts: freezes your salary pickups</span></li>
                   </ul>
                 </div>
               </div>
@@ -204,7 +235,9 @@
             <div><dt data-i18n="items">Items collected</dt><dd id="over-items">0</dd></div>
             <div><dt data-i18n="streak_long">Longest streak</dt><dd id="over-streak">0</dd></div>
             <div><dt data-i18n="close_calls">Close calls</dt><dd id="over-near">0</dd></div>
+            <div><dt data-i18n="salary_paid">Salary paid</dt><dd id="over-pay" class="num-gold">₦0</dd></div>
           </dl>
+          <p id="over-goal" class="over-challenge" hidden></p>
           <div id="over-badges" class="over-badges" hidden></div>
 
           <div class="name-row">
@@ -272,6 +305,20 @@
             <div class="seg" data-setting="music"><button type="button" data-v="on">On</button><button type="button" data-v="off">Off</button></div>
           </div>
           <div class="setting">
+            <span class="setting-label" data-i18n="voices">Voices</span>
+            <div class="seg" data-setting="voices"><button type="button" data-v="on">On</button><button type="button" data-v="off">Off</button></div>
+          </div>
+          <p id="voice-info" class="setting-help setting-sub"></p>
+          <div class="setting">
+            <span class="setting-label" data-i18n="commute_set">Morning commute</span>
+            <div class="seg" data-setting="commute"><button type="button" data-v="on">On</button><button type="button" data-v="off">Off</button></div>
+          </div>
+          <div class="setting">
+            <label for="set-oga" data-i18n="oga_name">Name your Oga</label>
+            <input id="set-oga" type="text" maxlength="16" autocomplete="off" placeholder="e.g. Chukwudi">
+          </div>
+          <p id="oga-help" class="setting-help setting-sub" data-i18n="oga_help">Only on this device. Never shared or uploaded.</p>
+          <div class="setting">
             <span class="setting-label" data-i18n="language">Language</span>
             <div class="seg" data-setting="lang"><button type="button" data-v="en">English</button><button type="button" data-v="pcm">Pidgin</button></div>
           </div>
@@ -321,6 +368,91 @@
       </div>
     </section>
 
+    <!-- ================= SHOP ================= -->
+    <section id="screen-shop" class="screen" aria-labelledby="shop-title">
+      <div class="screen-scroll">
+        <article class="panel">
+          <div class="panel-head">
+            <h2 id="shop-title" data-i18n="shop_title">Staff shop</h2>
+            <button class="btn btn-primary btn-small js-back" type="button" data-i18n="done">Done</button>
+          </div>
+          <div class="wallet-bar"><span data-i18n="wallet">Wallet</span> <strong id="shop-wallet">₦0</strong></div>
+          <p class="panel-intro" data-i18n="shop_intro">Every shift pays salary: one naira for every 5 points. Upgrades don't apply on the daily shift, so it stays fair.</p>
+          <div id="shop-grid" class="shop-grid"></div>
+        </article>
+      </div>
+    </section>
+
+    <!-- ================= OFFICE LEAGUES ================= -->
+    <section id="screen-leagues" class="screen" aria-labelledby="leagues-title">
+      <div class="screen-scroll">
+        <article class="panel panel-narrow">
+          <div class="panel-head">
+            <h2 id="leagues-title" data-i18n="nav_leagues">Office leagues</h2>
+            <button class="btn btn-primary btn-small js-back" type="button" data-i18n="done">Done</button>
+          </div>
+          <div id="league-home">
+            <p class="panel-intro" data-i18n="leagues_intro">A private weekly scoreboard for your office. Create one, share the code with colleagues, and your best score each week counts. Boards reset every Monday.</p>
+            <div id="league-name-need" class="setting" hidden>
+              <label for="league-player" data-i18n="your_name_short">Your name</label>
+              <input id="league-player" type="text" maxlength="20" autocomplete="nickname" placeholder="e.g. Tunde">
+            </div>
+            <ul id="league-list" class="league-list"></ul>
+            <form id="league-create" class="league-form">
+              <label for="league-new" data-i18n="create_league">Create a league</label>
+              <div class="lb-row">
+                <input id="league-new" type="text" maxlength="30" placeholder="e.g. Ikoyi branch" required>
+                <button class="btn btn-primary" type="submit" data-i18n="create">Create</button>
+              </div>
+            </form>
+            <form id="league-join" class="league-form">
+              <label for="league-code" data-i18n="join_code">Join with a code</label>
+              <div class="lb-row">
+                <input id="league-code" type="text" maxlength="6" placeholder="ABC234" autocapitalize="characters" autocomplete="off" required>
+                <button class="btn btn-ghost" type="submit" data-i18n="join">Join</button>
+              </div>
+            </form>
+            <p id="league-status" class="lb-status" role="status"></p>
+          </div>
+          <div id="league-board" hidden>
+            <button id="btn-league-back" class="link-btn" type="button" data-i18n="all_leagues">All my leagues</button>
+            <h3 id="lb-name" class="league-title"></h3>
+            <p class="league-meta"><span data-i18n="code">Code</span> <strong id="lb-code"></strong> · <span data-i18n="this_week">This week</span></p>
+            <ol id="league-rows" class="board-list"></ol>
+            <p id="league-board-status" class="lb-status"></p>
+            <div class="over-actions">
+              <button id="btn-league-invite" class="btn btn-gold" type="button" data-i18n="invite">Invite colleagues</button>
+              <button id="btn-league-leave" class="btn btn-ghost" type="button" data-i18n="leave_league">Leave league</button>
+            </div>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <!-- ================= PROMOTION LETTER ================= -->
+    <section id="screen-promo" class="screen" aria-labelledby="promo-title">
+      <div class="screen-scroll">
+        <article class="letter">
+          <div class="letter-head">
+            <span class="flag" aria-hidden="true"><i></i><i></i><i></i></span>
+            <div>
+              <strong>Wahala &amp; Sons Ltd.</strong>
+              <small>Human Resources Department</small>
+            </div>
+          </div>
+          <p class="letter-ref">Ref: WSL/HR/PROMO/<span id="promo-ref"></span></p>
+          <h2 id="promo-title" data-i18n="promo_title">Letter of promotion</h2>
+          <p>Dear <strong id="promo-name">Staff</strong>,</p>
+          <p id="promo-body"></p>
+          <p class="letter-sign">Yours faithfully,<br><span class="sig">Oga</span><br><small>Managing Director</small></p>
+          <div class="over-actions">
+            <button id="btn-promo-share" class="btn btn-gold" type="button" data-i18n="share_promo">Share letter</button>
+            <button id="btn-promo-ok" class="btn btn-primary" type="button" data-i18n="promo_ok">Next week</button>
+          </div>
+        </article>
+      </div>
+    </section>
+
     <!-- ================= LEADERBOARD ================= -->
     <section id="screen-board" class="screen" aria-labelledby="board-title">
       <div class="screen-scroll">
@@ -356,6 +488,7 @@
   </div>
 
   <script src="music.js"></script>
+  <script src="voice.js"></script>
   <script src="game.js"></script>
 </body>
 </html>

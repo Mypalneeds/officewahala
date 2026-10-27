@@ -1,9 +1,25 @@
-# Office Wahala: Netlify settings. No build step; the folder is served as-is.
+# Office Wahala: Netlify settings.
+#
+# GitHub / Netlify CLI deploys: the build step copies only the game files into
+# dist/ (so node_modules is never published) and builds the Office Leagues
+# function from netlify/functions.
+# Drag-and-drop deploys skip the build and functions; the game still works and
+# simply hides the Leagues button.
 [build]
-  publish = "."
+  publish = "dist"
+  command = "rm -rf dist && mkdir dist && cp -r index.html style.css game.js music.js voice.js sw.js manifest.webmanifest icons voices api dist/"
+
+[functions]
+  directory = "netlify/functions"
+  node_bundler = "esbuild"
 
 [[headers]]
   for = "/sw.js"
+  [headers.values]
+    Cache-Control = "no-cache"
+
+[[headers]]
+  for = "/voices/voices.json"
   [headers.values]
     Cache-Control = "no-cache"
 

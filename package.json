@@ -1,0 +1,13 @@
+{
+  "name": "office-wahala",
+  "version": "3.0.0",
+  "private": true,
+  "description": "Office Wahala: a free Nigerian office arcade game. Static site plus an optional Netlify Function for Office Leagues.",
+  "type": "module",
+  "scripts": {
+    "start": "npx --yes serve ."
+  },
+  "dependencies": {
+    "@netlify/blobs": "11.1.4"
+  }
+}
