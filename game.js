@@ -13,7 +13,7 @@
     // Public URL of your deployed game, e.g. 'https://office-wahala.vercel.app'.
     // Leave empty to use the page's own address automatically when the game is
     // served over http(s) from a real domain (never localhost).
-    SHARE_URL: '',
+    SHARE_URL: 'https://officewahala.netlify.app',
 
     // Optional global leaderboard (Supabase). Leave both empty for local-only
     // personal bests. The anon key is designed to be public; security comes from
