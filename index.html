@@ -1,0 +1,208 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Office Wahala — Dodge your boss. Collect your salary.</title>
+  <meta name="description" content="Office Wahala is a free Nigerian office arcade game. Dodge your boss, collect your salary and survive the wahala. No sign-up, plays on phone and desktop.">
+  <meta name="theme-color" content="#0d1526">
+  <meta property="og:title" content="Office Wahala">
+  <meta property="og:description" content="Dodge your boss. Collect your salary. Survive the wahala.">
+  <meta property="og:type" content="website">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230d1526'/%3E%3Crect x='10' y='10' width='14' height='44' rx='3' fill='%23008751'/%3E%3Crect x='25' y='10' width='14' height='44' rx='3' fill='%23fff'/%3E%3Crect x='40' y='10' width='14' height='44' rx='3' fill='%23008751'/%3E%3Ctext x='32' y='42' font-family='Arial' font-weight='900' font-size='26' text-anchor='middle' fill='%23f5b301'%3E%E2%82%A6%3C/text%3E%3C/svg%3E">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div id="app">
+    <canvas id="game" aria-label="Office Wahala game area"></canvas>
+
+    <!-- HUD -->
+    <header id="hud" class="hud" hidden>
+      <div class="hud-row">
+        <div class="hud-stat">
+          <span class="hud-label">Score</span>
+          <strong id="hud-score" class="hud-value">0</strong>
+        </div>
+        <div class="hud-stat">
+          <span class="hud-label">Time</span>
+          <strong id="hud-time" class="hud-value">00:00</strong>
+        </div>
+        <div class="hud-stat">
+          <span class="hud-label">Level</span>
+          <strong id="hud-level" class="hud-value">1</strong>
+        </div>
+        <div class="hud-stat hud-lives" id="hud-lives" aria-label="Lives: 3"></div>
+        <div class="hud-actions">
+          <button id="btn-mute-hud" class="icon-btn" type="button" aria-label="Turn sound on" aria-pressed="false">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path class="ico-speaker" d="M4 9h4l5-4v14l-5-4H4z"/><path class="ico-waves" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/><path class="ico-x" d="M16 9l5 6M21 9l-5 6"/></svg>
+          </button>
+          <button id="btn-pause" class="icon-btn" type="button" aria-label="Pause game">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></svg>
+          </button>
+        </div>
+      </div>
+      <div class="hud-sub">
+        <div id="hud-best" class="hud-best">Best 0</div>
+        <div id="hud-streak" class="hud-streak" hidden></div>
+        <div class="powerups">
+          <div id="pu-leave" class="pu pu-leave" hidden><span>On leave</span><i></i></div>
+          <div id="pu-fuel" class="pu pu-fuel" hidden><span>Gen fuel</span><i></i></div>
+        </div>
+      </div>
+    </header>
+
+    <div id="toast" class="toast" role="status" aria-live="polite"></div>
+    <div id="banner" class="banner" aria-hidden="true"></div>
+
+    <!-- MENU: staff ID card -->
+    <section id="screen-menu" class="screen is-active" aria-labelledby="game-title">
+      <div class="screen-scroll">
+        <div class="lanyard" aria-hidden="true"><span></span></div>
+        <article class="id-card">
+          <div class="id-top">
+            <span class="flag" aria-hidden="true"><i></i><i></i><i></i></span>
+            <span class="id-company">Wahala &amp; Sons Ltd.</span>
+            <span class="id-kind">Staff ID</span>
+          </div>
+          <h1 id="game-title" class="title">
+            <span class="title-office">Office</span>
+            <span class="title-wahala">Wahala</span>
+          </h1>
+          <p class="subtitle">Dodge your boss. Collect your salary. Survive the wahala.</p>
+
+          <button id="btn-play" class="btn btn-primary btn-play" type="button">Clock in &amp; play</button>
+
+          <div class="id-meta">
+            <div><span>Position</span><strong>Chief Wahala Survivor</strong></div>
+            <div><span>Personal best</span><strong id="menu-best">0</strong></div>
+          </div>
+          <p id="friday-note" class="friday-note" hidden>It's Friday. TGIF bonuses show up twice as often today.</p>
+
+          <details class="howto" id="howto" open>
+            <summary>How to play</summary>
+            <div class="howto-body">
+              <div class="controls">
+                <div class="control">
+                  <h3>On a computer</h3>
+                  <p><kbd>←</kbd><kbd>↑</kbd><kbd>↓</kbd><kbd>→</kbd> or <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> to move</p>
+                  <p><kbd>Space</kbd> pause · <kbd>Enter</kbd> start · <kbd>M</kbd> sound</p>
+                </div>
+                <div class="control">
+                  <h3>On a phone</h3>
+                  <p>Put one finger anywhere on the screen and drag. Your worker follows your finger.</p>
+                </div>
+              </div>
+              <div class="legend">
+                <div class="legend-col">
+                  <h3>Grab these</h3>
+                  <ul>
+                    <li><canvas class="icon" data-sprite="salary"></canvas><span>Salary <b>+100</b></span></li>
+                    <li><canvas class="icon" data-sprite="data"></canvas><span>Data bundle <b>+75</b></span></li>
+                    <li><canvas class="icon" data-sprite="lunch"></canvas><span>Lunch money <b>+50</b></span></li>
+                    <li><canvas class="icon" data-sprite="leave"></canvas><span>Leave approval: nothing can touch you</span></li>
+                    <li><canvas class="icon" data-sprite="fuel"></canvas><span>Generator fuel: speed boost</span></li>
+                    <li><canvas class="icon" data-sprite="friday"></canvas><span>Friday bonus <b>+500</b>, rare, and a life back</span></li>
+                  </ul>
+                </div>
+                <div class="legend-col">
+                  <h3>Dodge these</h3>
+                  <ul>
+                    <li><canvas class="icon" data-sprite="boss"></canvas><span>Oga. Costs two lives</span></li>
+                    <li><canvas class="icon" data-sprite="meeting"></canvas><span>"Quick" meetings</span></li>
+                    <li><canvas class="icon" data-sprite="task"></canvas><span>Urgent tasks and falling files</span></li>
+                    <li><canvas class="icon" data-sprite="deadline"></canvas><span>Last-minute deadlines</span></li>
+                    <li><canvas class="icon" data-sprite="network"></canvas><span>Network outages</span></li>
+                    <li><canvas class="icon" data-sprite="printer"></canvas><span>Runaway printers</span></li>
+                    <li><canvas class="icon" data-sprite="colleague"></canvas><span>The colleague with "one small task"</span></li>
+                  </ul>
+                </div>
+              </div>
+              <p class="tip">Collect five in a row without getting hit to build a streak and multiply your points.</p>
+            </div>
+          </details>
+
+          <div class="menu-actions">
+            <button id="btn-mute-menu" class="btn btn-ghost" type="button" aria-pressed="false">Sound: off</button>
+            <button id="btn-board-menu" class="btn btn-ghost" type="button" hidden>Leaderboard</button>
+          </div>
+          <p class="fineprint">Free. No sign-up. Your best score stays on this device.</p>
+        </article>
+      </div>
+    </section>
+
+    <!-- PAUSE: out of office note -->
+    <section id="screen-pause" class="screen" aria-labelledby="pause-title">
+      <div class="screen-scroll">
+        <article class="note">
+          <h2 id="pause-title">Out of office</h2>
+          <p>Abeg, let me breathe. Back in a minute.</p>
+          <div class="note-actions">
+            <button id="btn-resume" class="btn btn-primary" type="button">Resume</button>
+            <button id="btn-restart" class="btn btn-ghost" type="button">Restart</button>
+            <button id="btn-menu-pause" class="btn btn-ghost" type="button">Main menu</button>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <!-- GAME OVER: performance appraisal -->
+    <section id="screen-over" class="screen" aria-labelledby="over-title">
+      <div class="screen-scroll">
+        <article class="appraisal">
+          <div class="appraisal-head">
+            <div>
+              <span class="appraisal-org">Wahala &amp; Sons Ltd.</span>
+              <h2 id="over-title">Performance appraisal</h2>
+            </div>
+            <div id="over-stamp" class="stamp">Shift over</div>
+          </div>
+          <p id="over-message" class="verdict">You no reach lunch break.</p>
+          <dl class="appraisal-grid">
+            <div class="row-score"><dt>Score</dt><dd id="over-score">0</dd></div>
+            <div><dt>Time survived</dt><dd id="over-time">00:00</dd></div>
+            <div><dt>Level reached</dt><dd id="over-level">1</dd></div>
+            <div><dt>Personal best</dt><dd id="over-best">0</dd></div>
+            <div><dt>Items collected</dt><dd id="over-items">0</dd></div>
+            <div><dt>Longest streak</dt><dd id="over-streak">0</dd></div>
+            <div><dt>Close calls</dt><dd id="over-near">0</dd></div>
+          </dl>
+
+          <form id="lb-form" class="lb-form" hidden>
+            <label for="lb-name">Add your score to the leaderboard</label>
+            <div class="lb-row">
+              <input id="lb-name" name="name" type="text" maxlength="20" autocomplete="nickname" placeholder="Your name" required>
+              <button id="lb-submit" class="btn btn-ghost" type="submit">Submit score</button>
+            </div>
+            <p id="lb-status" class="lb-status" role="status"></p>
+          </form>
+
+          <div class="over-actions">
+            <button id="btn-again" class="btn btn-primary" type="button">Play again</button>
+            <button id="btn-share" class="btn btn-gold" type="button">Share score</button>
+          </div>
+          <div class="over-actions secondary">
+            <button id="btn-board-over" class="btn btn-ghost" type="button" hidden>Leaderboard</button>
+            <button id="btn-menu-over" class="btn btn-ghost" type="button">Main menu</button>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <!-- LEADERBOARD -->
+    <section id="screen-board" class="screen" aria-labelledby="board-title">
+      <div class="screen-scroll">
+        <article class="note board">
+          <h2 id="board-title">Notice board: top survivors</h2>
+          <p id="board-status" class="board-status">Loading scores…</p>
+          <ol id="board-list" class="board-list"></ol>
+          <div class="note-actions">
+            <button id="btn-board-back" class="btn btn-primary" type="button">Back</button>
+          </div>
+        </article>
+      </div>
+    </section>
+  </div>
+
+  <script src="game.js"></script>
+</body>
+</html>
