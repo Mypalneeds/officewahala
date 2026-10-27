@@ -1701,8 +1701,8 @@
     G.state = 'menu';
     keys.clear();
     clearOverlays();
-    refreshMenu();
     showScreen('menu');
+    refreshMenu();
     if (Music && Sound.musicOn) { Music.muffle(false); Music.start('menu'); Music.setMode('menu'); }
   }
 
@@ -4508,16 +4508,21 @@
 
   function drawPortrait(cv, charId, outfitId, zoomed, look) {
     const r = Math.min(window.devicePixelRatio || 1, 3);
-    const w = cv.clientWidth || parseInt(cv.getAttribute('width'), 10) || 64;
-    const h = cv.clientHeight || parseInt(cv.getAttribute('height'), 10) || 76;
+    // remember the CSS size once, so redrawing while hidden doesn't grow the canvas
+    if (!cv.dataset.w) { cv.dataset.w = cv.clientWidth || parseInt(cv.getAttribute('width'), 10) || 64; cv.dataset.h = cv.clientHeight || parseInt(cv.getAttribute('height'), 10) || 76; }
+    const w = cv.clientWidth || +cv.dataset.w;
+    const h = cv.clientHeight || +cv.dataset.h;
     cv.width = Math.round(w * r); cv.height = Math.round(h * r);
     const c = cv.getContext('2d');
     c.setTransform(r, 0, 0, r, 0, 0);
     c.clearRect(0, 0, w, h);
     c.save();
     if (zoomed) {
-      const s = h / 46;
-      c.translate(w / 2, h * 0.5 + 22 * s);
+      // zoom out a little for tall hair and hats so they aren't cropped
+      const pp = playerParams(charId, outfitId, {}, look);
+      const tall = pp.cap === 'gele' || pp.cap === 'santa' ? 1.3 : pp.cap || pp.hair === 'afro' || pp.hair === 'puff' ? 1.16 : 1;
+      const s = h / (46 * tall);
+      c.translate(w / 2, h * 0.5 + 22 * s + (tall - 1) * h * 0.32);
       SPRITES.player(c, 0, { char: charId, outfit: outfitId, walk: 0, mood: 'happy', s, lookY: 0.2, look });
     } else {
       const s = h / 80;
@@ -4542,7 +4547,7 @@
     ui.fridayNote.hidden = !isFridayNow();
     const db = dailyBest();
     ui.dailySub.textContent = db > 0 ? t('dailyBest')(fmtNum(db)) : t('dailyNone');
-    if (ui.screens.menu.classList.contains('is-active')) drawPortrait(ui.idPhoto, S.char, S.outfit, true);
+    drawPortrait(ui.idPhoto, S.char, S.outfit, true);
     const c = G.challenge;
     ui.challengeCard.hidden = !c;
     if (c) ui.challengeText.innerHTML = t('challengeCard')(c.by, fmtNum(c.score), c.daily);
