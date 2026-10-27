@@ -2,12 +2,13 @@
 #
 # GitHub / Netlify CLI deploys: the build step copies only the game files into
 # dist/ (so node_modules is never published) and builds the Office Leagues
-# function from netlify/functions.
-# Drag-and-drop deploys skip the build and functions; the game still works and
-# simply hides the Leagues button.
+# functions from netlify/functions (Office Leagues, analytics, billboard ads).
+# Drag-and-drop deploys skip the build and functions; the game still works,
+# hides the Leagues button, shows the default billboards and sends no analytics.
+# The dashboard (/dashboard/) needs the DASHBOARD_KEY environment variable.
 [build]
   publish = "dist"
-  command = "rm -rf dist && mkdir dist && cp -r index.html style.css game.js music.js voice.js sw.js manifest.webmanifest icons voices api dist/"
+  command = "node tools/build.mjs"
 
 [functions]
   directory = "netlify/functions"
@@ -27,3 +28,21 @@
   for = "/manifest.webmanifest"
   [headers.values]
     Content-Type = "application/manifest+json"
+
+[[headers]]
+  for = "/dashboard/*"
+  [headers.values]
+    X-Robots-Tag = "noindex, nofollow"
+    Cache-Control = "no-cache"
+    Referrer-Policy = "no-referrer"
+
+[[headers]]
+  for = "/api/*"
+  [headers.values]
+    X-Robots-Tag = "noindex"
+    Content-Type = "application/json"
+
+[[headers]]
+  for = "/analytics.js"
+  [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"

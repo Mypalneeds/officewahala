@@ -3,17 +3,22 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <title>Office Wahala — Dodge your boss. Collect your salary.</title>
-  <meta name="description" content="Office Wahala is a free Nigerian office arcade game. Dodge your boss, collect your salary and survive the wahala. No sign-up, plays on phone and desktop, works offline.">
+  <title>Office Wahala: Free Nigerian Office Game (Dodge Oga, Collect Salary)</title>
+  <meta name="description" content="Play Office Wahala free in your browser: dodge Oga, survive NEPA blackouts and the Lagos commute, collect your salary and challenge colleagues. No sign-up, works offline.">
+  <meta name="robots" content="index,follow,max-image-preview:large">
+  <link rel="canonical" href="https://officewahala.netlify.app/">
   <meta name="theme-color" content="#0d1526">
   <meta name="author" content="Mmadubuko Micheal, Analaize Limited">
-  <meta property="og:title" content="Office Wahala 🇳🇬">
-  <meta property="og:description" content="Dodge your boss. Collect your salary. Survive the wahala. Free Nigerian office arcade game.">
+  <meta property="og:site_name" content="Office Wahala">
+  <meta property="og:locale" content="en_NG">
+  <meta property="og:title" content="Office Wahala 🇳🇬 Free Nigerian office game">
+  <meta property="og:description" content="Dodge your boss. Collect your salary. Survive the wahala. Free, no sign-up, plays on any phone.">
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://officewahala.netlify.app/">
   <meta property="og:image" content="https://officewahala.netlify.app/icons/og-image.png">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Office Wahala: a Nigerian office worker and Oga saying Do the needful">
   <meta name="twitter:card" content="summary_large_image">
   <link rel="icon" href="icons/icon-192.png" type="image/png">
   <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
@@ -23,10 +28,125 @@
   <meta name="apple-mobile-web-app-title" content="Office Wahala">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <link rel="stylesheet" href="style.css">
+  <script type="application/ld+json">
+{
+ "@context": "https://schema.org",
+ "@graph": [
+  {
+   "@type": "WebSite",
+   "@id": "https://officewahala.netlify.app/#website",
+   "url": "https://officewahala.netlify.app/",
+   "name": "Office Wahala",
+   "alternateName": "Office Wahala game",
+   "inLanguage": "en-NG",
+   "publisher": {
+    "@id": "https://officewahala.netlify.app/#analaize"
+   }
+  },
+  {
+   "@type": [
+    "VideoGame",
+    "WebApplication"
+   ],
+   "@id": "https://officewahala.netlify.app/#game",
+   "name": "Office Wahala",
+   "url": "https://officewahala.netlify.app/",
+   "description": "A free Nigerian office arcade game for phone and computer. Dodge your boss (Oga), meetings, deadlines and NEPA blackouts, collect your salary and survive the workday. Includes a Lagos morning commute, career mode, daily shift, office leagues, Pidgin mode and offline play.",
+   "genre": [
+    "Arcade",
+    "Casual",
+    "Endless runner"
+   ],
+   "gamePlatform": [
+    "Web browser",
+    "Android",
+    "iOS",
+    "Windows",
+    "macOS"
+   ],
+   "playMode": "SinglePlayer",
+   "applicationCategory": "GameApplication",
+   "operatingSystem": "Any (runs in a web browser)",
+   "inLanguage": [
+    "en-NG",
+    "pcm"
+   ],
+   "isAccessibleForFree": true,
+   "offers": {
+    "@type": "Offer",
+    "price": "0",
+    "priceCurrency": "NGN",
+    "availability": "https://schema.org/InStock"
+   },
+   "image": "https://officewahala.netlify.app/icons/og-image.png",
+   "screenshot": [
+    "https://officewahala.netlify.app/screenshots/oga-chase.jpg",
+    "https://officewahala.netlify.app/screenshots/commute.jpg",
+    "https://officewahala.netlify.app/screenshots/nepa-blackout.jpg",
+    "https://officewahala.netlify.app/screenshots/menu.jpg",
+    "https://officewahala.netlify.app/screenshots/evening-driver.jpg"
+   ],
+   "datePublished": "2026-10-27",
+   "author": {
+    "@id": "https://officewahala.netlify.app/#developer"
+   },
+   "creator": {
+    "@id": "https://officewahala.netlify.app/#developer"
+   },
+   "publisher": {
+    "@id": "https://officewahala.netlify.app/#analaize"
+   },
+   "countryOfOrigin": {
+    "@type": "Country",
+    "name": "Nigeria"
+   },
+   "keywords": "Nigerian game, office game, Oga, wahala, NEPA, Lagos, Pidgin, free browser game"
+  },
+  {
+   "@type": "Organization",
+   "@id": "https://officewahala.netlify.app/#analaize",
+   "name": "Analaize Limited",
+   "url": "https://www.analaize.com.ng",
+   "address": {
+    "@type": "PostalAddress",
+    "addressLocality": "Lagos",
+    "addressCountry": "NG"
+   },
+   "contactPoint": {
+    "@type": "ContactPoint",
+    "telephone": "+234-706-645-9689",
+    "contactType": "customer support",
+    "areaServed": "NG",
+    "availableLanguage": [
+     "en",
+     "pcm"
+    ]
+   }
+  },
+  {
+   "@type": "Person",
+   "@id": "https://officewahala.netlify.app/#developer",
+   "name": "Mmadubuko Micheal",
+   "jobTitle": "CEO",
+   "worksFor": {
+    "@id": "https://officewahala.netlify.app/#analaize"
+   },
+   "url": "https://www.analaize.com.ng"
+  }
+ ]
+}
+  </script>
 </head>
 <body>
   <div id="app">
     <canvas id="game" aria-label="Office Wahala game area"></canvas>
+    <noscript>
+      <div class="noscript">
+        <h1>Office Wahala</h1>
+        <p>A free Nigerian office arcade game: dodge Oga, collect your salary and survive the workday. Please turn on JavaScript to play.</p>
+        <p><a href="how-to-play/">How to play</a> · <a href="faq/">FAQ</a> · <a href="nigerian-office-slang/">Nigerian office slang</a> · <a href="about/">About</a></p>
+      </div>
+    </noscript>
 
     <!-- ================= HUD ================= -->
     <header id="hud" class="hud" hidden>
@@ -189,7 +309,23 @@
             </div>
           </details>
 
+          <aside id="sponsor-card" class="sponsor-card" hidden aria-label="Sponsored">
+            <span class="sponsor-tag">Sponsored</span>
+            <a id="sponsor-link" class="sponsor-body" href="#" target="_blank" rel="noopener sponsored">
+              <strong id="sponsor-brand"></strong>
+              <span id="sponsor-text"></span>
+            </a>
+          </aside>
+
           <footer class="credits">
+            <nav class="guide-links" aria-label="Guides">
+              <a href="how-to-play/">How to play</a>
+              <a href="faq/">FAQ</a>
+              <a href="nigerian-office-slang/">Office slang</a>
+              <a href="about/">About</a>
+              <a href="privacy/">Privacy</a>
+              <a href="https://wa.me/2347066459689?text=I%20want%20to%20advertise%20on%20Office%20Wahala" target="_blank" rel="noopener">Advertise here</a>
+            </nav>
             <p data-i18n="free_line">Free. No sign-up. Works offline once installed.</p>
             <p>Built by <strong>Mmadubuko Micheal</strong>, CEO, <a href="https://www.analaize.com.ng" target="_blank" rel="noopener">Analaize Limited</a></p>
             <p><span data-i18n="contact_dev">Contact developer:</span> <a href="tel:+2347066459689">07066459689</a> · <a href="https://wa.me/2347066459689" target="_blank" rel="noopener">WhatsApp</a></p>
@@ -250,6 +386,7 @@
             <p id="lb-status" class="lb-status" role="status"></p>
           </form>
 
+          <a id="over-sponsor" class="over-sponsor" href="#" target="_blank" rel="noopener sponsored" hidden></a>
           <div class="over-actions">
             <button id="btn-again" class="btn btn-primary" type="button" data-i18n="again">Play again</button>
             <button id="btn-share" class="btn btn-gold" type="button" data-i18n="share">Challenge a colleague</button>
@@ -322,6 +459,11 @@
             <span class="setting-label" data-i18n="language">Language</span>
             <div class="seg" data-setting="lang"><button type="button" data-v="en">English</button><button type="button" data-v="pcm">Pidgin</button></div>
           </div>
+          <div class="setting">
+            <span class="setting-label" data-i18n="stats_set">Anonymous stats</span>
+            <div class="seg" data-setting="stats"><button type="button" data-v="on">On</button><button type="button" data-v="off">Off</button></div>
+          </div>
+          <p class="setting-help setting-sub"><span data-i18n="stats_help">Helps improve the game. No cookies, no names.</span> <a href="privacy/">Privacy</a></p>
           <div class="setting">
             <span class="setting-label" data-i18n="graphics">Graphics</span>
             <div class="seg" data-setting="gfx"><button type="button" data-v="auto">Auto</button><button type="button" data-v="high">High</button><button type="button" data-v="low">Low</button></div>
@@ -487,6 +629,7 @@
     </section>
   </div>
 
+  <script src="analytics.js"></script>
   <script src="music.js"></script>
   <script src="voice.js"></script>
   <script src="game.js"></script>

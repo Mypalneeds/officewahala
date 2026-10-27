@@ -1143,3 +1143,36 @@ kbd {
 }
 .outfit-cell .btn-buy[disabled] { opacity: 0.5; cursor: not-allowed; }
 .setting-help.err { color: #b4232a; font-weight: 700; }
+
+/* ==========================================================
+   v4: guide links, noscript, sponsor card
+   ========================================================== */
+.guide-links { display: flex; flex-wrap: wrap; justify-content: center; gap: 4px 14px; margin-bottom: 8px; }
+.guide-links a { color: var(--ink); font-weight: 700; }
+.noscript { position: relative; z-index: 60; max-width: 520px; margin: 40px auto; padding: 24px; background: var(--paper); color: var(--ink); border-radius: 16px; }
+.sponsor-card {
+  position: relative;
+  margin-top: 14px;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  box-shadow: inset 0 0 0 1px #dfe2e8;
+}
+.sponsor-card[hidden] { display: none; }
+.sponsor-tag {
+  position: absolute; top: 6px; right: 8px; z-index: 1;
+  font-size: 0.66rem; font-weight: 800; padding: 1px 7px; border-radius: 99px;
+  background: rgba(0, 0, 0, 0.35); color: #fff;
+}
+.sponsor-body {
+  display: flex; flex-direction: column; gap: 2px;
+  padding: 12px 14px; text-decoration: none;
+  background: var(--sp-bg, #0d1526); color: var(--sp-fg, #fff);
+}
+.sponsor-body strong { color: var(--sp-accent, var(--gold)); font-size: 1.05rem; }
+.sponsor-body span { font-size: 0.9rem; opacity: 0.92; }
+.over-sponsor {
+  display: block; margin: 0 0 12px; padding: 8px 12px; border-radius: var(--radius-sm);
+  background: var(--sp-bg, #0d1526); color: var(--sp-fg, #fff); text-decoration: none; font-size: 0.85rem; font-weight: 700;
+}
+.over-sponsor[hidden] { display: none; }
+.over-sponsor b { color: var(--sp-accent, var(--gold)); }

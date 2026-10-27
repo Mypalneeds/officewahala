@@ -27,7 +27,7 @@
 
     // Office Leagues API (Netlify Function in netlify/functions/league.mjs).
     // The Leagues button only appears when this endpoint answers.
-    LEAGUE_API: '/api/league',
+    LEAGUE_API: 'api/league',
 
     // Developer credit (shown on the share image)
     CREDIT: 'Built by Analaize Limited · analaize.com.ng',
@@ -282,6 +282,7 @@
     leagues_intro: 'Your office own private weekly scoreboard. Create one, share the code with your colleagues, your best score every week go show. E dey reset every Monday.',
     your_name_short: 'Your name', create_league: 'Create league', create: 'Create', join_code: 'Join with code', join: 'Join',
     all_leagues: 'All my leagues', code: 'Code', this_week: 'This week', invite: 'Invite colleagues', leave_league: 'Comot from league',
+    stats_set: 'Anonymous stats', stats_help: 'E dey help us improve the game. No cookies, no names.',
     promo_title: 'Promotion letter', share_promo: 'Share letter', promo_ok: 'Next week', salary_paid: 'Salary wey dem pay',
   });
 
@@ -1163,6 +1164,7 @@
     G.beatBestLive = false;
     G.challengeBeaten = false;
     G.newBadges = [];
+    G.lastHit = '';
     G.lastMsg = '';
     G.player = {
       x: (FX0 + FX1) / 2, y: H * 0.78, vx: 0, vy: 0, tx: 0, ty: 0, r: 15,
@@ -1423,6 +1425,9 @@
     Sound.play('start');
     if (Music && Sound.musicOn) { Music.setLevel(1); Music.muffle(false); Music.start('game'); Music.setMode('game'); }
     const coarse = window.matchMedia && window.matchMedia('(pointer: coarse)').matches;
+    G.startedAt = performance.now();
+    ADS.seen = new Set(); ADS.views = 0;
+    T('game_start', { mode: G.mode, commute: G.phase === 'commute', held: G.held || '' });
     if (G.phase === 'commute') { toast(t('commuteStart'), 'info', 2600); say('commute'); }
     else if (G.mode === 'career') toast(t('days')[S.career.day] + ': ' + t('goalText')(careerDay().type, goalTarget()), 'info', 2800);
     else toast(G.mode === 'daily' ? t('dailyStart') : coarse ? t('clockInTouch') : t('clockIn'), 'info', 2400);
@@ -1450,6 +1455,7 @@
   }
 
   function toMenu() {
+    refreshSponsor(true);
     if (G.black) endBlackout(true);
     if (Voice) Voice.stop();
     G.state = 'menu';
@@ -1462,6 +1468,7 @@
 
   function openSide(name) {
     G.state = name;
+    T('screen', { name });
     if (name === 'wardrobe') renderWardrobe();
     if (name === 'settings') syncSettingsUi();
     if (name === 'review') prepareReview();
@@ -1510,6 +1517,10 @@
     }
     S.wallet += pay;
     saveS.wallet();
+    T('game_over', { mode: G.mode, score, secs: Math.floor(G.time), real: Math.round((performance.now() - (G.startedAt || performance.now())) / 1000),
+      level: G.level, cause: G.success ? 'goal' : (G.lastHit || 'unknown'), items: G.collected, streak: G.maxStreak, near: G.nearMisses,
+      late: G.commute ? G.commute.late : 0, pay, success: !!G.success });
+    if (G.mode === 'career') T('career_day', { day: careerWon ? (S.career.day + 4) % 5 : S.career.day, week: careerWon && S.career.day === 0 ? S.career.week - 1 : S.career.week, success: careerWon });
     recordWeekBest(score, Math.max(1, Math.floor(G.time)), G.level);
     submitLeagues({ score, duration: Math.max(1, Math.floor(G.time)), level: G.level });
     stats.games++;
@@ -1566,6 +1577,7 @@
     Sound.play('over');
     if (Voice) { Voice.stop(); say(beatOld ? 'new_best' : careerWon ? 'goal_done' : 'game_over'); }
     showScreen('over');
+    showOverSponsor();
     if (G.promoPending) setTimeout(() => { if (G.state === 'over') openPromo(); }, 1300);
     refreshMenu();
     makeShareImage().then((b) => { G.shareBlob = b; }).catch(() => { G.shareBlob = null; });
@@ -1665,6 +1677,7 @@
     G.black = null;
     if (Music) Music.muffle(false);
     if (silent || !b) return;
+    T('blackout', { survived: !b.hit, level: G.level });
     Sound.play('powerup');
     say('nepa_on');
     if (!b.hit) {
@@ -1717,6 +1730,7 @@
       if ((stats[b.stat] || 0) >= b.goal) {
         unlocked.add(b.id);
         if (G.newBadges) G.newBadges.push(b);
+        T('badge', { id: b.id });
         changed = true;
         if (live) {
           toast(t('badge') + b.ico + ' ' + b.name, 'badge', 2600);
@@ -1804,6 +1818,7 @@
     if (G.phase !== 'commute') return;
     const late = G.commute.late;
     G.phase = 'office';
+    T('commute_end', { late, skipped: !!skipped });
     G.obstacles = [];
     G.time = 0;
     G.spawnT = DIFFICULTY.graceSeconds + 0.6;
@@ -1841,6 +1856,7 @@
     const id = force || options[(rng() * options.length) | 0];
     G.event = { id, t: DIFFICULTY.eventLength, dur: DIFFICULTY.eventLength };
     G.lastEvent = id;
+    T('event_start', { id, level: G.level });
     banner(t('ev_' + id), id === 'audit' || id === 'agm');
     toast(t('ev_' + id + '_d'), 'info', 2600);
     say('ev_' + id);
@@ -1880,6 +1896,7 @@
     const k = pickBoss();
     if (!k) return;
     ({ oga: spawnOga, driver: spawnDriver, hr: spawnHR, aunty: spawnAunty })[k]();
+    T('boss', { type: k, level: G.level });
   }
   function leaveBoss(o) {
     if (o.type === 'driver') { o.phase = 'leave'; return; }
@@ -2025,6 +2042,7 @@
     if (k.prog >= 1) {
       addScore(300);
       stats.tasks++; G.run.tasks++; G.badgeCheckT = 0;
+      T('task_done', { level: G.level });
       floater(t('taskDone'), k.x, k.y - 34, '#7df0b5', 16);
       say('report_done');
       Sound.play('big');
@@ -2041,6 +2059,7 @@
     if (!G.held || G.state !== 'playing') return;
     const h = G.held;
     G.held = null;
+    T('powerup_use', { id: h, level: G.level });
     if (h === 'autoreply') {
       let n = 0;
       for (let i = G.obstacles.length - 1; i >= 0; i--) {
@@ -2122,6 +2141,7 @@
     $('promo-ref').textContent = new Date().getFullYear() + '/' + String(pr.week).padStart(3, '0');
     $('promo-body').textContent = t('promoBody')(pr.rank, pr.week);
     G.state = 'promo';
+    T('promotion', { week: pr.week });
     showScreen('promo');
     say('promoted');
     confetti(80);
@@ -2172,6 +2192,7 @@
     });
   }
   async function sharePromo() {
+    T('share', { kind: 'promotion' });
     try {
       const blob = await makePromoImage();
       const file = new File([blob], 'office-wahala-promotion.png', { type: 'image/png' });
@@ -2224,6 +2245,7 @@
     S.wallet -= price; S.upg[id] = lvl + 1;
     saveS.wallet(); saveS.upg();
     stats.buys++; checkBadges(true); saveProgress();
+    T('shop_buy', { id, price, level: S.upg[id] });
     renderShop();
     toast(t('bought') + ' ' + it.name, 'good', 1800);
     Sound.play('coin');
@@ -2236,6 +2258,7 @@
     saveS.wallet(); saveS.owned();
     stats.buys++; checkBadges(true); saveProgress();
     S.outfit = id; store.set('ow_outfit', id);
+    T('outfit_buy', { id, price });
     renderWardrobe();
     toast(t('bought'), 'good', 1800);
     Sound.play('coin');
@@ -2319,6 +2342,7 @@
     try {
       const b = await api('/' + code);
       S.leagues.push({ code, name: b.name }); saveS.leagues();
+      T('league_join');
       const wb = store.json('ow_weekbest', null);
       if (wb && wb.week === weekKeyLocal() && wb.score > 0) await postScore(code, wb).catch(() => {});
       if (!silent) toast(t('leagueJoined')(b.name), 'good', 2000);
@@ -2332,6 +2356,7 @@
     try {
       const r = await api('', { method: 'POST', body: JSON.stringify({ name, playerId: S.playerId }) });
       S.leagues.push({ code: r.code, name: r.name }); saveS.leagues();
+      T('league_create');
       const wb = store.json('ow_weekbest', null);
       if (wb && wb.week === weekKeyLocal() && wb.score > 0) await postScore(r.code, wb).catch(() => {});
       toast(t('leagueCreated')(r.code), 'good', 2600);
@@ -2367,6 +2392,7 @@
     } catch (e) { st.textContent = e.message || t('leagueOffline'); }
   }
   async function inviteLeague() {
+    T('share', { kind: 'league' });
     const code = LG.current;
     const l = S.leagues.find((x) => x.code === code);
     const base = shareBase();
@@ -2382,6 +2408,116 @@
     saveS.leagues();
     renderLeagueHome();
     leagueStatus(t('leagueLeft'), 'ok');
+  }
+
+  /* ---------- Analytics helper ---------- */
+  function T(name, props) { try { if (window.OWTrack) window.OWTrack(name, props); } catch (e) { /* never break the game */ } }
+
+  /* ---------- Sponsor billboards ---------- */
+  const ADS = { list: [], imgs: {}, seen: new Set(), views: 0, menuAd: null, overAd: null };
+  const AD_HEX = /^#[0-9a-f]{6}$/i;
+  function setAds(cfg) {
+    if (!cfg || !Array.isArray(cfg.ads)) return;
+    ADS.list = cfg.ads.filter((a) => a && a.id && a.brand).slice(0, 30).map((a) => ({
+      id: String(a.id).slice(0, 40), brand: String(a.brand).slice(0, 40), headline: String(a.headline || '').slice(0, 60), sub: String(a.sub || '').slice(0, 40),
+      url: /^https:\/\//.test(a.url || '') ? a.url : '', image: /^https:\/\//.test(a.image || '') ? a.image : '',
+      bg: AD_HEX.test(a.bg) ? a.bg : '#0d1526', fg: AD_HEX.test(a.fg) ? a.fg : '#ffffff', accent: AD_HEX.test(a.accent) ? a.accent : '#f5b301',
+      weight: Math.max(1, Math.min(10, +a.weight || 1)), where: Array.isArray(a.where) && a.where.length ? a.where : ['road', 'office', 'menu'],
+      start: a.start || '', end: a.end || '',
+    }));
+    for (const a of ADS.list) {
+      if (a.image && !ADS.imgs[a.image]) { const im = new Image(); im.decoding = 'async'; im.src = a.image; ADS.imgs[a.image] = im; }
+    }
+  }
+  const adActive = (a) => { const d = todayKey(); return (!a.start || d >= a.start) && (!a.end || d <= a.end); };
+  function pickAd(where, seed) {
+    const l = ADS.list.filter((a) => a.where.includes(where) && adActive(a));
+    if (!l.length) return null;
+    let r = seed * l.reduce((n, a) => n + a.weight, 0);
+    for (const a of l) { r -= a.weight; if (r <= 0) return a; }
+    return l[l.length - 1];
+  }
+  function loadAds() {
+    const cached = store.json('ow_ads', null);
+    if (cached) setAds(cached);
+    if (!/^https?:$/.test(location.protocol)) return;
+    fetch('api/ads', { cache: 'no-cache' })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((j) => { if (j && Array.isArray(j.ads)) { setAds(j); store.set('ow_ads', JSON.stringify(j)); if (G.state === 'menu') refreshSponsor(true); } })
+      .catch(() => {});
+  }
+  function adSeen(ad, where, key) {
+    if (G.state !== 'playing' || ADS.seen.has(key) || ADS.views >= 40) return;
+    ADS.seen.add(key);
+    ADS.views++;
+    T('ad_view', { id: ad.id, where });
+  }
+  function styleSponsor(el, ad) {
+    el.style.setProperty('--sp-bg', ad.bg);
+    el.style.setProperty('--sp-fg', ad.fg);
+    el.style.setProperty('--sp-accent', ad.accent);
+  }
+  function refreshSponsor(repick) {
+    if (repick || !ADS.menuAd) ADS.menuAd = pickAd('menu', Math.random());
+    const ad = ADS.menuAd;
+    const card = $('sponsor-card');
+    card.hidden = !ad;
+    if (!ad) return;
+    styleSponsor(card.querySelector('.sponsor-body'), ad);
+    $('sponsor-brand').textContent = ad.brand;
+    $('sponsor-text').textContent = [ad.headline, ad.sub].filter(Boolean).join(' · ');
+    $('sponsor-link').href = ad.url || '#';
+    if (repick) T('ad_view', { id: ad.id, where: 'menu' });
+  }
+  function showOverSponsor() {
+    const ad = (ADS.overAd = pickAd('menu', Math.random()));
+    const el = $('over-sponsor');
+    el.hidden = !ad;
+    if (!ad) return;
+    styleSponsor(el, ad);
+    el.innerHTML = 'Shift sponsored by <b>' + esc(ad.brand) + '</b>' + (ad.headline ? ' · ' + esc(ad.headline) : '');
+    el.href = ad.url || '#';
+    T('ad_view', { id: ad.id, where: 'appraisal' });
+  }
+  function drawBillboard(c, x, y, w, h, ad, small) {
+    c.save();
+    c.translate(x, y);
+    if (!small) {
+      c.fillStyle = '#374151';
+      c.fillRect(-w * 0.32, h / 2, 4, 16); c.fillRect(w * 0.32 - 4, h / 2, 4, 16);
+      c.fillStyle = 'rgba(0,0,0,.35)'; c.beginPath(); c.ellipse(0, h / 2 + 17, w * 0.42, 4, 0, 0, TAU); c.fill();
+    }
+    c.fillStyle = '#1f2937'; rr(c, -w / 2 - 3, -h / 2 - 3, w + 6, h + 6, small ? 3 : 4); c.fill();
+    c.fillStyle = ad.bg; rr(c, -w / 2, -h / 2, w, h, 2); c.fill();
+    const im = ad.image && ADS.imgs[ad.image];
+    if (im && im.complete && im.naturalWidth) {
+      c.save(); c.beginPath(); c.rect(-w / 2, -h / 2, w, h); c.clip();
+      const s = Math.max(w / im.naturalWidth, h / im.naturalHeight);
+      c.drawImage(im, -im.naturalWidth * s / 2, -im.naturalHeight * s / 2, im.naturalWidth * s, im.naturalHeight * s);
+      c.restore();
+    } else {
+      c.textAlign = 'center'; c.textBaseline = 'middle';
+      c.fillStyle = ad.accent;
+      c.font = `900 ${Math.round(h * 0.22)}px system-ui, Arial, sans-serif`;
+      c.fillText(ad.brand, 0, -h * 0.26, w - 8);
+      c.fillStyle = ad.fg;
+      c.font = `700 ${Math.max(5, Math.round(h * 0.145))}px system-ui, Arial, sans-serif`;
+      const lines = wrapText(c, ad.headline || '', w - 10).slice(0, 2);
+      lines.forEach((ln, i) => c.fillText(ln, 0, (lines.length === 1 ? 0.02 : -0.06 + i * 0.17) * h, w - 8));
+      if (ad.sub) {
+        c.globalAlpha = 0.85;
+        c.font = `800 ${Math.max(5, Math.round(h * 0.125))}px system-ui, Arial, sans-serif`;
+        c.fillText(ad.sub, 0, h * 0.34, w - 8);
+        c.globalAlpha = 1;
+      }
+    }
+    if (!small) {
+      c.fillStyle = 'rgba(255,240,180,.9)'; circle(c, -w * 0.3, -h / 2 - 5, 2); c.fill(); circle(c, w * 0.3, -h / 2 - 5, 2); c.fill();
+    }
+    c.fillStyle = 'rgba(0,0,0,.45)'; rr(c, w / 2 - 15, -h / 2 + 2, 13, 8, 2); c.fill();
+    c.fillStyle = '#fff'; c.font = '800 5.5px system-ui, Arial, sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle';
+    c.fillText('AD', w / 2 - 8.5, -h / 2 + 6.3);
+    c.restore();
   }
 
   /* ---------- Commute background ---------- */
@@ -2433,6 +2569,21 @@
     for (let i = 1; i < lanes.length; i++) {
       const x = (lanes[i - 1] + lanes[i]) / 2;
       for (let y = (off % 60) - 60; y < H; y += 60) c.fillRect(x - 2, y, 4, 30);
+    }
+    // sponsor billboards along the road
+    if (ADS.list.length) {
+      const SEGA = 290, ao = off % SEGA, abase = Math.floor(off / SEGA);
+      const bw = Math.min(124, Math.max(92, (FX1 - FX0) * 0.34)), bh = bw * 0.56;
+      for (let k = -1; k <= Math.ceil(H / SEGA) + 1; k++) {
+        const y = k * SEGA + ao - 40, id = k - abase;
+        const ad = pickAd('road', hash(id * 4.17 + 2.3));
+        if (!ad) continue;
+        const left = ((id % 2) + 2) % 2 === 0;
+        const roomOut = FX0 > bw + 40;
+        const x = left ? (roomOut ? FX0 - bw / 2 - 30 : FX0 + bw / 2 - 2) : (roomOut ? FX1 + bw / 2 + 30 : FX1 - bw / 2 + 2);
+        drawBillboard(c, x, y, bw, bh, ad);
+        if (y > 40 && y < H - 40) adSeen(ad, 'road', 'r' + id);
+      }
     }
     // street lamps on the kerbs
     for (let y = (off % 260) - 260; y < H + 40; y += 260) {
@@ -2562,6 +2713,7 @@
     const p = G.player;
     const dmg = o.type === 'boss' ? 2 : 1;
     G.lives = Math.max(0, G.lives - dmg);
+    G.lastHit = o.type === 'boss' ? 'oga' : o.type;
     G.streak = 0;
     p.invuln = 1.6;
     G.shake = o.type === 'boss' ? 18 : 11;
@@ -2756,6 +2908,7 @@
     if (d.held) {
       G.collected++; G.streak++; G.maxStreak = Math.max(G.maxStreak, G.streak);
       G.held = it.type;
+      T('powerup_pick', { id: it.type });
       updateUseBtn();
       toast(t('heldGot')(heldName(it.type)), 'good', 2000);
       Sound.play('power');
@@ -2834,6 +2987,7 @@
         confetti(36);
         if (Music) Music.setLevel(G.level);
         say('level');
+        if (G.level <= 12 || G.level % 5 === 0) T('level_up', { level: G.level, mode: G.mode });
         const later = (k) => setTimeout(() => G.state === 'playing' && toast(t(k), 'info'), 1600);
         if (G.level === OBSTACLES.deadline.unlock) later('deadlines');
         if (G.level === OBSTACLES.printer.unlock) later('printers');
@@ -2956,7 +3110,7 @@
   let frameSky = ['#8ecfff', '#e3f3ff', 9];
   let frameNight = 0;
 
-  function drawDecor(c, kind, x, y, side, tm) {
+  function drawDecor(c, kind, x, y, side, tm, id) {
     c.save();
     c.translate(x, y);
     switch (kind) {
@@ -3007,6 +3161,15 @@
         c.fillStyle = '#4b5263';
         for (let i = 0; i < 3; i++) c.fillRect(-4, -15 + i * 14, 8, 2);
         break;
+      case 'adscreen': {
+        const ad = pickAd('office', hash((id || 0) * 3.31 + side * 7.7));
+        if (!ad) { c.fillStyle = '#2b3550'; rr(c, -26, -16, 52, 32, 3); c.fill(); break; }
+        c.restore();
+        drawBillboard(c, x, y, 54, 32, ad, true);
+        c.save(); c.translate(x, y);
+        if (y > 60 && y < H - 30) adSeen(ad, 'office', 'o' + id + ':' + side);
+        break;
+      }
       case 'copier':
         c.fillStyle = '#c6ccd8'; rr(c, -16, -16, 32, 32, 4); c.fill();
         c.fillStyle = '#e4e8ef'; rr(c, -14, -14, 28, 10, 2); c.fill();
@@ -3042,7 +3205,7 @@
     c.restore();
   }
 
-  const WALL_DECOR = ['desk', 'window', 'plant', 'water', 'door', 'cabinet', 'copier', 'desk', 'meetingroom', 'window'];
+  const WALL_DECOR = ['desk', 'window', 'plant', 'water', 'door', 'cabinet', 'copier', 'desk', 'meetingroom', 'window', 'adscreen', 'adscreen'];
   function drawBackground(c, tm, hour) {
     frameSky = skyAt(hour);
     const h = frameSky[2];
@@ -3103,8 +3266,8 @@
       const id = k - base;
       const kl = WALL_DECOR[Math.floor(hash(id * 1.37) * WALL_DECOR.length)];
       const kr = WALL_DECOR[Math.floor(hash(id * 2.91 + 9) * WALL_DECOR.length)];
-      drawDecor(c, kl, FX0 + (kl === 'meetingroom' ? 32 : 28), y, -1, tm);
-      drawDecor(c, kr, FX1 - (kr === 'meetingroom' ? 32 : 28), y + 70, 1, tm);
+      drawDecor(c, kl, FX0 + (kl === 'meetingroom' ? 32 : 28), y, -1, tm, id);
+      drawDecor(c, kr, FX1 - (kr === 'meetingroom' ? 32 : 28), y + 70, 1, tm, id);
     }
     const g = c.createLinearGradient(0, 0, 0, 160);
     g.addColorStop(0, 'rgba(8,13,26,.85)');
@@ -3389,13 +3552,15 @@
         const file = G.shareBlob ? new File([G.shareBlob], 'office-wahala-score.png', { type: 'image/png' }) : null;
         if (file && navigator.canShare && navigator.canShare({ files: [file] })) {
           await navigator.share({ files: [file], text: full, title: CONFIG.TITLE });
+          T('share', { kind: 'challenge', via: 'native-image', score: Math.floor(G.scoreF) });
           return;
         }
         const data = url ? { title: CONFIG.TITLE, text, url } : { title: CONFIG.TITLE, text };
-        if (!navigator.canShare || navigator.canShare(data)) { await navigator.share(data); return; }
+        if (!navigator.canShare || navigator.canShare(data)) { await navigator.share(data); T('share', { kind: 'challenge', via: 'native', score: Math.floor(G.scoreF) }); return; }
       } catch (e) { if (e && e.name === 'AbortError') return; }
     }
     const ok = await copyText(full);
+    if (ok) T('share', { kind: 'challenge', via: 'copy', score: Math.floor(G.scoreF) });
     toast(ok ? t('copied') : t('copyFail') + fmtNum(G.scoreF), ok ? 'good' : 'info', 2600);
   }
 
@@ -3512,6 +3677,7 @@
       const a = document.createElement('a');
       a.href = URL.createObjectURL(blob);
       a.download = 'office-wahala-' + Math.floor(G.scoreF) + '.png';
+      T('share', { kind: 'image' });
       document.body.appendChild(a);
       a.click();
       setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1500);
@@ -3634,6 +3800,7 @@
     if (!ui.excel.hidden || G.state === 'dying') return;
     if (G.state === 'playing') pauseGame();
     excelReturn = G.state;
+    T('boss_key', { from: G.state });
     buildSheet();
     realTitle = document.title;
     document.title = 'Q3_Revenue_Report_FINAL_v7.xlsx';
@@ -3755,7 +3922,8 @@
 
   function syncSettingsUi() {
     $('set-name').value = S.name;
-    const val = { sound: Sound.sfxOn ? 'on' : 'off', music: Sound.musicOn ? 'on' : 'off', lang: S.lang, gfx: S.gfx, voices: S.voices ? 'on' : 'off', commute: S.commute ? 'on' : 'off' };
+    const val = { sound: Sound.sfxOn ? 'on' : 'off', music: Sound.musicOn ? 'on' : 'off', lang: S.lang, gfx: S.gfx, voices: S.voices ? 'on' : 'off', commute: S.commute ? 'on' : 'off',
+      stats: window.OWTrack && window.OWTrack.isOn() ? 'on' : 'off' };
     $('set-oga').value = S.ogaName;
     if (Voice) { Voice.init(); $('voice-info').textContent = 'Voice: ' + Voice.describe(); }
     document.querySelectorAll('.seg').forEach((seg) => {
@@ -3828,6 +3996,7 @@
       const res = await fetch('/', { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body });
       if (!res.ok) throw new Error('status ' + res.status);
       reviewStatus.textContent = t('reviewThanks'); reviewStatus.className = 'lb-status ok';
+      T('review_submit', { rating: +((reviewForm.querySelector('input[name="rating"]:checked') || {}).value || 0) });
       reviewForm.reset();
       prepareReview();
       reviewStatus.textContent = t('reviewThanks'); reviewStatus.className = 'lb-status ok';
@@ -3842,10 +4011,12 @@
     e.preventDefault();
     installEvt = e;
     $('btn-install').hidden = false;
+    T('install_prompt');
   });
-  window.addEventListener('appinstalled', () => { $('btn-install').hidden = true; installEvt = null; });
+  window.addEventListener('appinstalled', () => { $('btn-install').hidden = true; installEvt = null; T('install_done'); });
   $('btn-install').addEventListener('click', async () => {
     if (!installEvt) return;
+    T('install_click');
     installEvt.prompt();
     try { await installEvt.userChoice; } catch (e) { /* ignore */ }
     installEvt = null;
@@ -3925,7 +4096,11 @@
     const b = e.target.closest('button');
     if (!b) return;
     const v = b.dataset.v;
+    if (seg.dataset.setting !== 'stats') T('setting', { k: seg.dataset.setting, v });
     switch (seg.dataset.setting) {
+      case 'stats':
+        if (window.OWTrack) { if (v === 'on') { window.OWTrack.setEnabled(true); T('setting', { k: 'stats', v: 'on' }); } else { T('setting', { k: 'stats', v: 'off' }); window.OWTrack.flush(); window.OWTrack.setEnabled(false); } }
+        break;
       case 'sound': Sound.setSfx(v === 'on'); Sound.play('click'); break;
       case 'music': Sound.setMusic(v === 'on'); break;
       case 'lang': S.lang = v; store.set('ow_lang', v); applyLang(); break;
@@ -3975,9 +4150,24 @@
     help.textContent = t('ogaSaved'); help.classList.remove('err');
   });
 
+  $('sponsor-link').addEventListener('click', (e) => {
+    const ad = ADS.menuAd;
+    if (!ad) return;
+    T('ad_click', { id: ad.id, where: 'menu' });
+    if (!ad.url) e.preventDefault();
+  });
+  $('over-sponsor').addEventListener('click', (e) => {
+    const ad = ADS.overAd;
+    if (!ad) return;
+    T('ad_click', { id: ad.id, where: 'appraisal' });
+    if (!ad.url) e.preventDefault();
+  });
+
   /* ==================== Boot ==================== */
   G.challenge = readChallenge();
+  if (G.challenge) T('challenge_open', { score: G.challenge.score, daily: G.challenge.daily });
   probeLeagues();
+  loadAds();
   if (Voice) { Voice.init(); Voice.lang = S.lang; Voice.enabled = S.voices; }
   buildGraphics();
   syncMuteUi();
@@ -4001,7 +4191,7 @@
     window.__OW = {
       G, S, stats, unlocked, CONFIG, DIFFICULTY, step, render, spawnBoss, spawnItem, spawnObstacle, startBlackout,
       startGame, pauseGame, resumeGame, toMenu, spawnOga, spawnDriver, spawnHR, spawnAunty, startEvent, useHeld, arrive,
-      renderShop, buyItem, LG, Voice, careerDay, goalTarget, isRude, weekKeyLocal, makePromoImage, openPromo, shareText, challengeUrl, makeShareImage, openBossKey, closeBossKey,
+      renderShop, buyItem, LG, ADS, setAds, pickAd, T, Voice, careerDay, goalTarget, isRude, weekKeyLocal, makePromoImage, openPromo, shareText, challengeUrl, makeShareImage, openBossKey, closeBossKey,
       SPRITES, officeClock, setQuality, get quality() { return quality; }, Sound, Music,
     };
   }

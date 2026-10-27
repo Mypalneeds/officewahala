@@ -4,9 +4,9 @@
 
 Office Wahala is a free browser arcade game about surviving a chaotic Nigerian workday. You walk an endless office corridor and grab salary, lunch money and data bundles. You dodge "quick" meetings, urgent tasks, runaway printers, network outages and Oga himself, who chases you down the corridor.
 
-- Free, no sign-up, no ads, no tracking
+- Free, no sign-up, no pop-up ads, no cookies. Roadside billboards you control from your own dashboard, and anonymous gameplay stats players can switch off
 - Plays on phones, tablets and desktops, and installs as an app that works offline
-- Plain HTML, CSS and JavaScript. No build step, no dependencies
+- Plain HTML, CSS and JavaScript. The game itself has no dependencies; the optional Netlify Functions use one (`@netlify/blobs`)
 - Original Afrobeats/Amapiano-style soundtrack generated in code (no audio files, no licences)
 - English and Pidgin
 - Personal best saved on the device. Optional global leaderboard with Supabase
@@ -14,6 +14,17 @@ Office Wahala is a free browser arcade game about surviving a chaotic Nigerian w
 Built by **Mmadubuko Micheal**, CEO, [Analaize Limited](https://www.analaize.com.ng). Contact the developer: 07066459689.
 
 Live: https://officewahala.netlify.app
+
+## What's in version 4
+
+| Feature | What it does |
+|---|---|
+| SEO pages | Five real guide pages Google can index: **How to play**, **FAQ** (18 questions), **Nigerian office slang** (32 terms), **About** and **Privacy**, plus a friendly 404 ("This page don japa"). Each has its own title, description, canonical link, breadcrumbs and Open Graph tags. |
+| Structured data (rich results) | JSON-LD on every page: VideoGame, WebApplication, WebSite, Organization, Person, FAQPage, HowTo, DefinedTermSet (the slang glossary), AboutPage and BreadcrumbList. |
+| AEO (answer engines) | Every guide page opens with a short direct answer, questions are written the way people ask them, and `llms.txt` gives ChatGPT, Perplexity, Gemini and Claude a plain summary of the game and its pages. |
+| Crawl files | `sitemap.xml` (with real gameplay screenshots as image entries), `robots.txt` (keeps `/dashboard/` and `/api/` out of search), a `<noscript>` description on the game page, and real screenshots in `screenshots/`. |
+| Analytics dashboard | `/dashboard/`, behind a password you choose: visitors (new and returning), sessions, page views, games, total and average playtime, scores, live visitors, a daily chart, busiest hours (Lagos time), a player funnel, traffic sources and UTM campaigns, countries, devices, languages, and a breakdown of almost every in-game event (what ended each shift, levels reached, bosses, shift events, power-ups, commute, blackouts, career days, badges, shop, outfits, shares, settings, installs) plus any JavaScript errors. Export to CSV. |
+| Roadside billboards | Billboards line the Lagos road during the commute, ad screens hang on the office walls, a sponsored card sits on the menu and a "Shift sponsored by…" line on the appraisal. You manage every ad (brand, message, colours, image, link, dates, where it shows, how often) from the dashboard's **Ads** tab, with a live preview and view and click counts per ad. Changes go live in about two minutes, with no redeploy. |
 
 ## What's in version 3
 
@@ -65,9 +76,19 @@ office-wahala/
 ├── tools/
 │   ├── generate-voices.bat   Windows: double-click to make the Nigerian AI voice clips
 │   └── generate_voices.py    The generator itself (Mac/Linux: python3 tools/generate_voices.py)
+├── analytics.js         Anonymous, cookie-free event tracking (sends only when /api/track is live)
+├── dashboard/           Password-protected analytics dashboard and billboard manager (not indexed)
+├── how-to-play/ faq/ nigerian-office-slang/ about/ privacy/   Guide pages for Google (pages.css)
+├── 404.html             "This page don japa" not-found page
+├── robots.txt sitemap.xml llms.txt   Crawl files for search engines and AI answer engines
+├── screenshots/         Real gameplay screenshots used by the pages and the sitemap
 ├── netlify/functions/
-│   └── league.mjs       Office Leagues API (Netlify Function + Netlify Blobs storage)
-├── api/league/health    Placeholder answer used when the leagues function isn't deployed
+│   ├── league.mjs       Office Leagues API (Netlify Function + Netlify Blobs storage)
+│   ├── track.mjs        Receives analytics batches (POST /api/track)
+│   ├── stats.mjs        Dashboard numbers (GET /api/stats, needs DASHBOARD_KEY)
+│   └── ads.mjs          Billboard ads (GET public, POST from the dashboard)
+├── netlify/lib/         Shared code: aggregation, ad validation, default ads, dashboard key check
+├── api/                 Placeholder answers used when the functions aren't deployed
 ├── package.json         One dependency for the leagues function (@netlify/blobs)
 ├── sw.js                Service worker: offline play after the first visit
 ├── manifest.webmanifest App name, colours and icons for "install to home screen"
@@ -207,6 +228,69 @@ Leagues need a tiny server. It lives in `netlify/functions/league.mjs` and store
 - **Data:** Netlify dashboard → your site → **Blobs** → store `office-wahala`.
 - If you host somewhere other than Netlify, change `CONFIG.LEAGUE_API` in `game.js` to any server that implements the same four routes (listed at the top of `league.mjs`).
 
+## Get it on Google (SEO) and AI answers (AEO)
+
+Everything on the site side is already done. These steps tell Google and Bing it exists. Do them once, after the v4 deploy is live.
+
+**Google Search Console**
+1. Go to search.google.com/search-console and click **Add property**. Choose **URL prefix** and enter `https://officewahala.netlify.app/`.
+2. Verify ownership. Easiest on a netlify.app address: pick **HTML tag**, copy the `content="…"` value and send it to whoever edits the site (or add `<meta name="google-site-verification" content="…">` to the `<head>` of `index.html` yourself), redeploy, then click **Verify**.
+3. Open **Sitemaps**, enter `sitemap.xml` and click **Submit**.
+4. Open **URL inspection**, paste the home page address and click **Request indexing**. Repeat for `/faq/`, `/how-to-play/` and `/nigerian-office-slang/`.
+5. Indexing usually takes a few days to two weeks. **Performance** then shows which searches bring people in.
+
+**Bing (also feeds ChatGPT search, DuckDuckGo and Copilot)**
+1. Go to bing.com/webmasters and sign in. Choose **Import from Google Search Console** (fastest) or add the site and verify the same way.
+2. Under **Sitemaps** submit `https://officewahala.netlify.app/sitemap.xml`.
+
+**Check the structured data:** paste a page into search.google.com/test/rich-results (FAQ, How-to and VideoGame should show as valid) and validator.schema.org.
+
+**What helps from here:** links from other sites (a tweet, a blog post, a Nairaland thread, your Analaize website, a LinkedIn post) matter more than anything else. Ask friends to search "Office Wahala game" and click the result; shared challenge links bring people back.
+
+**Using your own domain?** The address `https://officewahala.netlify.app` is written in `index.html` (canonical, Open Graph, JSON-LD, `CONFIG.SHARE_URL` in `game.js`), every guide page, `sitemap.xml`, `robots.txt` and `llms.txt`. Search-and-replace it in all files, redeploy, then add the new domain in Search Console.
+
+## Analytics dashboard
+
+The game sends small anonymous batches of events (page views, shifts started and finished, levels, scores, bosses, power-ups, shares, settings, ad views and clicks, errors) to `/api/track`. They are stored in Netlify Blobs and rolled up per hour and per day.
+
+**Turn it on (one time)**
+1. Netlify → your site → **Site configuration → Environment variables → Add a variable**. Key: `DASHBOARD_KEY`. Value: a long password only you know (at least 8 characters; 16+ is better). Scope: all, or at least Functions.
+2. **Deploys → Trigger deploy → Deploy site** so the functions see the new variable.
+3. Open `https://officewahala.netlify.app/dashboard/` and enter the password. It is kept for that browser tab only.
+
+Tracking starts as soon as the site is deployed from GitHub; the password is only needed to read the numbers. Data before the deploy is not available.
+
+**Privacy (also written on the /privacy/ page)**
+- No cookies, no names, no emails and no IP addresses are stored. A random visitor ID in `localStorage` (`ow_vid`) tells new from returning visitors; the country comes from Netlify's location header and only the two-letter code is kept.
+- Players can switch it off in **Settings → Anonymous stats** (`ow_track` = `0`). Browsers sending Do Not Track or Global Privacy Control start with it off.
+- Bots and crawlers are ignored.
+- Drag-and-drop, Vercel and GitHub Pages deploys send nothing: the script checks `/api/track/health` first.
+
+**Notes**
+- Times and days are Lagos time (WAT).
+- "Live now" counts visitors active in the last 5 minutes. Playtime is wall-clock time in shifts; "Time on site" counts time with the tab visible.
+- Netlify's free plan covers 125,000 function calls a month. Each visitor normally causes 2–5 calls, so roughly 25,000–50,000 visits a month fit. If the site goes viral, check **Usage** in Netlify.
+- Raw data: Netlify → your site → **Blobs** → store `office-wahala-stats`.
+
+## Sell billboard space
+
+There are four ad spots, all managed from **Dashboard → Ads**:
+
+| Spot | Where | Clickable |
+|---|---|---|
+| Road billboards | Both sides of the road during the morning commute | No (seen by everyone who plays the commute) |
+| Office screens | TV screens on the corridor walls | No |
+| Menu card | "Sponsored" card on the staff ID menu | Yes |
+| Appraisal line | "Shift sponsored by …" on the game-over screen | Yes |
+
+**Add an advertiser:** Dashboard → **Ads** → **+ Add ad**. Fill in the brand, a short headline, a small line (website or phone), a link starting with `https://`, colours, and optionally an image link (a wide picture, about 640×360, hosted anywhere that gives an `https://` address). Choose where it shows, a weight from 1 to 10 (higher = shown more often) and optional start and end dates for the campaign. Click **Save ads**. Players see it within about two minutes; no redeploy.
+
+**Reporting to advertisers:** the performance table shows views per ad on the road, office and menu, plus clicks and click-through rate. Pick a date range at the top and use **Export CSV**.
+
+The game ships with three house ads: "YOUR BRAND HERE" (links to WhatsApp so advertisers can reach you), Analaize Limited and Office Leagues. Edit or remove them like any other ad. Without the functions (drag-and-drop deploys) the game shows these defaults from the file `api/ads`; edit that JSON file to change them by hand.
+
+Ads never pop up, never cover the play area and never make sound. Keep it that way; that is why people will keep playing.
+
 ## Voices
 
 Every line is in `voice.js` (between the `LINES_START` / `LINES_END` markers), in English and Pidgin, with a speaker for each (narrator, Oga, HR, Aunty, driver, agbero, colleague). Players turn voices on in Settings or with the speaker button. The game speaks in one of two ways, chosen automatically:
@@ -275,8 +359,10 @@ The best score is saved in the browser's `localStorage` under these keys:
 | `ow_voices`, `ow_commute`, `ow_commuted` | Voices on/off, commute on/off, first commute done |
 | `ow_oga` | Your Oga's name (only ever on this device) |
 | `ow_pid`, `ow_leagues`, `ow_weekbest` | Random league player ID, joined leagues, this week's best run |
+| `ow_vid`, `ow_last`, `ow_track` | Anonymous visitor ID, last activity time, stats on/off (see Analytics dashboard) |
+| `ow_ads` | Last billboard list, so ads still show offline |
 
-This data never leaves the device, except your name and weekly best score when you join an Office League. Clearing site data resets it. In private browsing, or if storage is blocked, the game still works and just doesn't remember between visits.
+This data never leaves the device, except your name and weekly best score when you join an Office League, and the anonymous visitor ID sent with gameplay stats (unless switched off). Clearing site data resets it. In private browsing, or if storage is blocked, the game still works and just doesn't remember between visits.
 
 ---
 
@@ -368,7 +454,7 @@ If you change `LEVEL_SECONDS` or the scoring, update the plausibility checks in 
 
 ## Updating the live game
 
-When you change any file, also bump `VERSION` at the top of `sw.js` (for example `ow-v3.0.1`). Players' phones then fetch the new files instead of the copy saved for offline play.
+When you change any file, also bump `VERSION` at the top of `sw.js` (for example `ow-v4.0.1`). Players' phones then fetch the new files instead of the copy saved for offline play.
 
 ## Browser support
 

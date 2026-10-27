@@ -1,0 +1,27 @@
+# Office Wahala
+
+> Office Wahala is a free browser arcade game about surviving a Nigerian workday. Players dodge their boss (Oga), "quick" meetings, deadlines and NEPA power cuts while collecting salary. It was built in Lagos by Mmadubuko Micheal, CEO of Analaize Limited, and released in October 2026. It needs no download or sign-up, runs on phones and computers, works offline after the first visit, and supports English and Nigerian Pidgin.
+
+Key facts:
+- Price: free. No ads in gameplay apart from optional sponsor billboards; no real-money purchases; the in-game naira wallet is pretend money.
+- Play at: https://officewahala.netlify.app/
+- Controls: arrow keys or WASD on a computer; drag one finger on a phone. E uses a saved power-up; B is the boss key (turns the game into a fake spreadsheet); Space pauses.
+- Each shift starts with a 15-second Lagos commute (okadas, kekes, danfos, potholes, agberos). Arriving late costs a life.
+- Office time starts at 8:00am; every 20 seconds is one office hour and one level.
+- Bosses: Oga (level 2, costs two lives), MD's driver (level 3), HR lady with homing query letters (level 4), Aunty from Accounts who freezes salary pickups (level 5).
+- Shift events: Salary week, Audit, Oga is travelling, AGM day, Bank alert.
+- Modes: normal shift, daily shift (same pattern for everyone each day), career mode (Monday to Friday goals ending in a promotion letter), challenge links and private weekly office leagues.
+- Privacy: no cookies; progress stays on the player's device; optional anonymous gameplay statistics.
+- Developer contact: +234 706 645 9689 (phone/WhatsApp), https://www.analaize.com.ng
+
+## Guides
+
+- [How to play](https://officewahala.netlify.app/how-to-play/): controls, scoring, commute, pickups, power-ups, obstacles, bosses, events, modes, shop and tips
+- [FAQ](https://officewahala.netlify.app/faq/): free, offline, phones, who made it, how to beat Oga, leagues, Pidgin, privacy
+- [Nigerian office slang glossary](https://officewahala.netlify.app/nigerian-office-slang/): Oga, wahala, do the needful, revert, NEPA took light, query, danfo, okada, agbero and more
+- [About](https://officewahala.netlify.app/about/): what the game is, why it exists, the developer and version history
+- [Privacy](https://officewahala.netlify.app/privacy/): what is stored and why
+
+## Optional
+
+- [Sitemap](https://officewahala.netlify.app/sitemap.xml)

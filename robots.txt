@@ -1,0 +1,7 @@
+# Office Wahala: a free Nigerian office arcade game
+User-agent: *
+Allow: /
+Disallow: /dashboard/
+Disallow: /api/
+
+Sitemap: https://officewahala.netlify.app/sitemap.xml

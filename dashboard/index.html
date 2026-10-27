@@ -1,0 +1,482 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex,nofollow">
+  <title>Office Wahala Analytics</title>
+  <link rel="icon" href="/icons/icon-192.png" type="image/png">
+  <style>
+    :root {
+      --bg: #0b1222; --panel: #131c33; --panel-2: #1a2542; --line: #24304f; --text: #e8ecf5; --muted: #93a0bd;
+      --green: #19c37d; --green-d: #008751; --gold: #f5b301; --red: #ef5b61; --blue: #5ab0ff; --purple: #b58cff;
+      --font: system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+      --display: Impact, "Arial Black", system-ui, sans-serif;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--bg); color: var(--text); font: 15px/1.5 var(--font); }
+    a { color: var(--blue); }
+    button, input, select, textarea { font: inherit; }
+    :focus-visible { outline: 3px solid var(--gold); outline-offset: 2px; }
+    .top { position: sticky; top: 0; z-index: 5; background: rgba(11, 18, 34, 0.94); backdrop-filter: blur(6px); border-bottom: 1px solid var(--line); }
+    .top .in { max-width: 1240px; margin: 0 auto; padding: 10px 16px; display: flex; gap: 10px 16px; align-items: center; flex-wrap: wrap; }
+    .brand { font-family: var(--display); font-weight: 900; font-synthesis: none; font-size: 1.15rem; text-transform: uppercase; letter-spacing: 0.02em; }
+    .brand span { color: var(--green); }
+    .live { display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px; border-radius: 99px; background: var(--panel-2); color: var(--muted); font-weight: 700; font-size: 0.85rem; }
+    .live i { width: 8px; height: 8px; border-radius: 50%; background: var(--green); box-shadow: 0 0 0 3px rgba(25, 195, 125, 0.25); }
+    .tabs, .range { display: inline-flex; background: var(--panel); border-radius: 99px; padding: 3px; }
+    .tabs button, .range button { border: 0; background: none; color: var(--muted); padding: 5px 10px; border-radius: 99px; cursor: pointer; font-weight: 700; }
+    .tabs button[aria-selected="true"], .range button[aria-pressed="true"] { background: var(--green-d); color: #fff; }
+    .spacer { flex: 1; }
+    .btn { border: 0; border-radius: 99px; padding: 6px 11px; font-weight: 800; cursor: pointer; background: var(--panel-2); color: var(--text); }
+    .btn:hover { background: #22305a; }
+    .btn.primary { background: var(--green-d); color: #fff; }
+    .btn.primary:hover { background: #00a060; }
+    .btn.gold { background: var(--gold); color: #17203a; }
+    main { max-width: 1240px; margin: 0 auto; padding: 18px 16px 60px; }
+    .meta { color: var(--muted); font-size: 0.85rem; margin: 0 0 14px; }
+    .kpis { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 10px; margin-bottom: 14px; }
+    .kpi { background: var(--panel); border-radius: 14px; padding: 12px 14px; }
+    .kpi .k { color: var(--muted); font-size: 0.8rem; font-weight: 700; }
+    .kpi .v { font-size: 1.7rem; font-weight: 800; font-variant-numeric: tabular-nums; line-height: 1.2; }
+    .kpi .s { color: var(--muted); font-size: 0.78rem; }
+    .grid { display: grid; grid-template-columns: repeat(12, 1fr); gap: 12px; }
+    .card { background: var(--panel); border-radius: 14px; padding: 14px 16px; grid-column: span 6; min-width: 0; }
+    .card.w12 { grid-column: span 12; } .card.w8 { grid-column: span 8; } .card.w4 { grid-column: span 4; }
+    .card h2 { font-size: 0.95rem; margin: 0 0 10px; display: flex; justify-content: space-between; gap: 8px; }
+    .card h2 small { color: var(--muted); font-weight: 600; }
+    .section-title { grid-column: span 12; margin: 14px 0 0; font-size: 1.05rem; color: var(--gold); }
+    .bars { display: grid; gap: 5px; }
+    .bar { display: grid; grid-template-columns: minmax(80px, 38%) 1fr auto; gap: 8px; align-items: center; font-size: 0.86rem; }
+    .bar .l { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #cfd6e6; }
+    .bar .t { height: 10px; border-radius: 99px; background: var(--panel-2); overflow: hidden; }
+    .bar .t i { display: block; height: 100%; border-radius: 99px; background: var(--green); }
+    .bar .n { font-variant-numeric: tabular-nums; font-weight: 700; min-width: 3ch; text-align: right; }
+    .empty { color: var(--muted); font-size: 0.86rem; margin: 0; }
+    svg { display: block; width: 100%; height: auto; }
+    .legend { display: flex; gap: 14px; flex-wrap: wrap; font-size: 0.8rem; color: var(--muted); margin-top: 6px; }
+    .legend b { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 5px; vertical-align: -1px; }
+    table { width: 100%; border-collapse: collapse; font-size: 0.86rem; }
+    th, td { text-align: left; padding: 7px 8px; border-bottom: 1px solid var(--line); }
+    th { color: var(--muted); font-weight: 700; }
+    td.n, th.n { text-align: right; font-variant-numeric: tabular-nums; }
+    .funnel { display: grid; gap: 6px; }
+    .fstep { display: grid; grid-template-columns: 150px 1fr 90px; gap: 10px; align-items: center; font-size: 0.88rem; }
+    .fstep .t { height: 22px; border-radius: 6px; background: var(--panel-2); overflow: hidden; }
+    .fstep .t i { display: block; height: 100%; background: linear-gradient(90deg, var(--green-d), var(--green)); }
+    .fstep .n { text-align: right; font-weight: 700; font-variant-numeric: tabular-nums; }
+    .login { max-width: 420px; margin: 12vh auto; background: var(--panel); border-radius: 18px; padding: 26px; }
+    .login h1 { font-family: var(--display); font-weight: 900; font-synthesis: none; text-transform: uppercase; margin: 0 0 6px; }
+    .login input { width: 100%; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--line); background: var(--bg); color: var(--text); margin: 10px 0; }
+    .err { color: var(--red); font-weight: 700; }
+    .ok { color: var(--green); font-weight: 700; }
+    .hidden { display: none !important; }
+    /* ads */
+    .ad-list { display: grid; gap: 12px; }
+    .ad-edit { background: var(--panel); border-radius: 14px; padding: 14px; display: grid; grid-template-columns: 300px 1fr; gap: 16px; }
+    .ad-edit .fields { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 8px 12px; }
+    .ad-edit label { display: flex; flex-direction: column; gap: 3px; font-size: 0.78rem; color: var(--muted); font-weight: 700; }
+    .ad-edit input[type=text], .ad-edit input[type=url], .ad-edit input[type=date], .ad-edit input[type=number] { padding: 7px 9px; border-radius: 8px; border: 1px solid var(--line); background: var(--bg); color: var(--text); }
+    .ad-edit input[type=color] { width: 100%; height: 34px; border: 1px solid var(--line); border-radius: 8px; background: var(--bg); padding: 2px; }
+    .ad-edit .checks { display: flex; gap: 12px; align-items: center; color: var(--text); font-weight: 600; }
+    .ad-edit .checks label { flex-direction: row; align-items: center; gap: 5px; color: var(--text); }
+    .ad-preview canvas { width: 100%; height: auto; border-radius: 10px; background: #3b4049; }
+    .ad-stats { font-size: 0.82rem; color: var(--muted); margin-top: 6px; }
+    .ad-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 8px; }
+    @media (max-width: 900px) {
+      .card, .card.w8, .card.w4 { grid-column: span 12; }
+      .ad-edit { grid-template-columns: 1fr; }
+      .fstep { grid-template-columns: 110px 1fr 70px; }
+    }
+  </style>
+</head>
+<body>
+  <section id="login" class="login hidden" aria-labelledby="login-title">
+    <h1 id="login-title">Office Wahala Analytics</h1>
+    <p class="meta">Enter the dashboard key you set as <code>DASHBOARD_KEY</code> in Netlify.</p>
+    <form id="login-form">
+      <label for="key">Dashboard key</label>
+      <input id="key" type="password" autocomplete="current-password" required>
+      <button class="btn primary" type="submit">Open dashboard</button>
+      <p id="login-msg" class="err" role="status"></p>
+    </form>
+  </section>
+
+  <div id="app" class="hidden">
+    <header class="top">
+      <div class="in">
+        <div class="brand">Office <span>Wahala</span> analytics</div>
+        <span class="live" title="Visitors active in the last 5 minutes"><i></i><span id="live">0</span>&nbsp;live now</span>
+        <div class="tabs" role="tablist">
+          <button role="tab" aria-selected="true" data-tab="overview">Overview</button>
+          <button role="tab" aria-selected="false" data-tab="ads">Ads</button>
+        </div>
+        <span class="spacer"></span>
+        <div class="range" aria-label="Date range">
+          <button type="button" data-days="1">Today</button>
+          <button type="button" data-days="7" aria-pressed="true">7 days</button>
+          <button type="button" data-days="30">30 days</button>
+          <button type="button" data-days="90">90 days</button>
+        </div>
+        <button id="refresh" class="btn" type="button">Refresh</button>
+        <button id="export" class="btn" type="button">Export CSV</button>
+        <button id="logout" class="btn" type="button">Log out</button>
+      </div>
+    </header>
+
+    <main>
+      <p id="meta" class="meta">Loading…</p>
+
+      <!-- ================= OVERVIEW ================= -->
+      <section id="tab-overview">
+        <div id="kpis" class="kpis"></div>
+        <div class="grid">
+          <div class="card w8"><h2>Visitors and games per day <small id="series-note"></small></h2><div id="chart-daily"></div>
+            <div class="legend"><span><b style="background:var(--green)"></b>Visitors</span><span><b style="background:var(--gold)"></b>Games started</span><span><b style="background:var(--blue)"></b>Page views</span></div></div>
+          <div class="card w4"><h2>Player journey <small>sessions</small></h2><div id="funnel" class="funnel"></div></div>
+          <div class="card w12"><h2>Busiest hours <small>Lagos time, whole range</small></h2><div id="chart-hours"></div>
+            <div class="legend"><span><b style="background:var(--green)"></b>Visitors</span><span><b style="background:var(--gold)"></b>Games</span></div></div>
+
+          <h3 class="section-title">Audience</h3>
+          <div class="card w4"><h2>Where visitors come from</h2><div id="d-ref"></div></div>
+          <div class="card w4"><h2>Campaigns &amp; links <small>utm / challenge / invite</small></h2><div id="d-src"></div></div>
+          <div class="card w4"><h2>Countries</h2><div id="d-country"></div></div>
+          <div class="card w4"><h2>Devices</h2><div id="d-dev"></div></div>
+          <div class="card w4"><h2>Browser vs installed app</h2><div id="d-app"></div></div>
+          <div class="card w4"><h2>Language <small>device / game</small></h2><div id="d-lang"></div></div>
+          <div class="card w6"><h2>Pages viewed</h2><div id="d-path"></div></div>
+          <div class="card w6"><h2>Screens opened in the game</h2><div id="d-screen"></div></div>
+
+          <h3 class="section-title">Gameplay</h3>
+          <div class="card w4"><h2>Game modes</h2><div id="d-mode"></div></div>
+          <div class="card w4"><h2>What ended the shift</h2><div id="d-cause"></div></div>
+          <div class="card w4"><h2>Level reached</h2><div id="d-level"></div></div>
+          <div class="card w4"><h2>Scores</h2><div id="d-scoreb"></div></div>
+          <div class="card w4"><h2>Morning commute</h2><div id="d-commute"></div></div>
+          <div class="card w4"><h2>NEPA blackouts</h2><div id="d-blackout"></div></div>
+          <div class="card w4"><h2>Bosses spawned</h2><div id="d-boss"></div></div>
+          <div class="card w4"><h2>Shift events</h2><div id="d-event"></div></div>
+          <div class="card w4"><h2>Power-ups <small>picked / used</small></h2><div id="d-power"></div></div>
+          <div class="card w6"><h2>Career days</h2><div id="d-career"></div></div>
+          <div class="card w6"><h2>Badges unlocked</h2><div id="d-badge"></div></div>
+
+          <h3 class="section-title">Economy &amp; social</h3>
+          <div class="card w4"><h2>Shop upgrades bought</h2><div id="d-shop"></div></div>
+          <div class="card w4"><h2>Outfits bought</h2><div id="d-outfit"></div></div>
+          <div class="card w4"><h2>Shares <small>by type</small></h2><div id="d-share"></div></div>
+          <div class="card w6"><h2>Settings chosen</h2><div id="d-setting"></div></div>
+          <div class="card w6"><h2>Install to home screen</h2><div id="d-install"></div></div>
+
+          <h3 class="section-title">All events &amp; errors</h3>
+          <div class="card w6"><h2>Every event <small>count</small></h2><div id="d-events"></div></div>
+          <div class="card w6"><h2>JavaScript errors <small>should be empty</small></h2><div id="d-errors"></div></div>
+        </div>
+      </section>
+
+      <!-- ================= ADS ================= -->
+      <section id="tab-ads" class="hidden">
+        <div class="grid">
+          <div class="card w12"><h2>Ad performance <small id="ads-range"></small></h2><div id="ads-perf"></div></div>
+          <div class="card w12">
+            <h2>Manage billboards <small>Changes go live within ~2 minutes, no redeploy needed</small></h2>
+            <p class="meta">Each ad can show on road billboards (commute), office wall screens and the sponsored card on the menu and appraisal. Leave the image empty to use the text design, or paste an <strong>https</strong> image link (wide, about 16:9, e.g. 640×360). Dates are optional (YYYY-MM-DD).</p>
+            <div id="ad-list" class="ad-list"></div>
+            <div class="ad-actions">
+              <button id="ad-add" class="btn" type="button">+ Add ad</button>
+              <button id="ad-save" class="btn primary" type="button">Save ads</button>
+            </div>
+            <p id="ad-msg" role="status"></p>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+<script>
+(() => {
+  'use strict';
+  const $ = (id) => document.getElementById(id);
+  const fmt = (n) => Math.round(n || 0).toLocaleString('en-NG');
+  const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
+  const dur = (s) => { s = Math.round(s || 0); if (s < 60) return s + 's'; const m = Math.floor(s / 60); if (m < 60) return m + 'm ' + (s % 60) + 's'; return Math.floor(m / 60) + 'h ' + (m % 60) + 'm'; };
+  const pct = (a, b) => (b ? Math.round((a / b) * 100) + '%' : '–');
+  let KEY = sessionStorage.getItem('ow_dash_key') || '';
+  let DAYS = 7, DATA = null, ADS = null;
+
+  async function api(path, opts) {
+    const r = await fetch(path, Object.assign({ cache: 'no-store' }, opts || {}, { headers: Object.assign({ 'x-dashboard-key': KEY, 'content-type': 'application/json' }, (opts || {}).headers || {}) }));
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok) { const e = new Error(j.error || ('Error ' + r.status)); e.status = r.status; throw e; }
+    return j;
+  }
+
+  /* ---------- charts ---------- */
+  function lineChart(el, labels, series, h = 220) {
+    const W = 760, H = h, P = { l: 40, r: 26, t: 10, b: 26 };
+    const max = Math.max(1, ...series.flatMap((s) => s.values));
+    const nice = Math.pow(10, Math.floor(Math.log10(max))); const top = Math.ceil(max / nice) * nice;
+    const x = (i) => P.l + (labels.length <= 1 ? (W - P.l - P.r) / 2 : (i * (W - P.l - P.r)) / (labels.length - 1));
+    const y = (v) => H - P.b - (v / top) * (H - P.t - P.b);
+    let g = '';
+    for (let k = 0; k <= 4; k++) { const v = (top * k) / 4; g += `<line x1="${P.l}" x2="${W - P.r}" y1="${y(v)}" y2="${y(v)}" stroke="#24304f"/><text x="${P.l - 6}" y="${y(v) + 4}" fill="#93a0bd" font-size="11" text-anchor="end">${fmt(v)}</text>`; }
+    const step = Math.max(1, Math.ceil(labels.length / 10));
+    labels.forEach((l, i) => { if (i % step === 0 || i === labels.length - 1) g += `<text x="${x(i)}" y="${H - 8}" fill="#93a0bd" font-size="11" text-anchor="middle">${esc(l)}</text>`; });
+    for (const s of series) {
+      const pts = s.values.map((v, i) => `${x(i)},${y(v)}`).join(' ');
+      g += `<polyline points="${pts}" fill="none" stroke="${s.color}" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>`;
+      s.values.forEach((v, i) => { g += `<circle cx="${x(i)}" cy="${y(v)}" r="3" fill="${s.color}"><title>${esc(labels[i])}: ${fmt(v)} ${esc(s.name)}</title></circle>`; });
+    }
+    el.innerHTML = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Chart">${g}</svg>`;
+  }
+  function barChart(el, labels, series, h = 180) {
+    const W = 760, H = h, P = { l: 36, r: 6, t: 8, b: 24 };
+    const max = Math.max(1, ...series.flatMap((s) => s.values));
+    const gw = (W - P.l - P.r) / labels.length, bw = Math.max(2, (gw - 4) / series.length);
+    let g = '';
+    for (let k = 0; k <= 3; k++) { const v = (max * k) / 3; const yy = H - P.b - (v / max) * (H - P.t - P.b); g += `<line x1="${P.l}" x2="${W - P.r}" y1="${yy}" y2="${yy}" stroke="#24304f"/><text x="${P.l - 5}" y="${yy + 4}" fill="#93a0bd" font-size="10" text-anchor="end">${fmt(v)}</text>`; }
+    labels.forEach((l, i) => {
+      series.forEach((s, j) => { const v = s.values[i]; const bh = (v / max) * (H - P.t - P.b); g += `<rect x="${P.l + i * gw + 2 + j * bw}" y="${H - P.b - bh}" width="${bw - 1}" height="${bh}" rx="2" fill="${s.color}"><title>${esc(l)}: ${fmt(v)} ${esc(s.name)}</title></rect>`; });
+      if (i % 2 === 0) g += `<text x="${P.l + i * gw + gw / 2}" y="${H - 7}" fill="#93a0bd" font-size="10" text-anchor="middle">${esc(l)}</text>`;
+    });
+    el.innerHTML = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Chart">${g}</svg>`;
+  }
+  function bars(el, rows, opts = {}) {
+    if (!rows || !rows.length) { el.innerHTML = '<p class="empty">No data yet.</p>'; return; }
+    const max = Math.max(...rows.map((r) => r[1]));
+    const total = rows.reduce((n, r) => n + r[1], 0);
+    el.innerHTML = '<div class="bars">' + rows.slice(0, opts.limit || 12).map(([k, v]) =>
+      `<div class="bar"><span class="l" title="${esc(k)}">${esc(opts.label ? opts.label(k) : k)}</span><span class="t"><i style="width:${(v / max) * 100}%;background:${opts.color || 'var(--green)'}"></i></span><span class="n">${fmt(v)}${opts.share ? ' <small style="color:var(--muted)">' + pct(v, total) + '</small>' : ''}</span></div>`).join('') + '</div>';
+  }
+
+  const NAMES = {
+    boss: 'Oga', oga: 'Oga', driver: "MD's driver", hr: 'HR lady', aunty: 'Aunty Accounts', file: 'Falling files', task: 'URGENT task', meeting: 'Quick meeting',
+    deadline: 'Deadline', network: 'Network outage', printer: 'Printer', colleague: 'Colleague', query: 'HR query letter', goal: 'Career goal done', unknown: 'Unknown',
+    salary: 'Salary week', audit: 'Audit', travel: 'Oga travelling', agm: 'AGM day', alert: 'Bank alert', autoreply: 'Auto-reply', fakecall: 'Fake call', puffpuff: 'Puff-puff',
+    normal: 'Normal shift', daily: 'Daily shift', career: 'Career', chair: 'Ergonomic chair', stab: 'Stabilizer', canteen: 'Canteen card', life: 'Health insurance', pocket: 'Pocket auto-reply',
+    direct: 'Direct / unknown', prompt: 'Prompt shown', click: 'Install tapped', done: 'Installed',
+  };
+  const nm = (k) => NAMES[k] || k;
+
+  function render() {
+    const d = DATA, T = d.total;
+    $('live').textContent = d.live;
+    $('meta').textContent = `${d.from} → ${d.to} (Lagos time) · updated ${new Date(d.generated).toLocaleTimeString()}`;
+    const avgPlay = T.visitors ? T.playSeconds / T.visitors : 0;
+    const k = [
+      ['Visitors', fmt(T.visitors), `${fmt(T.newVisitors)} new · ${fmt(T.returning)} returning`],
+      ['Sessions', fmt(T.sessions), `${fmt(T.pageViews)} page views`],
+      ['Games started', fmt(T.gamesStarted), `${fmt(T.gamesFinished)} finished`],
+      ['Total playtime', dur(T.playSeconds), 'all shifts, wall-clock'],
+      ['Playtime per visitor', dur(avgPlay), `avg shift ${dur(T.gamesFinished ? T.playSeconds / T.gamesFinished : 0)}`],
+      ['Time on site', dur(T.visibleSeconds), `avg ${dur(T.visitors ? T.visibleSeconds / T.visitors : 0)} per visitor`],
+      ['Average score', fmt(T.avgScore), `best ${fmt(T.maxScore)}`],
+      ['Games per visitor', T.visitors ? (T.gamesStarted / T.visitors).toFixed(1) : '0', 'replay rate'],
+      ['Shares', fmt((T.dims.share || []).reduce((n, r) => n + r[1], 0)), 'challenge, image, promo, league'],
+      ['In-game naira spent', '₦' + fmt(T.nairaSpent), 'shop + outfits'],
+    ];
+    $('kpis').innerHTML = k.map(([a, b, c]) => `<div class="kpi"><div class="k">${a}</div><div class="v">${b}</div><div class="s">${c}</div></div>`).join('');
+    const lab = d.series.map((s) => s.day.slice(5));
+    lineChart($('chart-daily'), lab, [
+      { name: 'visitors', color: 'var(--green)', values: d.series.map((s) => s.visitors) },
+      { name: 'games', color: 'var(--gold)', values: d.series.map((s) => s.games) },
+      { name: 'page views', color: 'var(--blue)', values: d.series.map((s) => s.pageViews) },
+    ]);
+    $('series-note').textContent = d.days === 1 ? 'today' : `last ${d.days} days`;
+    barChart($('chart-hours'), T.hours.map((_, i) => String(i).padStart(2, '0')), [
+      { name: 'visitors', color: 'var(--green)', values: T.hours.map((h) => h.visitors) },
+      { name: 'games', color: 'var(--gold)', values: T.hours.map((h) => h.games) },
+    ]);
+    const F = T.funnel, steps = [['Opened the game', F.view], ['Started a shift', F.start], ['Got to the office', F.arrive], ['Reached 10am (level 3)', F.lvl3], ['Finished a shift', F.over], ['Shared', F.share]];
+    $('funnel').innerHTML = steps.map(([l, v]) => `<div class="fstep"><span>${l}</span><span class="t"><i style="width:${F.view ? (v / F.view) * 100 : 0}%"></i></span><span class="n">${fmt(v)} <small style="color:var(--muted)">${pct(v, F.view)}</small></span></div>`).join('');
+    const D = T.dims;
+    bars($('d-ref'), D.ref, { label: nm, share: true });
+    bars($('d-src'), D.src, { share: true });
+    bars($('d-country'), D.country, { share: true, label: (c) => (c === '??' ? 'Unknown' : c) });
+    bars($('d-dev'), D.dev, { share: true });
+    bars($('d-app'), D.app, { share: true });
+    bars($('d-lang'), (D.lang || []).concat((D.gl || []).map(([k2, v]) => ['game: ' + (k2 === 'pcm' ? 'Pidgin' : 'English'), v])), { share: false });
+    bars($('d-path'), D.path, { share: true });
+    bars($('d-screen'), D.screen);
+    bars($('d-mode'), D.mode, { label: nm, share: true, color: 'var(--gold)' });
+    bars($('d-cause'), D.cause, { label: nm, share: true, color: 'var(--red)' });
+    const order = ['1', '2', '3', '4-5', '6-9', '10-14', '15+'];
+    bars($('d-level'), (D.level || []).slice().sort((a, b) => order.indexOf(a[0]) - order.indexOf(b[0])), { label: (x) => 'Level ' + x, share: true, color: 'var(--blue)', limit: 8 });
+    const so = ['0-499', '500-1.5k', '1.5k-3k', '3k-6k', '6k-10k', '10k+'];
+    bars($('d-scoreb'), (D.scoreb || []).slice().sort((a, b) => so.indexOf(a[0]) - so.indexOf(b[0])), { share: true, color: 'var(--purple)' });
+    bars($('d-commute'), D.commute, { share: true });
+    bars($('d-blackout'), D.blackout, { share: true });
+    bars($('d-boss'), D.boss, { label: nm, color: 'var(--red)' });
+    bars($('d-event'), D.event, { label: nm, color: 'var(--purple)' });
+    bars($('d-power'), (D.pick || []).map(([k2, v]) => ['picked: ' + nm(k2), v]).concat((D.power || []).map(([k2, v]) => ['used: ' + nm(k2), v])), { limit: 8 });
+    bars($('d-career'), D.career);
+    bars($('d-badge'), D.badge, { limit: 20, color: 'var(--gold)' });
+    bars($('d-shop'), D.shop, { label: nm, color: 'var(--gold)' });
+    bars($('d-outfit'), D.outfit, { color: 'var(--gold)' });
+    bars($('d-share'), D.share, { share: true, color: 'var(--blue)' });
+    bars($('d-setting'), D.setting, { limit: 20 });
+    bars($('d-install'), D.install, { label: nm });
+    bars($('d-events'), T.events, { limit: 40, color: 'var(--blue)' });
+    if (T.errors && T.errors.length) bars($('d-errors'), T.errors, { color: 'var(--red)', limit: 30 });
+    else $('d-errors').innerHTML = '<p class="ok">No errors reported. 🎉</p>';
+    renderAdPerf();
+  }
+
+  function renderAdPerf() {
+    if (!DATA) return;
+    const V = {}, C = {};
+    for (const [k, v] of DATA.total.dims.adv || []) { const [id, w] = k.split('|'); (V[id] = V[id] || {})[w] = v; }
+    for (const [k, v] of DATA.total.dims.adc || []) { const [id, w] = k.split('|'); (C[id] = C[id] || {})[w] = v; }
+    const ids = [...new Set([...Object.keys(V), ...Object.keys(C), ...((ADS && ADS.ads) || []).map((a) => a.id)])];
+    $('ads-range').textContent = `${DATA.from} → ${DATA.to}`;
+    if (!ids.length) { $('ads-perf').innerHTML = '<p class="empty">No ad views yet.</p>'; return; }
+    const sum = (o) => Object.values(o || {}).reduce((n, x) => n + x, 0);
+    const rows = ids.map((id) => ({ id, road: (V[id] || {}).road || 0, office: (V[id] || {}).office || 0, menu: ((V[id] || {}).menu || 0) + ((V[id] || {}).appraisal || 0), views: sum(V[id]), clicks: sum(C[id]) }))
+      .sort((a, b) => b.views - a.views);
+    $('ads-perf').innerHTML = `<table><thead><tr><th>Ad</th><th class="n">Road views</th><th class="n">Office views</th><th class="n">Menu/appraisal views</th><th class="n">Total views</th><th class="n">Clicks</th><th class="n">CTR (menu)</th></tr></thead><tbody>` +
+      rows.map((r) => `<tr><td>${esc(r.id)}</td><td class="n">${fmt(r.road)}</td><td class="n">${fmt(r.office)}</td><td class="n">${fmt(r.menu)}</td><td class="n"><strong>${fmt(r.views)}</strong></td><td class="n">${fmt(r.clicks)}</td><td class="n">${pct(r.clicks, r.menu)}</td></tr>`).join('') + '</tbody></table>' +
+      '<p class="meta" style="margin-top:8px">Road and office views count each billboard once per shift when it scrolls onto a player\'s screen. Only the menu and appraisal cards are clickable, so CTR uses those views.</p>';
+  }
+
+  /* ---------- ads manager ---------- */
+  const blankAd = () => ({ id: 'new-ad-' + Math.random().toString(36).slice(2, 6), brand: 'Brand name', headline: 'Your message here', sub: 'website or phone', url: '', image: '', bg: '#0d1526', fg: '#ffffff', accent: '#f5b301', weight: 1, where: ['road', 'office', 'menu'], start: '', end: '' });
+  function drawPreview(cv, ad) {
+    const c = cv.getContext('2d'), w = 300, h = 168, r = Math.min(window.devicePixelRatio || 1, 2);
+    cv.width = w * r; cv.height = h * r; c.setTransform(r, 0, 0, r, 0, 0);
+    c.fillStyle = '#3b4049'; c.fillRect(0, 0, w, h);
+    c.fillStyle = 'rgba(255,255,255,.7)'; for (let y = 0; y < h; y += 30) c.fillRect(w - 40, y, 4, 16);
+    const bw = 220, bh = 124, x = 20, y = 14;
+    c.fillStyle = '#374151'; c.fillRect(x + bw * 0.18, y + bh, 5, 22); c.fillRect(x + bw * 0.82 - 5, y + bh, 5, 22);
+    c.fillStyle = '#1f2937'; c.fillRect(x - 4, y - 4, bw + 8, bh + 8);
+    c.fillStyle = ad.bg; c.fillRect(x, y, bw, bh);
+    const draw = (img) => {
+      if (img) { const s = Math.max(bw / img.naturalWidth, bh / img.naturalHeight); c.save(); c.beginPath(); c.rect(x, y, bw, bh); c.clip(); c.drawImage(img, x + bw / 2 - img.naturalWidth * s / 2, y + bh / 2 - img.naturalHeight * s / 2, img.naturalWidth * s, img.naturalHeight * s); c.restore(); return; }
+      c.textAlign = 'center'; c.textBaseline = 'middle';
+      c.fillStyle = ad.accent; c.font = `900 ${Math.round(bh * 0.22)}px system-ui, Arial`; c.fillText(ad.brand, x + bw / 2, y + bh * 0.24, bw - 12);
+      c.fillStyle = ad.fg; c.font = `700 ${Math.round(bh * 0.14)}px system-ui, Arial`; c.fillText(ad.headline, x + bw / 2, y + bh * 0.52, bw - 12);
+      c.globalAlpha = 0.85; c.font = `800 ${Math.round(bh * 0.12)}px system-ui, Arial`; c.fillText(ad.sub, x + bw / 2, y + bh * 0.82, bw - 12); c.globalAlpha = 1;
+    };
+    if (ad.image) { const img = new Image(); img.onload = () => draw(img); img.onerror = () => draw(null); img.src = ad.image; } else draw(null);
+  }
+  function renderAds() {
+    const list = $('ad-list');
+    list.innerHTML = '';
+    (ADS.ads || []).forEach((ad, i) => {
+      const box = document.createElement('div');
+      box.className = 'ad-edit';
+      box.innerHTML = `<div class="ad-preview"><canvas width="300" height="168" aria-label="Billboard preview"></canvas><div class="ad-stats"></div></div>
+        <div><div class="fields">
+          <label>ID (letters, numbers, dashes)<input type="text" data-k="id" maxlength="40"></label>
+          <label>Brand<input type="text" data-k="brand" maxlength="40"></label>
+          <label>Headline<input type="text" data-k="headline" maxlength="60"></label>
+          <label>Small line (website / phone)<input type="text" data-k="sub" maxlength="40"></label>
+          <label>Link (https)<input type="url" data-k="url" placeholder="https://"></label>
+          <label>Image link (https, optional)<input type="url" data-k="image" placeholder="https://…/billboard.jpg"></label>
+          <label>Background<input type="color" data-k="bg"></label>
+          <label>Text<input type="color" data-k="fg"></label>
+          <label>Brand colour<input type="color" data-k="accent"></label>
+          <label>Weight (1–10, how often)<input type="number" data-k="weight" min="1" max="10"></label>
+          <label>Start date<input type="date" data-k="start"></label>
+          <label>End date<input type="date" data-k="end"></label>
+        </div>
+        <div class="checks" style="margin-top:8px">Show on:
+          <label><input type="checkbox" data-w="road"> Road billboards</label>
+          <label><input type="checkbox" data-w="office"> Office screens</label>
+          <label><input type="checkbox" data-w="menu"> Menu &amp; appraisal card</label>
+          <span class="spacer"></span><button class="btn" type="button" data-del>Remove</button>
+        </div></div>`;
+      for (const inp of box.querySelectorAll('[data-k]')) {
+        inp.value = ad[inp.dataset.k] == null ? '' : ad[inp.dataset.k];
+        inp.addEventListener('input', () => { ad[inp.dataset.k] = inp.type === 'number' ? +inp.value : inp.value; drawPreview(box.querySelector('canvas'), ad); });
+      }
+      for (const cb of box.querySelectorAll('[data-w]')) {
+        cb.checked = (ad.where || []).includes(cb.dataset.w);
+        cb.addEventListener('change', () => { ad.where = [...box.querySelectorAll('[data-w]')].filter((x) => x.checked).map((x) => x.dataset.w); });
+      }
+      box.querySelector('[data-del]').addEventListener('click', () => { ADS.ads.splice(i, 1); renderAds(); });
+      list.appendChild(box);
+      drawPreview(box.querySelector('canvas'), ad);
+    });
+  }
+  async function loadAds() {
+    try { ADS = await (await fetch('/api/ads', { cache: 'no-store' })).json(); } catch (e) { ADS = { ads: [] }; }
+    if (!ADS || !Array.isArray(ADS.ads)) ADS = { ads: [] };
+    renderAds();
+    renderAdPerf();
+  }
+  async function saveAds() {
+    const msg = $('ad-msg');
+    msg.className = ''; msg.textContent = 'Saving…';
+    try {
+      ADS = await api('/api/ads', { method: 'POST', body: JSON.stringify({ ads: ADS.ads }) });
+      renderAds();
+      msg.className = 'ok'; msg.textContent = `Saved ${ADS.ads.length} ads. Players see them within about 2 minutes.`;
+    } catch (e) { msg.className = 'err'; msg.textContent = e.message; }
+  }
+
+  /* ---------- export ---------- */
+  function exportCsv() {
+    if (!DATA) return;
+    const rows = [['section', 'key', 'value']];
+    for (const s of DATA.series) for (const k of ['visitors', 'newVisitors', 'sessions', 'pageViews', 'games', 'finished', 'playSeconds']) rows.push(['daily:' + s.day, k, s[k]]);
+    const T = DATA.total;
+    for (const k of ['visitors', 'newVisitors', 'returning', 'sessions', 'pageViews', 'gamesStarted', 'gamesFinished', 'playSeconds', 'visibleSeconds', 'avgScore', 'maxScore', 'nairaSpent']) rows.push(['total', k, T[k]]);
+    for (const [d, list] of Object.entries(T.dims)) for (const [k, v] of list) rows.push([d, k, v]);
+    for (const [k, v] of T.events) rows.push(['event', k, v]);
+    for (const [k, v] of Object.entries(T.funnel)) rows.push(['funnel', k, v]);
+    T.hours.forEach((h, i) => { rows.push(['hour:' + i, 'visitors', h.visitors]); rows.push(['hour:' + i, 'games', h.games]); });
+    const csv = rows.map((r) => r.map((x) => '"' + String(x).replace(/"/g, '""') + '"').join(',')).join('\n');
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
+    a.download = `office-wahala-stats-${DATA.from}-to-${DATA.to}.csv`;
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  }
+
+  /* ---------- flow ---------- */
+  async function load() {
+    $('meta').textContent = 'Loading…';
+    try {
+      DATA = await api('/api/stats?days=' + DAYS);
+      $('login').classList.add('hidden');
+      $('app').classList.remove('hidden');
+      render();
+    } catch (e) {
+      if (e.status === 401 || e.status === 503 || !KEY) { showLogin(e.message); return; }
+      $('meta').textContent = 'Could not load stats: ' + e.message;
+    }
+  }
+  function showLogin(msg) {
+    $('app').classList.add('hidden');
+    $('login').classList.remove('hidden');
+    $('login-msg').textContent = msg && KEY ? msg : '';
+    $('key').focus();
+  }
+  $('login-form').addEventListener('submit', (e) => {
+    e.preventDefault();
+    KEY = $('key').value.trim();
+    sessionStorage.setItem('ow_dash_key', KEY);
+    load();
+    loadAds();
+  });
+  document.querySelectorAll('.range button').forEach((b) => b.addEventListener('click', () => {
+    DAYS = +b.dataset.days;
+    document.querySelectorAll('.range button').forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
+    load();
+  }));
+  document.querySelectorAll('.tabs button').forEach((b) => b.addEventListener('click', () => {
+    document.querySelectorAll('.tabs button').forEach((x) => x.setAttribute('aria-selected', String(x === b)));
+    $('tab-overview').classList.toggle('hidden', b.dataset.tab !== 'overview');
+    $('tab-ads').classList.toggle('hidden', b.dataset.tab !== 'ads');
+  }));
+  $('refresh').addEventListener('click', load);
+  $('export').addEventListener('click', exportCsv);
+  $('logout').addEventListener('click', () => { sessionStorage.removeItem('ow_dash_key'); KEY = ''; showLogin(''); });
+  $('ad-add').addEventListener('click', () => { ADS.ads.push(blankAd()); renderAds(); });
+  $('ad-save').addEventListener('click', saveAds);
+  setInterval(() => { if (!document.hidden && KEY && DATA) load(); }, 60000);
+
+  if (KEY) { load(); loadAds(); } else showLogin('');
+})();
+</script>
+</body>
+</html>
