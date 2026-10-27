@@ -4,31 +4,43 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Office Wahala — Dodge your boss. Collect your salary.</title>
-  <meta name="description" content="Office Wahala is a free Nigerian office arcade game. Dodge your boss, collect your salary and survive the wahala. No sign-up, plays on phone and desktop.">
+  <meta name="description" content="Office Wahala is a free Nigerian office arcade game. Dodge your boss, collect your salary and survive the wahala. No sign-up, plays on phone and desktop, works offline.">
   <meta name="theme-color" content="#0d1526">
-  <meta property="og:title" content="Office Wahala">
-  <meta property="og:description" content="Dodge your boss. Collect your salary. Survive the wahala.">
+  <meta name="author" content="Mmadubuko Micheal, Analaize Limited">
+  <meta property="og:title" content="Office Wahala 🇳🇬">
+  <meta property="og:description" content="Dodge your boss. Collect your salary. Survive the wahala. Free Nigerian office arcade game.">
   <meta property="og:type" content="website">
-  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230d1526'/%3E%3Crect x='10' y='10' width='14' height='44' rx='3' fill='%23008751'/%3E%3Crect x='25' y='10' width='14' height='44' rx='3' fill='%23fff'/%3E%3Crect x='40' y='10' width='14' height='44' rx='3' fill='%23008751'/%3E%3Ctext x='32' y='42' font-family='Arial' font-weight='900' font-size='26' text-anchor='middle' fill='%23f5b301'%3E%E2%82%A6%3C/text%3E%3C/svg%3E">
+  <meta property="og:url" content="https://officewahala.netlify.app/">
+  <meta property="og:image" content="https://officewahala.netlify.app/icons/og-image.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="icon" href="icons/icon-192.png" type="image/png">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <link rel="manifest" href="manifest.webmanifest">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Office Wahala">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
   <div id="app">
     <canvas id="game" aria-label="Office Wahala game area"></canvas>
 
-    <!-- HUD -->
+    <!-- ================= HUD ================= -->
     <header id="hud" class="hud" hidden>
       <div class="hud-row">
         <div class="hud-stat">
-          <span class="hud-label">Score</span>
+          <span class="hud-label" data-i18n="hud_score">Score</span>
           <strong id="hud-score" class="hud-value">0</strong>
         </div>
         <div class="hud-stat">
-          <span class="hud-label">Time</span>
-          <strong id="hud-time" class="hud-value">00:00</strong>
+          <span class="hud-label" data-i18n="hud_clock">Office time</span>
+          <strong id="hud-clock" class="hud-value">8:00<small>am</small></strong>
         </div>
         <div class="hud-stat">
-          <span class="hud-label">Level</span>
+          <span class="hud-label" data-i18n="hud_level">Level</span>
           <strong id="hud-level" class="hud-value">1</strong>
         </div>
         <div class="hud-stat hud-lives" id="hud-lives" aria-label="Lives: 3"></div>
@@ -42,11 +54,13 @@
         </div>
       </div>
       <div class="hud-sub">
-        <div id="hud-best" class="hud-best">Best 0</div>
-        <div id="hud-streak" class="hud-streak" hidden></div>
+        <div id="hud-best" class="hud-chip hud-best">Best 0</div>
+        <div id="hud-target" class="hud-chip hud-target" hidden></div>
+        <div id="hud-daily" class="hud-chip hud-daily" hidden data-i18n="hud_daily">Daily shift</div>
+        <div id="hud-streak" class="hud-chip hud-streak" hidden></div>
         <div class="powerups">
-          <div id="pu-leave" class="pu pu-leave" hidden><span>On leave</span><i></i></div>
-          <div id="pu-fuel" class="pu pu-fuel" hidden><span>Gen fuel</span><i></i></div>
+          <div id="pu-leave" class="pu pu-leave" hidden><span data-i18n="pu_leave">On leave</span><i></i></div>
+          <div id="pu-fuel" class="pu pu-fuel" hidden><span data-i18n="pu_fuel">Gen fuel</span><i></i></div>
         </div>
       </div>
     </header>
@@ -54,7 +68,7 @@
     <div id="toast" class="toast" role="status" aria-live="polite"></div>
     <div id="banner" class="banner" aria-hidden="true"></div>
 
-    <!-- MENU: staff ID card -->
+    <!-- ================= MENU: staff ID card ================= -->
     <section id="screen-menu" class="screen is-active" aria-labelledby="game-title">
       <div class="screen-scroll">
         <div class="lanyard" aria-hidden="true"><span></span></div>
@@ -62,147 +76,286 @@
           <div class="id-top">
             <span class="flag" aria-hidden="true"><i></i><i></i><i></i></span>
             <span class="id-company">Wahala &amp; Sons Ltd.</span>
-            <span class="id-kind">Staff ID</span>
+            <span class="id-kind" data-i18n="staff_id">Staff ID</span>
           </div>
           <h1 id="game-title" class="title">
             <span class="title-office">Office</span>
             <span class="title-wahala">Wahala</span>
           </h1>
-          <p class="subtitle">Dodge your boss. Collect your salary. Survive the wahala.</p>
+          <p class="subtitle" data-i18n="subtitle">Dodge your boss. Collect your salary. Survive the wahala.</p>
 
-          <button id="btn-play" class="btn btn-primary btn-play" type="button">Clock in &amp; play</button>
-
-          <div class="id-meta">
-            <div><span>Position</span><strong>Chief Wahala Survivor</strong></div>
-            <div><span>Personal best</span><strong id="menu-best">0</strong></div>
+          <div id="challenge-card" class="challenge-card" hidden>
+            <p id="challenge-text"></p>
+            <button id="btn-challenge-clear" class="link-btn" type="button" data-i18n="challenge_clear">Remove challenge</button>
           </div>
-          <p id="friday-note" class="friday-note" hidden>It's Friday. TGIF bonuses show up twice as often today.</p>
+
+          <button id="btn-play" class="btn btn-primary btn-play" type="button" data-i18n="play">Clock in &amp; play</button>
+          <button id="btn-daily" class="btn btn-daily" type="button">
+            <span data-i18n="daily">Today's daily shift</span>
+            <small id="daily-sub">Same office for everyone today</small>
+          </button>
+
+          <div class="id-body">
+            <canvas id="id-photo" class="id-photo" width="88" height="104" aria-label="Your worker"></canvas>
+            <dl class="id-meta">
+              <div><dt data-i18n="name_label">Name</dt><dd id="menu-name">New staff</dd></div>
+              <div><dt data-i18n="position">Position</dt><dd id="menu-rank">Intern</dd></div>
+              <div><dt data-i18n="best">Personal best</dt><dd id="menu-best" class="num-green">0</dd></div>
+              <div><dt data-i18n="badges">Badges</dt><dd id="menu-badges">0 / 14</dd></div>
+            </dl>
+          </div>
+          <p id="friday-note" class="friday-note" hidden data-i18n="friday_note">It's Friday. TGIF bonuses show up twice as often today.</p>
+
+          <nav class="menu-nav" aria-label="More">
+            <button id="btn-wardrobe" class="nav-btn" type="button"><span class="nav-ico" aria-hidden="true">👔</span><span data-i18n="nav_wardrobe">Wardrobe &amp; badges</span></button>
+            <button id="btn-settings" class="nav-btn" type="button"><span class="nav-ico" aria-hidden="true">⚙️</span><span data-i18n="nav_settings">Settings</span></button>
+            <button id="btn-review" class="nav-btn" type="button"><span class="nav-ico" aria-hidden="true">⭐</span><span data-i18n="nav_review">Drop a review</span></button>
+            <button id="btn-board-menu" class="nav-btn" type="button" hidden><span class="nav-ico" aria-hidden="true">🏆</span><span data-i18n="nav_board">Leaderboard</span></button>
+            <button id="btn-install" class="nav-btn" type="button" hidden><span class="nav-ico" aria-hidden="true">📲</span><span data-i18n="nav_install">Install app</span></button>
+          </nav>
+          <p id="ios-install" class="install-hint" hidden data-i18n="ios_install">To install on iPhone: tap Share, then “Add to Home Screen”. It then works without data.</p>
 
           <details class="howto" id="howto" open>
-            <summary>How to play</summary>
+            <summary data-i18n="howto">How to play</summary>
             <div class="howto-body">
               <div class="controls">
                 <div class="control">
-                  <h3>On a computer</h3>
-                  <p><kbd>←</kbd><kbd>↑</kbd><kbd>↓</kbd><kbd>→</kbd> or <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> to move</p>
-                  <p><kbd>Space</kbd> pause · <kbd>Enter</kbd> start · <kbd>M</kbd> sound</p>
+                  <h3 data-i18n="on_computer">On a computer</h3>
+                  <p><kbd>←</kbd><kbd>↑</kbd><kbd>↓</kbd><kbd>→</kbd> <span data-i18n="or">or</span> <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> <span data-i18n="to_move">to move</span></p>
+                  <p><kbd>Space</kbd> <span data-i18n="k_pause">pause</span> · <kbd>Enter</kbd> <span data-i18n="k_start">start</span> · <kbd>M</kbd> <span data-i18n="k_sound">sound</span> · <kbd>B</kbd> <span data-i18n="k_boss">boss key</span></p>
                 </div>
                 <div class="control">
-                  <h3>On a phone</h3>
-                  <p>Put one finger anywhere on the screen and drag. Your worker follows your finger.</p>
+                  <h3 data-i18n="on_phone">On a phone</h3>
+                  <p data-i18n="phone_how">Put one finger anywhere on the screen and drag. Your worker follows your finger.</p>
                 </div>
               </div>
               <div class="legend">
                 <div class="legend-col">
-                  <h3>Grab these</h3>
+                  <h3 data-i18n="grab">Grab these</h3>
                   <ul>
-                    <li><canvas class="icon" data-sprite="salary"></canvas><span>Salary <b>+100</b></span></li>
-                    <li><canvas class="icon" data-sprite="data"></canvas><span>Data bundle <b>+75</b></span></li>
-                    <li><canvas class="icon" data-sprite="lunch"></canvas><span>Lunch money <b>+50</b></span></li>
-                    <li><canvas class="icon" data-sprite="leave"></canvas><span>Leave approval: nothing can touch you</span></li>
-                    <li><canvas class="icon" data-sprite="fuel"></canvas><span>Generator fuel: speed boost</span></li>
-                    <li><canvas class="icon" data-sprite="friday"></canvas><span>Friday bonus <b>+500</b>, rare, and a life back</span></li>
+                    <li><canvas class="icon" data-sprite="salary"></canvas><span><span data-i18n="i_salary">Salary</span> <b>+100</b></span></li>
+                    <li><canvas class="icon" data-sprite="data"></canvas><span><span data-i18n="i_data">Data bundle</span> <b>+75</b></span></li>
+                    <li><canvas class="icon" data-sprite="lunch"></canvas><span><span data-i18n="i_lunch">Lunch money</span> <b>+50</b></span></li>
+                    <li><canvas class="icon" data-sprite="leave"></canvas><span data-i18n="i_leave">Leave approval: nothing can touch you</span></li>
+                    <li><canvas class="icon" data-sprite="fuel"></canvas><span data-i18n="i_fuel">Generator fuel: speed boost, and light during blackouts</span></li>
+                    <li><canvas class="icon" data-sprite="friday"></canvas><span data-i18n="i_friday">Friday bonus +500, rare, and a life back</span></li>
                   </ul>
                 </div>
                 <div class="legend-col">
-                  <h3>Dodge these</h3>
+                  <h3 data-i18n="dodge">Dodge these</h3>
                   <ul>
-                    <li><canvas class="icon" data-sprite="boss"></canvas><span>Oga. Costs two lives</span></li>
-                    <li><canvas class="icon" data-sprite="meeting"></canvas><span>"Quick" meetings</span></li>
-                    <li><canvas class="icon" data-sprite="task"></canvas><span>Urgent tasks and falling files</span></li>
-                    <li><canvas class="icon" data-sprite="deadline"></canvas><span>Last-minute deadlines</span></li>
-                    <li><canvas class="icon" data-sprite="network"></canvas><span>Network outages</span></li>
-                    <li><canvas class="icon" data-sprite="printer"></canvas><span>Runaway printers</span></li>
-                    <li><canvas class="icon" data-sprite="colleague"></canvas><span>The colleague with "one small task"</span></li>
+                    <li><canvas class="icon" data-sprite="boss"></canvas><span data-i18n="o_boss">Oga. Costs two lives. Outrun him for +100</span></li>
+                    <li><canvas class="icon" data-sprite="meeting"></canvas><span data-i18n="o_meeting">"Quick" meetings</span></li>
+                    <li><canvas class="icon" data-sprite="task"></canvas><span data-i18n="o_task">Urgent tasks and falling files</span></li>
+                    <li><canvas class="icon" data-sprite="deadline"></canvas><span data-i18n="o_deadline">Last-minute deadlines</span></li>
+                    <li><canvas class="icon" data-sprite="network"></canvas><span data-i18n="o_network">Network outages</span></li>
+                    <li><canvas class="icon" data-sprite="printer"></canvas><span data-i18n="o_printer">Runaway printers</span></li>
+                    <li><canvas class="icon" data-sprite="colleague"></canvas><span data-i18n="o_colleague">The colleague with "one small task"</span></li>
                   </ul>
                 </div>
               </div>
-              <p class="tip">Collect five in a row without getting hit to build a streak and multiply your points.</p>
+              <p class="tip" data-i18n="tip">Collect five in a row without getting hit to build a streak. From level 3, NEPA can take light: stay close to what you can see until power returns.</p>
             </div>
           </details>
 
-          <div class="menu-actions">
-            <button id="btn-mute-menu" class="btn btn-ghost" type="button" aria-pressed="false">Sound: off</button>
-            <button id="btn-board-menu" class="btn btn-ghost" type="button" hidden>Leaderboard</button>
-          </div>
-          <p class="fineprint">Free. No sign-up. Your best score stays on this device.</p>
+          <footer class="credits">
+            <p data-i18n="free_line">Free. No sign-up. Works offline once installed.</p>
+            <p>Built by <strong>Mmadubuko Micheal</strong>, CEO, <a href="https://www.analaize.com.ng" target="_blank" rel="noopener">Analaize Limited</a></p>
+            <p><span data-i18n="contact_dev">Contact developer:</span> <a href="tel:+2347066459689">07066459689</a> · <a href="https://wa.me/2347066459689" target="_blank" rel="noopener">WhatsApp</a></p>
+          </footer>
         </article>
       </div>
     </section>
 
-    <!-- PAUSE: out of office note -->
+    <!-- ================= PAUSE: out of office ================= -->
     <section id="screen-pause" class="screen" aria-labelledby="pause-title">
       <div class="screen-scroll">
         <article class="note">
-          <h2 id="pause-title">Out of office</h2>
-          <p>Abeg, let me breathe. Back in a minute.</p>
+          <h2 id="pause-title" data-i18n="pause_title">Out of office</h2>
+          <p data-i18n="pause_body">Abeg, let me breathe. Back in a minute.</p>
           <div class="note-actions">
-            <button id="btn-resume" class="btn btn-primary" type="button">Resume</button>
-            <button id="btn-restart" class="btn btn-ghost" type="button">Restart</button>
-            <button id="btn-menu-pause" class="btn btn-ghost" type="button">Main menu</button>
+            <button id="btn-resume" class="btn btn-primary" type="button" data-i18n="resume">Resume</button>
+            <button id="btn-restart" class="btn btn-ghost" type="button" data-i18n="restart">Restart</button>
+            <button id="btn-bosskey" class="btn btn-ghost" type="button" data-i18n="bosskey_btn">Boss key: hide the game</button>
+            <button id="btn-menu-pause" class="btn btn-ghost" type="button" data-i18n="main_menu">Main menu</button>
           </div>
         </article>
       </div>
     </section>
 
-    <!-- GAME OVER: performance appraisal -->
+    <!-- ================= GAME OVER: appraisal ================= -->
     <section id="screen-over" class="screen" aria-labelledby="over-title">
       <div class="screen-scroll">
         <article class="appraisal">
           <div class="appraisal-head">
             <div>
               <span class="appraisal-org">Wahala &amp; Sons Ltd.</span>
-              <h2 id="over-title">Performance appraisal</h2>
+              <h2 id="over-title" data-i18n="over_title">Performance appraisal</h2>
             </div>
             <div id="over-stamp" class="stamp">Shift over</div>
           </div>
-          <p id="over-message" class="verdict">You no reach lunch break.</p>
+          <p id="over-message" class="verdict"></p>
+          <p id="over-challenge" class="over-challenge" hidden></p>
           <dl class="appraisal-grid">
-            <div class="row-score"><dt>Score</dt><dd id="over-score">0</dd></div>
-            <div><dt>Time survived</dt><dd id="over-time">00:00</dd></div>
-            <div><dt>Level reached</dt><dd id="over-level">1</dd></div>
-            <div><dt>Personal best</dt><dd id="over-best">0</dd></div>
-            <div><dt>Items collected</dt><dd id="over-items">0</dd></div>
-            <div><dt>Longest streak</dt><dd id="over-streak">0</dd></div>
-            <div><dt>Close calls</dt><dd id="over-near">0</dd></div>
+            <div class="row-score"><dt data-i18n="hud_score">Score</dt><dd id="over-score">0</dd></div>
+            <div><dt data-i18n="time_survived">Time survived</dt><dd id="over-time">00:00</dd></div>
+            <div><dt data-i18n="clocked_out">Clocked out at</dt><dd id="over-clock">8:00am</dd></div>
+            <div><dt data-i18n="best">Personal best</dt><dd id="over-best">0</dd></div>
+            <div><dt data-i18n="items">Items collected</dt><dd id="over-items">0</dd></div>
+            <div><dt data-i18n="streak_long">Longest streak</dt><dd id="over-streak">0</dd></div>
+            <div><dt data-i18n="close_calls">Close calls</dt><dd id="over-near">0</dd></div>
           </dl>
+          <div id="over-badges" class="over-badges" hidden></div>
+
+          <div class="name-row">
+            <label for="player-name" data-i18n="your_name">Your name (shows on challenges)</label>
+            <input id="player-name" type="text" maxlength="20" autocomplete="nickname" placeholder="e.g. Tunde">
+          </div>
 
           <form id="lb-form" class="lb-form" hidden>
-            <label for="lb-name">Add your score to the leaderboard</label>
-            <div class="lb-row">
-              <input id="lb-name" name="name" type="text" maxlength="20" autocomplete="nickname" placeholder="Your name" required>
-              <button id="lb-submit" class="btn btn-ghost" type="submit">Submit score</button>
-            </div>
+            <button id="lb-submit" class="btn btn-ghost" type="submit" data-i18n="lb_submit">Submit to leaderboard</button>
             <p id="lb-status" class="lb-status" role="status"></p>
           </form>
 
           <div class="over-actions">
-            <button id="btn-again" class="btn btn-primary" type="button">Play again</button>
-            <button id="btn-share" class="btn btn-gold" type="button">Share score</button>
+            <button id="btn-again" class="btn btn-primary" type="button" data-i18n="again">Play again</button>
+            <button id="btn-share" class="btn btn-gold" type="button" data-i18n="share">Challenge a colleague</button>
           </div>
           <div class="over-actions secondary">
-            <button id="btn-board-over" class="btn btn-ghost" type="button" hidden>Leaderboard</button>
-            <button id="btn-menu-over" class="btn btn-ghost" type="button">Main menu</button>
+            <button id="btn-save-image" class="btn btn-ghost" type="button" data-i18n="save_image">Save image</button>
+            <button id="btn-board-over" class="btn btn-ghost" type="button" hidden data-i18n="nav_board">Leaderboard</button>
+            <button id="btn-menu-over" class="btn btn-ghost" type="button" data-i18n="main_menu">Main menu</button>
           </div>
         </article>
       </div>
     </section>
 
-    <!-- LEADERBOARD -->
+    <!-- ================= WARDROBE & BADGES ================= -->
+    <section id="screen-wardrobe" class="screen" aria-labelledby="wardrobe-title">
+      <div class="screen-scroll">
+        <article class="panel">
+          <div class="panel-head">
+            <h2 id="wardrobe-title" data-i18n="wardrobe_title">Wardrobe &amp; badges</h2>
+            <button class="btn btn-primary btn-small js-back" type="button" data-i18n="done">Done</button>
+          </div>
+          <h3 data-i18n="character">Character</h3>
+          <div class="char-pick" role="radiogroup" aria-label="Character">
+            <button class="char-opt" type="button" role="radio" data-char="emeka"><canvas width="64" height="76"></canvas><span>Emeka</span></button>
+            <button class="char-opt" type="button" role="radio" data-char="ada"><canvas width="64" height="76"></canvas><span>Adaeze</span></button>
+          </div>
+          <h3 data-i18n="outfits">Outfits</h3>
+          <div id="outfit-grid" class="outfit-grid" role="radiogroup" aria-label="Outfits"></div>
+          <h3><span data-i18n="badges">Badges</span> <span id="badge-count" class="count"></span></h3>
+          <ul id="badge-list" class="badge-list"></ul>
+        </article>
+      </div>
+    </section>
+
+    <!-- ================= SETTINGS ================= -->
+    <section id="screen-settings" class="screen" aria-labelledby="settings-title">
+      <div class="screen-scroll">
+        <article class="panel panel-narrow">
+          <div class="panel-head">
+            <h2 id="settings-title" data-i18n="nav_settings">Settings</h2>
+            <button class="btn btn-primary btn-small js-back" type="button" data-i18n="done">Done</button>
+          </div>
+          <div class="setting">
+            <label for="set-name" data-i18n="name_label">Name</label>
+            <input id="set-name" type="text" maxlength="20" autocomplete="nickname" placeholder="e.g. Tunde">
+          </div>
+          <div class="setting">
+            <span class="setting-label" data-i18n="sound_fx">Sound effects</span>
+            <div class="seg" data-setting="sound"><button type="button" data-v="on">On</button><button type="button" data-v="off">Off</button></div>
+          </div>
+          <div class="setting">
+            <span class="setting-label" data-i18n="music">Music</span>
+            <div class="seg" data-setting="music"><button type="button" data-v="on">On</button><button type="button" data-v="off">Off</button></div>
+          </div>
+          <div class="setting">
+            <span class="setting-label" data-i18n="language">Language</span>
+            <div class="seg" data-setting="lang"><button type="button" data-v="en">English</button><button type="button" data-v="pcm">Pidgin</button></div>
+          </div>
+          <div class="setting">
+            <span class="setting-label" data-i18n="graphics">Graphics</span>
+            <div class="seg" data-setting="gfx"><button type="button" data-v="auto">Auto</button><button type="button" data-v="high">High</button><button type="button" data-v="low">Low</button></div>
+          </div>
+          <p class="setting-help" data-i18n="gfx_help">Auto switches to Low if your phone starts to lag. Low saves battery.</p>
+        </article>
+      </div>
+    </section>
+
+    <!-- ================= REVIEW ================= -->
+    <section id="screen-review" class="screen" aria-labelledby="review-title">
+      <div class="screen-scroll">
+        <article class="panel panel-narrow suggestion-box">
+          <div class="panel-head">
+            <h2 id="review-title" data-i18n="review_title">Suggestion box</h2>
+            <button class="btn btn-ghost btn-small js-back" type="button" data-i18n="close">Close</button>
+          </div>
+          <p class="panel-intro" data-i18n="review_intro">Tell the developer what you think. Bugs, ideas and wahala you want added are all welcome.</p>
+          <form id="review-form" name="review" method="POST" data-netlify="true" netlify-honeypot="bot-field">
+            <input type="hidden" name="form-name" value="review">
+            <p class="hp"><label>Leave this empty <input name="bot-field" tabindex="-1" autocomplete="off"></label></p>
+            <fieldset class="stars">
+              <legend data-i18n="rating">Your rating</legend>
+              <input type="radio" id="star5" name="rating" value="5"><label for="star5" title="5 stars">★</label>
+              <input type="radio" id="star4" name="rating" value="4"><label for="star4" title="4 stars">★</label>
+              <input type="radio" id="star3" name="rating" value="3"><label for="star3" title="3 stars">★</label>
+              <input type="radio" id="star2" name="rating" value="2"><label for="star2" title="2 stars">★</label>
+              <input type="radio" id="star1" name="rating" value="1"><label for="star1" title="1 star">★</label>
+            </fieldset>
+            <label class="field">
+              <span data-i18n="review_name">Name (optional)</span>
+              <input id="review-name" name="name" type="text" maxlength="40" autocomplete="name">
+            </label>
+            <label class="field">
+              <span data-i18n="review_msg">Your review</span>
+              <textarea id="review-message" name="message" rows="4" maxlength="600" required></textarea>
+            </label>
+            <input type="hidden" name="best_score" id="review-best" value="0">
+            <button id="review-submit" class="btn btn-primary" type="submit" data-i18n="review_send">Send review</button>
+            <p id="review-status" class="lb-status" role="status"></p>
+            <a id="review-wa" class="wa-link" href="https://wa.me/2347066459689" target="_blank" rel="noopener" data-i18n="review_wa">Or send it on WhatsApp</a>
+          </form>
+        </article>
+      </div>
+    </section>
+
+    <!-- ================= LEADERBOARD ================= -->
     <section id="screen-board" class="screen" aria-labelledby="board-title">
       <div class="screen-scroll">
         <article class="note board">
-          <h2 id="board-title">Notice board: top survivors</h2>
+          <h2 id="board-title" data-i18n="board_title">Notice board: top survivors</h2>
           <p id="board-status" class="board-status">Loading scores…</p>
           <ol id="board-list" class="board-list"></ol>
           <div class="note-actions">
-            <button id="btn-board-back" class="btn btn-primary" type="button">Back</button>
+            <button id="btn-board-back" class="btn btn-primary" type="button" data-i18n="back">Back</button>
           </div>
         </article>
       </div>
     </section>
+
+    <!-- ================= BOSS KEY: fake spreadsheet ================= -->
+    <section id="screen-excel" class="sheet-app" aria-label="Spreadsheet" hidden>
+      <div class="sheet-titlebar">
+        <span class="sheet-logo" aria-hidden="true">▦</span>
+        <span class="sheet-file">Q3_Revenue_Report_FINAL_v7.xlsx</span>
+        <span class="sheet-saved">Saved</span>
+        <button id="btn-excel-close" class="sheet-close" type="button" aria-label="Back to the game">×</button>
+      </div>
+      <div class="sheet-ribbon" aria-hidden="true">
+        <span class="on">Home</span><span>Insert</span><span>Page Layout</span><span>Formulas</span><span>Data</span><span>Review</span><span>View</span>
+      </div>
+      <div class="sheet-tools" aria-hidden="true">
+        <i></i><i></i><i></i><b>Calibri</b><b>11</b><i></i><i></i><i></i><i></i><b>Σ AutoSum</b>
+      </div>
+      <div class="sheet-formula" aria-hidden="true"><span class="cell-ref">F14</span><span class="fx">fx</span><span id="sheet-fx">=SUM(F3:F13)*(1+$B$1)</span></div>
+      <div class="sheet-grid-wrap"><table id="sheet-grid" class="sheet-grid"></table></div>
+      <div class="sheet-tabs" aria-hidden="true"><span class="on">Summary</span><span>Lagos</span><span>Abuja</span><span>PH</span><span>Kano</span><span>+</span></div>
+    </section>
   </div>
 
+  <script src="music.js"></script>
   <script src="game.js"></script>
 </body>
 </html>
