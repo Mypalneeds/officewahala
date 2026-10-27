@@ -74,6 +74,7 @@ office-wahala/
 ├── voice.js             Voice lines (single source of truth) + speaking engine
 ├── voices/              voices.json (+ MP3 clips once you run the generator)
 ├── tools/
+│   ├── build-icons.mjs  Rebuilds the Font Awesome icon set inside index.html (only when adding icons)
 │   ├── generate-voices.bat   Windows: double-click to make the Nigerian AI voice clips
 │   └── generate_voices.py    The generator itself (Mac/Linux: python3 tools/generate_voices.py)
 ├── analytics.js         Anonymous, cookie-free event tracking (sends only when /api/track is live)
@@ -463,3 +464,5 @@ Current Chrome, Edge, Firefox and Safari on desktop, Android and iOS. Uses Canva
 ## License
 
 MIT. See `LICENSE`. All artwork, sounds and music are original and generated in code.
+
+Interface icons: [Font Awesome Free 6](https://fontawesome.com) by Fonticons, Inc., licensed [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/). They are stored inside `index.html` (no CDN, so they work offline). To add one: `npm i --no-save @fortawesome/fontawesome-free@6`, add its name to the list in `tools/build-icons.mjs`, run `node tools/build-icons.mjs`, then use `<svg class="ico"><use href="#i-NAME"/></svg>` in HTML or `ico('NAME')` in `game.js`.

@@ -116,11 +116,10 @@ button { touch-action: manipulation; }
   cursor: pointer;
 }
 .icon-btn:hover { background: rgba(255, 255, 255, 0.18); }
-.icon-btn svg { width: 22px; height: 22px; fill: currentColor; stroke: currentColor; stroke-width: 0; }
-.icon-btn .ico-waves, .icon-btn .ico-x { fill: none; stroke-width: 2.2; stroke-linecap: round; }
-.icon-btn .ico-waves { display: none; }
-.icon-btn[aria-pressed="true"] .ico-waves { display: inline; }
-.icon-btn[aria-pressed="true"] .ico-x { display: none; }
+.icon-btn .ico { width: 20px; height: 20px; }
+.icon-btn .when-on { display: none; }
+.icon-btn[aria-pressed="true"] .when-on { display: block; }
+.icon-btn[aria-pressed="true"] .when-off { display: none; }
 
 kbd {
   display: inline-block;
@@ -1176,3 +1175,29 @@ kbd {
 }
 .over-sponsor[hidden] { display: none; }
 .over-sponsor b { color: var(--sp-accent, var(--gold)); }
+
+/* ==========================================================
+   v4.1 icons (Font Awesome Free, inline sprite in index.html)
+   ========================================================== */
+.ico { width: 1em; height: 1em; fill: currentColor; flex: none; display: inline-block; vertical-align: -0.125em; overflow: visible; }
+.btn .ico { margin-right: 0.5em; font-size: 0.95em; }
+.btn-play .ico { font-size: 0.85em; }
+.btn-mode .mode-ico { font-size: 1.15rem; margin: 0 0 2px; opacity: 0.9; }
+.nav-ico { flex: none; display: inline-grid; place-items: center; width: 30px; height: 30px; border-radius: 9px; background: #ffffff; color: var(--green); font-size: 0.95rem; box-shadow: 0 1px 0 rgba(23, 32, 58, 0.08); }
+#btn-review .nav-ico, #btn-board-menu .nav-ico { color: #c98a00; }
+.shop-card .s-ico { display: grid; place-items: center; width: 42px; height: 42px; border-radius: 12px; background: #ffffff; color: var(--green); font-size: 1.25rem; margin-bottom: 4px; box-shadow: 0 1px 0 rgba(23, 32, 58, 0.08); }
+.shop-card.is-max .s-ico { background: var(--green); color: #ffffff; }
+.badge-list .b-ico { font-size: 1.05rem; color: #7d8597; filter: none; opacity: 1; }
+.badge-list li:not(.is-got) .b-ico { background: #e3e6ec; color: #a3a9b6; }
+.badge-list .is-got .b-ico { background: var(--gold); color: var(--ink); }
+.badge-list .is-got .b-prog { font-size: 1.15rem; }
+.stars label .ico { width: 2rem; height: 2rem; vertical-align: middle; }
+.toast .ico { margin-right: 0.45em; vertical-align: -0.15em; }
+.over-badges .ob-badge { display: inline-flex; align-items: center; gap: 6px; margin: 4px 6px 0 0; padding: 4px 10px 4px 6px; border-radius: 99px; background: #ffffff; color: var(--ink); font-size: 0.85rem; }
+.over-badges .ob-badge .ico { width: 22px; height: 22px; padding: 4px; border-radius: 50%; background: var(--gold); color: var(--ink); box-sizing: border-box; }
+.outfit-opt small .ico { font-size: 0.85em; margin-right: 2px; vertical-align: -0.1em; }
+.wa-link { display: flex; align-items: center; justify-content: center; gap: 6px; }
+.wa-link .ico { font-size: 1.15em; color: #25d366; }
+.sheet-logo { display: inline-grid; place-items: center; }
+.sheet-logo .ico { width: 16px; height: 16px; }
+.sheet-close .ico { width: 16px; height: 16px; vertical-align: middle; }

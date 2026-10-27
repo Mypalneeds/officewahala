@@ -325,11 +325,11 @@
   const EVENTS = ['salary', 'audit', 'travel', 'agm', 'alert'];
 
   const SHOP_ITEMS = [
-    { id: 'chair', ico: '🪑', name: 'Ergonomic chair', desc: '+5% walking speed per level', max: 3, price: [600, 1800, 4500] },
-    { id: 'stab', ico: '🔌', name: 'Stabilizer', desc: 'Blackouts are 25% shorter per level', max: 2, price: [900, 2700] },
-    { id: 'canteen', ico: '🍛', name: 'Canteen card', desc: 'Lunch packs worth +25 more points per level', max: 2, price: [800, 2400] },
-    { id: 'life', ico: '❤️', name: 'Health insurance', desc: 'Start every shift with an extra life', max: 1, price: [7000] },
-    { id: 'pocket', ico: '📧', name: 'Auto-reply in your pocket', desc: 'Start your next shift holding an Auto-reply. Stack up to 3', max: 3, price: [350, 350, 350], consumable: true },
+    { id: 'chair', ico: 'chair', name: 'Ergonomic chair', desc: '+5% walking speed per level', max: 3, price: [600, 1800, 4500] },
+    { id: 'stab', ico: 'stabilizer', name: 'Stabilizer', desc: 'Blackouts are 25% shorter per level', max: 2, price: [900, 2700] },
+    { id: 'canteen', ico: 'canteen', name: 'Canteen card', desc: 'Lunch packs worth +25 more points per level', max: 2, price: [800, 2400] },
+    { id: 'life', ico: 'health', name: 'Health insurance', desc: 'Start every shift with an extra life', max: 1, price: [7000] },
+    { id: 'pocket', ico: 'autoreply', name: 'Auto-reply in your pocket', desc: 'Start your next shift holding an Auto-reply. Stack up to 3', max: 3, price: [350, 350, 350], consumable: true },
   ];
   const OUTFIT_PRICES = { ankara: 1500, senator: 2500, suit: 3000, jersey: 3000, native: 4000, agbada: 6000, legend: 12000 };
 
@@ -344,25 +344,25 @@
   const PROMO_RANKS = ['Senior officer', 'Manager', 'Director', 'General manager', 'MD / CEO'];
 
   const BADGES = [
-    { id: 'first', ico: '🪪', name: 'First day at work', desc: 'Finish your first shift', stat: 'games', goal: 1 },
-    { id: 'lunch', ico: '🍛', name: 'Lunch champion', desc: 'Collect 30 lunch packs in total', stat: 'lunch', goal: 30 },
-    { id: 'escape10', ico: '🏃🏾', name: 'Oga no fit catch me', desc: 'Outrun Oga 10 times', stat: 'escapes', goal: 10 },
-    { id: 'nepa', ico: '💡', name: 'NEPA survivor', desc: 'Get through a blackout without a hit', stat: 'blackouts', goal: 1 },
-    { id: 'overtime', ico: '🌙', name: 'Overtime', desc: 'Work past 5pm (reach level 10)', stat: 'maxLevel', goal: 10 },
-    { id: 'bigboss', ico: '💼', name: 'Big boss energy', desc: 'Score 5,000 in one shift', stat: 'maxScore', goal: 5000 },
-    { id: 'legend', ico: '👑', name: 'Office legend', desc: 'Score 10,000 in one shift', stat: 'maxScore', goal: 10000 },
-    { id: 'streak15', ico: '🔥', name: 'On a roll', desc: 'Reach a streak of 15', stat: 'maxStreak', goal: 15 },
-    { id: 'close50', ico: '😅', name: 'Close shave', desc: '50 close calls in total', stat: 'near', goal: 50 },
-    { id: 'tgif', ico: '🎉', name: 'TGIF', desc: 'Grab a Friday bonus', stat: 'fridays', goal: 1 },
-    { id: 'marathon', ico: '⏱️', name: 'Marathon shift', desc: 'Survive 3 minutes in one shift', stat: 'maxTime', goal: 180 },
-    { id: 'challenger', ico: '🤝🏾', name: 'Who send you?', desc: "Beat a colleague's challenge", stat: 'challenges', goal: 1 },
-    { id: 'daily3', ico: '📅', name: 'Punctual staff', desc: 'Finish 3 daily shifts', stat: 'dailies', goal: 3 },
-    { id: 'bosskey', ico: '🙈', name: 'Nothing to see here', desc: 'Use the boss key', stat: 'bossKeys', goal: 1 },
-    { id: 'commuter', ico: '🚌', name: 'Lagos commuter', desc: 'Arrive at work on time 5 times', stat: 'ontime', goal: 5 },
-    { id: 'reporter', ico: '📊', name: 'Report machine', desc: 'Submit 10 reports in total', stat: 'tasks', goal: 10 },
-    { id: 'promoted', ico: '📜', name: 'Promoted!', desc: 'Finish a full career week', stat: 'weeks', goal: 1 },
-    { id: 'shopper', ico: '🛒', name: 'Big spender', desc: 'Buy something in the staff shop', stat: 'buys', goal: 1 },
-    { id: 'eventful', ico: '🎪', name: 'Seen it all', desc: 'Survive 10 shift events', stat: 'events', goal: 10 },
+    { id: 'first', ico: 'id-badge', name: 'First day at work', desc: 'Finish your first shift', stat: 'games', goal: 1 },
+    { id: 'lunch', ico: 'rice', name: 'Lunch champion', desc: 'Collect 30 lunch packs in total', stat: 'lunch', goal: 30 },
+    { id: 'escape10', ico: 'running', name: 'Oga no fit catch me', desc: 'Outrun Oga 10 times', stat: 'escapes', goal: 10 },
+    { id: 'nepa', ico: 'bulb', name: 'NEPA survivor', desc: 'Get through a blackout without a hit', stat: 'blackouts', goal: 1 },
+    { id: 'overtime', ico: 'moon', name: 'Overtime', desc: 'Work past 5pm (reach level 10)', stat: 'maxLevel', goal: 10 },
+    { id: 'bigboss', ico: 'career', name: 'Big boss energy', desc: 'Score 5,000 in one shift', stat: 'maxScore', goal: 5000 },
+    { id: 'legend', ico: 'crown', name: 'Office legend', desc: 'Score 10,000 in one shift', stat: 'maxScore', goal: 10000 },
+    { id: 'streak15', ico: 'fire', name: 'On a roll', desc: 'Reach a streak of 15', stat: 'maxStreak', goal: 15 },
+    { id: 'close50', ico: 'sweat', name: 'Close shave', desc: '50 close calls in total', stat: 'near', goal: 50 },
+    { id: 'tgif', ico: 'party', name: 'TGIF', desc: 'Grab a Friday bonus', stat: 'fridays', goal: 1 },
+    { id: 'marathon', ico: 'stopwatch', name: 'Marathon shift', desc: 'Survive 3 minutes in one shift', stat: 'maxTime', goal: 180 },
+    { id: 'challenger', ico: 'handshake', name: 'Who send you?', desc: "Beat a colleague's challenge", stat: 'challenges', goal: 1 },
+    { id: 'daily3', ico: 'calendar', name: 'Punctual staff', desc: 'Finish 3 daily shifts', stat: 'dailies', goal: 3 },
+    { id: 'bosskey', ico: 'hide', name: 'Nothing to see here', desc: 'Use the boss key', stat: 'bossKeys', goal: 1 },
+    { id: 'commuter', ico: 'bus', name: 'Lagos commuter', desc: 'Arrive at work on time 5 times', stat: 'ontime', goal: 5 },
+    { id: 'reporter', ico: 'chart', name: 'Report machine', desc: 'Submit 10 reports in total', stat: 'tasks', goal: 10 },
+    { id: 'promoted', ico: 'scroll', name: 'Promoted!', desc: 'Finish a full career week', stat: 'weeks', goal: 1 },
+    { id: 'shopper', ico: 'bag', name: 'Big spender', desc: 'Buy something in the staff shop', stat: 'buys', goal: 1 },
+    { id: 'eventful', ico: 'masks', name: 'Seen it all', desc: 'Survive 10 shift events', stat: 'events', goal: 10 },
   ];
 
   const CHARACTERS = {
@@ -388,6 +388,22 @@
   /* ==================== Helpers ==================== */
   const TAU = Math.PI * 2;
   const $ = (id) => document.getElementById(id);
+  // Font Awesome icon from the sprite in index.html (see tools/build-icons.mjs)
+  const ico = (name, cls) => `<svg class="ico${cls ? ' ' + cls : ''}" aria-hidden="true"><use href="#i-${name}"/></svg>`;
+  // Draw a sprite icon on a canvas (paths read once from index.html)
+  const iconPaths = {};
+  function drawIcon(c, name, x, y, size) {
+    let ip = iconPaths[name];
+    if (ip === undefined) {
+      const sym = document.getElementById('i-' + name);
+      ip = iconPaths[name] = sym ? { vb: sym.getAttribute('viewBox').split(' ').map(Number), p: [...sym.querySelectorAll('path')].map((el) => new Path2D(el.getAttribute('d'))) } : null;
+    }
+    if (!ip) return;
+    const [, , w, h] = ip.vb, k = size / Math.max(w, h);
+    c.save(); c.translate(x - (w * k) / 2, y - (h * k) / 2); c.scale(k, k);
+    for (const p of ip.p) c.fill(p);
+    c.restore();
+  }
   let rng = Math.random;                         // gameplay randomness (seeded on daily shifts)
   const rand = (a, b) => a + rng() * (b - a);
   const frand = (a, b) => a + Math.random() * (b - a);   // cosmetic randomness
@@ -1016,7 +1032,7 @@
       c.fillStyle = '#0f172a'; rr(c, -9, -15, 18, 30, 4); c.fill();
       c.fillStyle = '#22c55e'; rr(c, -7, -12, 14, 22, 2); c.fill();
       c.fillStyle = '#fff'; c.font = '900 6px system-ui, Arial, sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle';
-      c.fillText('MD', 0, -4); c.fillText('📞', 0, 4);
+      c.fillText('MD', 0, -4); drawIcon(c, 'phone', 0, 4, 7);
       c.strokeStyle = '#ff8fb1'; c.lineWidth = 2; c.lineCap = 'round';
       const k = (Math.sin(tm * 10) + 1) / 2;
       c.globalAlpha = 0.5 + k * 0.5;
@@ -1295,8 +1311,9 @@
 
   /* ==================== UI: toast / banner / HUD ==================== */
   let toastTimer = 0;
-  function toast(text, kind = 'info', ms = 2200) {
+  function toast(text, kind = 'info', ms = 2200, icon) {
     ui.toast.textContent = text;
+    if (icon) ui.toast.insertAdjacentHTML('afterbegin', ico(icon));
     ui.toast.className = 'toast is-on is-' + kind;
     clearTimeout(toastTimer);
     toastTimer = setTimeout(() => { ui.toast.className = 'toast'; }, ms);
@@ -1564,7 +1581,12 @@
       ui.overBadges.hidden = false;
       ui.overBadges.innerHTML = '';
       const st = document.createElement('strong'); st.textContent = t('newBadges');
-      ui.overBadges.append(st, document.createTextNode(G.newBadges.map((b) => b.ico + ' ' + b.name).join(' · ')));
+      ui.overBadges.append(st);
+      G.newBadges.forEach((b, i) => {
+        const sp = document.createElement('span'); sp.className = 'ob-badge';
+        sp.innerHTML = ico(b.ico); sp.append(b.name);
+        ui.overBadges.append(sp);
+      });
     } else ui.overBadges.hidden = true;
 
     ui.playerName.value = S.name;
@@ -1733,7 +1755,7 @@
         T('badge', { id: b.id });
         changed = true;
         if (live) {
-          toast(t('badge') + b.ico + ' ' + b.name, 'badge', 2600);
+          toast(t('badge') + b.name, 'badge', 2600, b.ico);
           Sound.play('badge');
         }
       }
@@ -2221,7 +2243,7 @@
       const card = document.createElement('div');
       card.className = 'shop-card' + (maxed ? ' is-max' : '');
       card.innerHTML = '<span class="s-ico" aria-hidden="true"></span><span class="s-name"></span><span class="s-desc"></span><span class="s-level"></span>';
-      card.querySelector('.s-ico').textContent = it.ico;
+      card.querySelector('.s-ico').innerHTML = ico(it.ico);
       card.querySelector('.s-name').textContent = it.name;
       card.querySelector('.s-desc').textContent = it.desc;
       card.querySelector('.s-level').textContent = it.consumable ? `In pocket: ${lvl}/${it.max}` : `Level ${lvl}/${it.max}`;
@@ -3886,7 +3908,7 @@
       const hint = document.createElement('small');
       if (!open) {
         const b = BADGES.find((x) => x.id === o.unlock);
-        hint.textContent = '🔒 ' + (b ? b.desc : t('locked'));
+        hint.innerHTML = ico('lock'); hint.append(' ' + (b ? b.desc : t('locked')));
         btn.setAttribute('aria-disabled', 'true');
       }
       btn.append(cv, label, hint);
@@ -3911,10 +3933,10 @@
       if (got) li.className = 'is-got';
       const prog = Math.min(b.goal, stats[b.stat] || 0);
       li.innerHTML = '<span class="b-ico" aria-hidden="true"></span><span><span class="b-name"></span><br><span class="b-desc"></span></span><span class="b-prog"></span>';
-      li.querySelector('.b-ico').textContent = b.ico;
+      li.querySelector('.b-ico').innerHTML = ico(b.ico);
       li.querySelector('.b-name').textContent = b.name;
       li.querySelector('.b-desc').textContent = b.desc;
-      li.querySelector('.b-prog').textContent = got ? '✓' : b.goal > 1 ? fmtNum(prog) + ' / ' + fmtNum(b.goal) : '';
+      if (got) li.querySelector('.b-prog').innerHTML = ico('check-circle'); else li.querySelector('.b-prog').textContent = b.goal > 1 ? fmtNum(prog) + ' / ' + fmtNum(b.goal) : '';
       list.appendChild(li);
     }
     $('badge-count').textContent = unlocked.size + ' / ' + BADGES.length;
