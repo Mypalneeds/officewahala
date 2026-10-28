@@ -222,6 +222,13 @@
     ev_salary: 'Salary week', ev_audit: 'Audit', ev_travel: 'Oga is travelling', ev_agm: 'AGM day', ev_alert: 'Bank alert!',
     ev_salary_d: 'Money everywhere!', ev_audit_d: 'No pickups. Survival points x2', ev_travel_d: 'No Oga, but colleagues bring double work',
     ev_agm_d: 'Every meeting is compulsory', ev_alert_d: 'Gold is raining. Grab it!', evOver: 'Event over. Back to normal wahala.',
+    weeklyDone: (txt, r) => `Weekly challenge done: ${txt}! +₦${r}`, weeklyAll: (r) => `All 3 weekly challenges done! Bonus +₦${r}`,
+    goldSet: 'All 19 classic badges at Gold! Gold ID frame unlocked and +₦5,000.',
+    goldSetProg: (g, n) => `Gold collection: ${g}/${n} classic badges at Gold. Get all ${n} for a gold ID frame and ₦5,000.`,
+    rewardTxt: (r) => '₦' + r + '\u00a0reward',
+    goldSetDone: 'Gold collection complete. Your ID card has a gold frame.', nextLevel: 'Next', levelsTotal: (n) => `${n} levels`,
+    thisWeek: 'this week', paid: 'Paid ✓', daysLeft: (d) => (d === 1 ? 'last day' : d + ' days left'), allBonus: (r) => `all 3 = +₦${r}`,
+    weeklyCard: (d, left) => `This week's challenges: ${d}/3 done · ${left === 1 ? 'last day' : left + ' days left'}`,
     bossNamed: (n) => `Oga ${n} is coming!`, driverComing: "MD's driver is coming through!", hrComing: 'HR is here with queries!',
     auntyComing: 'Aunty from Accounts is looking for you…', frozen: 'Aunty Accounts froze your salary!', frozenPick: 'Frozen!',
     query: 'You got a query!', auntyMiss: 'Not today, Aunty!', taskSpawn: 'A report is waiting. Stand on the glowing desk!',
@@ -308,6 +315,10 @@
     autoreply: { weight: 1.6, pts: 0, held: true, unlock: 2, color: '#7cc4ff' },
     fakecall:  { weight: 1.6, pts: 0, held: true, unlock: 2, color: '#ff8fb1' },
     puffpuff:  { weight: 1.6, pts: 0, held: true, unlock: 2, color: '#ffc46b' },
+    // event-only pickups
+    cake: { weight: 0, pts: 300, event: true, color: '#ff8fb1' },
+    gift: { weight: 0, pts: 400, event: true, color: '#e5484d' },
+    rose: { weight: 0, pts: 150, event: true, color: '#ff5d8f' },
   };
 
   // Morning commute hazards (Lagos road)
@@ -322,7 +333,6 @@
   // Bosses: who can show up, from which level
   const BOSS_TYPES = { oga: { unlock: 2, weight: 4 }, driver: { unlock: 3, weight: 3 }, hr: { unlock: 4, weight: 2.5 }, aunty: { unlock: 5, weight: 2.5 } };
 
-  const EVENTS = ['salary', 'audit', 'travel', 'agm', 'alert'];
 
   const SHOP_ITEMS = [
     { id: 'chair', ico: 'chair', name: 'Ergonomic chair', desc: '+5% walking speed per level', max: 3, price: [600, 1800, 4500] },
@@ -383,27 +393,54 @@
   ];
   const PROMO_RANKS = ['Senior officer', 'Manager', 'Director', 'General manager', 'MD / CEO'];
 
+  // Badges level up forever: Bronze, Silver, Gold, Platinum, Diamond, then Diamond II, III… (each level pays naira).
+  // tiers = goals for the first five levels; after that each level adds the last step again.
   const BADGES = [
-    { id: 'first', ico: 'id-badge', name: 'First day at work', desc: 'Finish your first shift', stat: 'games', goal: 1 },
-    { id: 'lunch', ico: 'rice', name: 'Lunch champion', desc: 'Collect 30 lunch packs in total', stat: 'lunch', goal: 30 },
-    { id: 'escape10', ico: 'running', name: 'Oga no fit catch me', desc: 'Outrun Oga 10 times', stat: 'escapes', goal: 10 },
-    { id: 'nepa', ico: 'bulb', name: 'NEPA survivor', desc: 'Get through a blackout without a hit', stat: 'blackouts', goal: 1 },
-    { id: 'overtime', ico: 'moon', name: 'Overtime', desc: 'Work past 5pm (reach level 10)', stat: 'maxLevel', goal: 10 },
-    { id: 'bigboss', ico: 'career', name: 'Big boss energy', desc: 'Score 5,000 in one shift', stat: 'maxScore', goal: 5000 },
-    { id: 'legend', ico: 'crown', name: 'Office legend', desc: 'Score 10,000 in one shift', stat: 'maxScore', goal: 10000 },
-    { id: 'streak15', ico: 'fire', name: 'On a roll', desc: 'Reach a streak of 15', stat: 'maxStreak', goal: 15 },
-    { id: 'close50', ico: 'sweat', name: 'Close shave', desc: '50 close calls in total', stat: 'near', goal: 50 },
-    { id: 'tgif', ico: 'party', name: 'TGIF', desc: 'Grab a Friday bonus', stat: 'fridays', goal: 1 },
-    { id: 'marathon', ico: 'stopwatch', name: 'Marathon shift', desc: 'Survive 3 minutes in one shift', stat: 'maxTime', goal: 180 },
-    { id: 'challenger', ico: 'handshake', name: 'Who send you?', desc: "Beat a colleague's challenge", stat: 'challenges', goal: 1 },
-    { id: 'daily3', ico: 'calendar', name: 'Punctual staff', desc: 'Finish 3 daily shifts', stat: 'dailies', goal: 3 },
-    { id: 'bosskey', ico: 'hide', name: 'Nothing to see here', desc: 'Use the boss key', stat: 'bossKeys', goal: 1 },
-    { id: 'commuter', ico: 'bus', name: 'Lagos commuter', desc: 'Arrive at work on time 5 times', stat: 'ontime', goal: 5 },
-    { id: 'reporter', ico: 'chart', name: 'Report machine', desc: 'Submit 10 reports in total', stat: 'tasks', goal: 10 },
-    { id: 'promoted', ico: 'scroll', name: 'Promoted!', desc: 'Finish a full career week', stat: 'weeks', goal: 1 },
-    { id: 'shopper', ico: 'bag', name: 'Big spender', desc: 'Buy something in the staff shop', stat: 'buys', goal: 1 },
-    { id: 'eventful', ico: 'masks', name: 'Seen it all', desc: 'Survive 10 shift events', stat: 'events', goal: 10 },
+    { id: 'first', ico: 'id-badge', name: 'First day at work', desc: (n) => (n === 1 ? 'Finish your first shift' : `Finish ${fmtNum(n)} shifts`), stat: 'games', tiers: [1, 10, 50, 200, 500] },
+    { id: 'lunch', ico: 'rice', name: 'Lunch champion', desc: (n) => `Collect ${fmtNum(n)} lunch packs in total`, stat: 'lunch', tiers: [30, 150, 500, 1500, 4000] },
+    { id: 'escape10', ico: 'running', name: 'Oga no fit catch me', desc: (n) => `Outrun Oga ${fmtNum(n)} times`, stat: 'escapes', tiers: [10, 40, 120, 350, 900] },
+    { id: 'nepa', ico: 'bulb', name: 'NEPA survivor', desc: (n) => (n === 1 ? 'Get through a blackout without a hit' : `Get through ${fmtNum(n)} blackouts without a hit`), stat: 'blackouts', tiers: [1, 10, 40, 120, 300] },
+    { id: 'overtime', ico: 'moon', name: 'Overtime', desc: (n) => `Reach level ${n} in one shift`, stat: 'maxLevel', tiers: [10, 13, 16, 20, 25] },
+    { id: 'bigboss', ico: 'career', name: 'Big boss energy', desc: (n) => `Score ${fmtNum(n)} in one shift`, stat: 'maxScore', tiers: [5000, 8000, 12000, 18000, 25000] },
+    { id: 'legend', ico: 'crown', name: 'Office legend', desc: (n) => `Score ${fmtNum(n)} in one shift`, stat: 'maxScore', tiers: [10000, 15000, 22000, 30000, 40000] },
+    { id: 'streak15', ico: 'fire', name: 'On a roll', desc: (n) => `Reach a streak of ${n}`, stat: 'maxStreak', tiers: [15, 25, 40, 60, 90] },
+    { id: 'close50', ico: 'sweat', name: 'Close shave', desc: (n) => `${fmtNum(n)} close calls in total`, stat: 'near', tiers: [50, 250, 800, 2500, 6000] },
+    { id: 'tgif', ico: 'party', name: 'TGIF', desc: (n) => (n === 1 ? 'Grab a Friday bonus' : `Grab ${fmtNum(n)} Friday bonuses`), stat: 'fridays', tiers: [1, 10, 40, 120, 300] },
+    { id: 'marathon', ico: 'stopwatch', name: 'Marathon shift', desc: (n) => `Survive ${fmtTime(n)} in one shift`, stat: 'maxTime', tiers: [180, 300, 420, 600, 900] },
+    { id: 'challenger', ico: 'handshake', name: 'Who send you?', desc: (n) => (n === 1 ? "Beat a colleague's challenge" : `Beat ${n} colleagues' challenges`), stat: 'challenges', tiers: [1, 5, 15, 40, 100] },
+    { id: 'daily3', ico: 'calendar', name: 'Punctual staff', desc: (n) => `Finish ${fmtNum(n)} daily shifts`, stat: 'dailies', tiers: [3, 10, 30, 100, 250] },
+    { id: 'bosskey', ico: 'hide', name: 'Nothing to see here', desc: (n) => (n === 1 ? 'Use the boss key' : `Use the boss key ${n} times`), stat: 'bossKeys', tiers: [1, 5, 20, 50, 120] },
+    { id: 'commuter', ico: 'bus', name: 'Lagos commuter', desc: (n) => `Arrive at work on time ${fmtNum(n)} times`, stat: 'ontime', tiers: [5, 25, 80, 200, 500] },
+    { id: 'reporter', ico: 'chart', name: 'Report machine', desc: (n) => `Submit ${fmtNum(n)} reports in total`, stat: 'tasks', tiers: [10, 50, 150, 400, 1000] },
+    { id: 'promoted', ico: 'scroll', name: 'Promoted!', desc: (n) => (n === 1 ? 'Finish a full career week' : `Finish ${n} career weeks`), stat: 'weeks', tiers: [1, 3, 8, 20, 50] },
+    { id: 'shopper', ico: 'bag', name: 'Big spender', desc: (n) => (n === 1 ? 'Buy something in the staff shop' : `Buy ${n} things in the staff shop`), stat: 'buys', tiers: [1, 5, 15, 40, 100] },
+    { id: 'eventful', ico: 'masks', name: 'Seen it all', desc: (n) => `Survive ${fmtNum(n)} shift events`, stat: 'events', tiers: [10, 50, 150, 400, 1000] },
+    // v6
+    { id: 'champion', ico: 'trophy', name: 'League champion', desc: (n) => (n === 1 ? 'Win a league round' : `Win ${n} league rounds`), stat: 'leagueWins', tiers: [1, 3, 8, 20, 50], v6: true },
+    { id: 'teamplayer', ico: 'leagues', name: 'Team player', desc: (n) => `Play ${fmtNum(n)} league shifts`, stat: 'leagueShifts', tiers: [5, 25, 80, 200, 500], v6: true },
+    { id: 'fashion', ico: 'wardrobe', name: 'Fashion killer', desc: (n) => `Own ${n} looks, outfits or titles`, stat: 'owned', tiers: [3, 8, 15, 25, 35], v6: true },
+    { id: 'doctor', ico: 'sick', name: "Doctor's note", desc: (n) => (n === 1 ? 'Get saved by sick leave' : `Get saved by sick leave ${n} times`), stat: 'sickUsed', tiers: [1, 5, 15, 40, 100], v6: true },
+    { id: 'dj', ico: 'music', name: 'Office DJ', desc: (n) => (n === 1 ? 'Last a full song (over a minute) in one shift' : `Last over a minute in ${fmtNum(n)} shifts`), stat: 'longShifts', tiers: [1, 10, 40, 120, 300], v6: true },
+    { id: 'ghostbuster', ico: 'sparkle', name: 'Ghostbuster', desc: (n) => (n === 1 ? "Beat a colleague's ghost" : `Beat ${n} ghosts`), stat: 'ghostsBeaten', tiers: [1, 5, 20, 50, 120], v6: true },
+    { id: 'generous', ico: 'gift', name: 'Generous oga', desc: (n) => (n === 1 ? 'Send a colleague lunch money' : `Send lunch money ${n} times`), stat: 'giftsSent', tiers: [1, 5, 20, 50, 120], v6: true },
+    { id: 'gist', ico: 'title', name: 'Office gist', desc: (n) => (n === 1 ? 'Post on a league wall' : `Post ${n} times on league walls`), stat: 'wallPosts', tiers: [1, 10, 40, 120, 300], v6: true },
+    { id: 'earner', ico: 'coins', name: 'Salary earner', desc: (n) => `Earn ₦${fmtNum(n)} in salary`, stat: 'earned', tiers: [5000, 25000, 100000, 300000, 1000000], v6: true },
+    { id: 'hustler', ico: 'calendar', name: 'Weekly hustler', desc: (n) => `Complete ${n} weekly challenges`, stat: 'weeklies', tiers: [1, 5, 15, 40, 100], v6: true },
+    { id: 'dodger', ico: 'party', name: 'Contribution dodger', desc: (n) => `Dodge ${n} birthday contribution collectors`, stat: 'bdayDodged', tiers: [5, 25, 80, 200, 500], v6: true },
   ];
+  const TIER_NAMES = ['Bronze', 'Silver', 'Gold', 'Platinum', 'Diamond'];
+  const TIER_COLORS = ['#cd7f32', '#b8c2cc', '#f5b301', '#8fd3e8', '#6ee7ff'];
+  const tierName = (lv) => (lv <= 0 ? '' : lv <= 5 ? TIER_NAMES[lv - 1] : 'Diamond ' + ['', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X'][Math.min(9, lv - 5)] + (lv > 14 ? ' +' + (lv - 14) : ''));
+  const tierColor = (lv) => TIER_COLORS[Math.max(0, Math.min(4, lv - 1))];
+  function tierGoal(b, k) { // goal for level k+1 (k = 0 is Bronze)
+    const tt = b.tiers;
+    if (k < tt.length) return tt[k];
+    const step = tt[tt.length - 1] - tt[tt.length - 2];
+    return tt[tt.length - 1] + step * (k - tt.length + 1);
+  }
+  const tierReward = (k) => (k < 5 ? [150, 400, 900, 2000, 4000][k] : 4000 + 1500 * (k - 4));
+  const GOLD_SET = BADGES.filter((b) => !b.v6).map((b) => b.id); // the original 19: all at Gold = gold ID frame + ₦5,000
+
 
   const CHARACTERS = {
     emeka: { name: 'Emeka', skin: '#8d5524', hair: 'low' },
@@ -578,6 +615,13 @@
     lgSubmitting: 'Sending your score to the league…', lgSubmitted: (r, n, sc) => `Rank #${r} of ${n} · your score ${sc}`, lgViewBoard: 'View league board',
     lgStartToast: (n, lim) => `${n}: ` + (lim ? `${lim % 60 ? (lim / 60).toFixed(1) : lim / 60}-minute shift. Go!` : 'this shift counts for the league. Go!'),
     lgTimeUp: 'Time up!', lgTimeUpStamp: 'Time up',
+    ghostRace: (n, sc) => `Racing ${n}'s ghost (${sc}). Same office, same obstacles!`, ghostMine: (sc) => `Racing your own best run (${sc}).`,
+    ghostOut: (n) => `${n}'s ghost clocked out here`, ghostPassed: (n) => `You passed ${n}'s ghost score!`, ghostBeatMine: 'You beat your own best!',
+    ghostYou: 'Your best', ghostBeaten: (n) => `you beat ${n}'s ghost`,
+    justNow: 'now', wallEmpty: 'No posts yet. Be the first to talk your talk.',
+    giftTo: (n) => `Send ${n} lunch money`, giftSent: (a, n, left) => `Sent ₦${a} to ${n}. You can send ₦${left} more today.`,
+    giftGot: (from, a, lg) => `${from} sent you ₦${a} lunch money (${lg})!`, giftsGot: (n, sum) => `You received ${n} lunch money gifts: +₦${sum}!`,
+    rivalPassed: (who, lg, r) => `${who} passed you in ${lg}. You're now #${r}.`, youWon: (lg, n) => `You won round ${n} of ${lg}!`,
     sickBack: 'Sick leave! The doctor signed you back in with 1 life.',
     skinTone: 'Skin tone', skinDefault: 'Default skin tone', hairDefault: 'Your usual hair', wearing: 'Wearing', wear: 'Wear', takeOff: 'Take off',
     turnOn: 'Turn on', turnOff: 'Turn off', useTitle: 'Use title', jobTitles: 'Job titles', shopOnly: 'Staff shop', orBadge: (b) => `Or unlock free with the "${b}" badge`,
@@ -592,10 +636,55 @@
     lgStartToast: (n, lim) => `${n}: ` + (lim ? `${lim % 60 ? (lim / 60).toFixed(1) : lim / 60}-minute shift. Oya go!` : 'this shift go count for league. Oya go!'),
   });
 
-  const STATS_DEFAULT = { games: 0, lunch: 0, escapes: 0, blackouts: 0, maxLevel: 0, maxScore: 0, maxStreak: 0, near: 0, fridays: 0, maxTime: 0, challenges: 0, dailies: 0, bossKeys: 0, ontime: 0, tasks: 0, weeks: 0, buys: 0, events: 0 };
+  // ---- v6 events words ----
+  Object.assign(STR.en, {
+    ev_birthday: 'Staff birthday!', ev_birthday_d: 'Colleagues are collecting ₦2,000 for cake. Dodge them!', ev_birthday_end: 'Cake has landed! Grab it.',
+    ev_flood: 'Rainy season flood', ev_flood_d: 'Puddles everywhere. They slow you down.',
+    ev_mop: 'Cleaner is mopping', ev_mop_d: 'Wet floor! You will slide. Watch the yellow signs.',
+    ev_hq: 'Visitor from HQ', ev_hq_d: 'Look busy! Standing still costs points; moving pays extra.',
+    ev_genfuel: 'Gen fuel finished', ev_genfuel_d: 'Lights are dying. Grab the jerrycan to restart the generator!',
+    ev_owambe: 'Owambe Friday', ev_owambe_d: 'Dancing colleagues block the corridor. Jollof is worth double!',
+    ev_netdown: 'Network down', ev_netdown_d: 'IT is rebooting the server. Data bundles are worth nothing for now.', ev_netdown_end: 'Network is back!',
+    ev_alertdelay: 'Alert never land', ev_alertdelay_d: 'Salary is pending. Pickups pay half… for now.', ev_alertdelay_end: 'Alert don land! Salary is raining.',
+    ev_cob: '4:59pm deadline', ev_cob_d: 'Close of business! Report desks everywhere, each worth triple.',
+    ev_harmattan: 'Harmattan haze', ev_harmattan_d: 'Dust everywhere. You can barely see ahead.',
+    ev_independence: 'Independence Day!', ev_independence_d: 'Green-white-green! Everything scores double.',
+    ev_detty: 'Detty December', ev_detty_d: 'End-of-year bonus! Gift boxes are falling.',
+    ev_valentine: "Valentine's Day", ev_valentine_d: 'Roses everywhere, and a colleague is following you with flowers.',
+    lookBusy: 'Look busy!', bdayTalk: ['₦2k for cake!', 'Contribute o!', 'Birthday levy!', 'Drop something!'],
+    bdayPaid: '-250 contribution', bdayPaidToast: 'You contributed for the cake.', bdayLeave: 'You are on leave. No contribution!',
+    danceBump: 'Owambe bump! -50', roseyBump: 'Not now! -50', noNetwork: 'No network', pending: 'pending',
+    genOn: 'Gen don start! Lights are back. +200', cakeGot: 'Birthday cake! +300',
+    fuelQueue: 'Fuel scarcity!', fuelQueue_d: 'A petrol queue is blocking one lane. Go around it!',
+  });
+  Object.assign(STR.pcm, {
+    ev_birthday: 'Staff birthday!', ev_birthday_d: 'Colleagues dey collect ₦2,000 for cake. Dodge dem!', ev_birthday_end: 'Cake don land! Carry am.',
+    ev_flood: 'Rain don fall', ev_flood_d: 'Water full ground. E go slow you down.',
+    ev_mop: 'Cleaner dey mop', ev_mop_d: 'Floor wet! You go slide. Watch the yellow sign.',
+    ev_hq: 'Oga from HQ dey come', ev_hq_d: 'Form busy! If you stand one place, points go reduce.',
+    ev_genfuel: 'Gen fuel don finish', ev_genfuel_d: 'Light dey go. Carry the jerrycan make gen start!',
+    ev_owambe: 'Owambe Friday', ev_owambe_d: 'People dey dance for corridor. Jollof na double!',
+    ev_netdown: 'Network don go', ev_netdown_d: 'IT dey restart server. Data no get value now.', ev_netdown_end: 'Network don come back!',
+    ev_alertdelay: 'Alert never land', ev_alertdelay_d: 'Salary still dey pending. Na half you go get… for now.', ev_alertdelay_end: 'Alert don land! Salary dey rain.',
+    ev_cob: '4:59pm deadline', ev_cob_d: 'Close of business! Report desk full everywhere, each one na triple.',
+    ev_harmattan: 'Harmattan haze', ev_harmattan_d: 'Dust everywhere. You no fit see far.',
+    ev_independence: 'Independence Day!', ev_independence_d: 'Green-white-green! Everything na double.',
+    ev_detty: 'Detty December', ev_detty_d: 'End of year bonus! Gift box dey fall.',
+    ev_valentine: "Val's Day", ev_valentine_d: 'Rose everywhere, and one colleague dey follow you with flower.',
+    lookBusy: 'Form busy!', bdayTalk: ['₦2k for cake!', 'Contribute o!', 'Birthday levy!', 'Drop something!'],
+    bdayPaid: '-250 contribution', bdayPaidToast: 'You don contribute for cake.', bdayLeave: 'You dey leave. No contribution!',
+    danceBump: 'Owambe don jam you! -50', roseyBump: 'No be now! -50', noNetwork: 'No network', pending: 'pending',
+    genOn: 'Gen don start! Light don come. +200', cakeGot: 'Birthday cake! +300',
+    fuelQueue: 'Fuel scarcity!', fuelQueue_d: 'Petrol queue don block one lane. Go round am!',
+  });
+
+  const STATS_DEFAULT = { games: 0, lunch: 0, escapes: 0, blackouts: 0, maxLevel: 0, maxScore: 0, maxStreak: 0, near: 0, fridays: 0, maxTime: 0, challenges: 0, dailies: 0, bossKeys: 0, ontime: 0, tasks: 0, weeks: 0, buys: 0, events: 0,
+    totalScore: 0, leagueWins: 0, leagueShifts: 0, owned: 0, sickUsed: 0, longShifts: 0, ghostsBeaten: 0, giftsSent: 0, wallPosts: 0, earned: 0, weeklies: 0, bdayDodged: 0, goldSet: 0 };
   const stats = Object.assign({}, STATS_DEFAULT, store.json('ow_stats', {}));
-  const unlocked = new Set(store.json('ow_badges', []));
-  function saveProgress() { store.set('ow_stats', JSON.stringify(stats)); store.set('ow_badges', JSON.stringify([...unlocked])); }
+  const unlocked = new Set(store.json('ow_badges', []));             // badges at Bronze or higher (outfits unlock from these)
+  const blevels = Object.assign({}, store.json('ow_blevels', {}));     // badge id -> level reached
+  for (const id of unlocked) if (!blevels[id]) blevels[id] = 1;
+  function saveProgress() { store.set('ow_stats', JSON.stringify(stats)); store.set('ow_badges', JSON.stringify([...unlocked])); store.set('ow_blevels', JSON.stringify(blevels)); }
   const outfitUnlocked = (o) => (!o.unlock && !o.buy) || unlocked.has(o.unlock) || S.owned.has(o.id);
   if (!OUTFITS.some((o) => o.id === S.outfit && outfitUnlocked(o))) S.outfit = 'standard';
 
@@ -1105,6 +1194,41 @@
       c.strokeStyle = '#d9d9d0'; c.stroke();
       c.restore();
     },
+    cake(c, tm) {
+      c.fillStyle = '#f8e1c4'; rr(c, -16, -4, 32, 16, 3); c.fill();
+      c.fillStyle = '#ff8fb1'; rr(c, -16, -8, 32, 7, 3); c.fill();
+      c.fillStyle = '#ffffff'; for (let i = 0; i < 5; i++) { circle(c, -12 + i * 6, -3, 1.6); c.fill(); }
+      c.fillStyle = '#6b4fd8'; c.fillRect(-1.2, -17, 2.4, 9);
+      c.fillStyle = Math.sin(tm * 14) > 0 ? '#ffd34d' : '#ff9a3c'; c.beginPath(); c.ellipse(0, -19, 2.2, 3.4, 0, 0, TAU); c.fill();
+      c.fillStyle = '#7a5200'; c.font = '900 6px system-ui, Arial, sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText('HBD', 0, 5);
+    },
+    gift(c, tm) {
+      c.save(); c.rotate(Math.sin(tm * 3) * 0.1);
+      c.fillStyle = '#e5484d'; rr(c, -14, -10, 28, 24, 3); c.fill();
+      c.fillStyle = '#f5d061'; c.fillRect(-2.5, -10, 5, 24); c.fillRect(-14, -1, 28, 5);
+      c.beginPath(); c.ellipse(-5, -13, 5, 3.2, -0.5, 0, TAU); c.ellipse(5, -13, 5, 3.2, 0.5, 0, TAU); c.fill();
+      c.restore();
+    },
+    rose(c, tm) {
+      c.save(); c.rotate(Math.sin(tm * 2.5) * 0.15);
+      c.strokeStyle = '#2f8f5b'; c.lineWidth = 2.4; c.beginPath(); c.moveTo(0, -2); c.lineTo(0, 16); c.stroke();
+      c.fillStyle = '#2f8f5b'; c.beginPath(); c.ellipse(4, 8, 4, 2, -0.6, 0, TAU); c.fill();
+      c.fillStyle = '#e11d48'; circle(c, 0, -8, 8); c.fill();
+      c.strokeStyle = '#9f1239'; c.lineWidth = 1.2; c.beginPath(); c.arc(0, -8, 4, 0, Math.PI * 1.4); c.stroke();
+      c.restore();
+    },
+    dancer(c, tm) {
+      c.save(); c.rotate(Math.sin(tm * 8) * 0.12);
+      drawPerson(c, { shirt: 'pattern:aso', sleeve: 'pattern:aso', pants: 'pattern:aso', skin: '#7a4521', hair: 'low', cap: 'gele', capColor: 'pattern:aso', earrings: true, lashes: true, mood: 'happy', walk: tm * 14, s: 1 });
+      c.restore();
+      c.fillStyle = '#ffd34d'; c.font = '900 12px system-ui, Arial, sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle';
+      c.fillText('♪', 18 + Math.sin(tm * 6) * 3, -38); c.fillText('♫', -18, -30 + Math.cos(tm * 5) * 3);
+    },
+    rosey(c, tm) {
+      drawPerson(c, { shirt: '#e11d48', sleeve: '#e11d48', pants: '#1f2937', skin: '#5c3519', hair: 'low', mood: 'happy', walk: tm * 9, s: 1 });
+      c.fillStyle = '#e11d48'; for (const [rx, ry] of [[-17, -2], [-14, -7], [-20, -6]]) { circle(c, rx, ry, 3.4); c.fill(); }
+      c.fillStyle = '#ff5d8f'; c.font = '900 12px system-ui, Arial, sans-serif'; c.textAlign = 'center'; c.fillText('♥', 16, -36 + Math.sin(tm * 5) * 2);
+    },
     data(c) {
       c.fillStyle = '#0f172a'; rr(c, -10, -16, 20, 32, 4); c.fill();
       c.fillStyle = '#1d4ed8'; rr(c, -8, -13, 16, 24, 2); c.fill();
@@ -1359,6 +1483,8 @@
     rng = G.mode === 'daily' ? mulberry32(strHash('office-wahala:' + G.dailyKey))
       : G.league && G.league.seed ? mulberry32(strHash('league:' + G.league.seed)) : Math.random;
     G.limit = LR && LR.shiftSecs ? LR.shiftSecs : 0;
+    G.rec = G.league && G.league.seed ? { path: [], acc: 0 } : null;
+    G.ghost = null;
     G.timeUp = false;
     G.friday = isFridayNow();
     G.time = 0;
@@ -1408,6 +1534,7 @@
     G.task = null;
     G.taskT = G.mode === 'career' && careerDay().type === 'tasks' ? 6 : rand(DIFFICULTY.taskEvery[0], DIFFICULTY.taskEvery[1]) * 0.7;
     G.held = null; G.calm = 0; G.frozen = 0; G.fade = 0; G.alertT = 0; G.revived = false; G.trailT = 0;
+    G.event2 = null; G.zones = []; G.dim = 0; G.bonusRain = 0; G.idleT = 0; G.stackTried = false;
     G.run = { lunch: 0, tasks: 0, escapes: 0, fridays: 0 };
     G.goalDone = false; G.goalEndT = 0; G.success = false; G.promoPending = null;
     if (G.mode === 'career' && careerDay().type === 'escapes') G.bossT = 8;
@@ -1587,10 +1714,10 @@
       c.streak = sk;
     }
     // shift event
-    const ev = G.event ? G.event.id : '';
+    const ev = activeEvents().map((e) => e.id).join('+');
     if (force || c.ev !== ev) {
       ui.event.hidden = !ev;
-      if (ev) ui.event.firstElementChild.textContent = t('ev_' + ev);
+      if (ev) ui.event.firstElementChild.textContent = ev.split('+').map((id) => t('ev_' + id)).join(' + ');
       c.ev = ev;
     }
     if (ev) ui.event.lastElementChild.style.width = clamp((G.event.t / G.event.dur) * 100, 0, 100).toFixed(1) + '%';
@@ -1713,7 +1840,7 @@
     if (name === 'settings') syncSettingsUi();
     if (name === 'review') prepareReview();
     if (name === 'shop') renderShop();
-    if (name === 'leagues') { renderLeagueHome(); leagueStatus(''); }
+    if (name === 'leagues') { renderLeagueHome(); leagueStatus(''); collectGifts(); }
     showScreen(name);
   }
 
@@ -1757,6 +1884,10 @@
     }
     S.wallet += pay;
     saveS.wallet();
+    stats.earned += pay; stats.totalScore += score;
+    if (G.time >= 60) stats.longShifts++;
+    if (G.mode === 'league') stats.leagueShifts++;
+    weeklyShiftDone();
     T('game_over', { mode: G.mode, score, secs: Math.floor(G.time), real: Math.round((performance.now() - (G.startedAt || performance.now())) / 1000),
       level: G.level, cause: G.success ? 'goal' : (G.lastHit || 'unknown'), items: G.collected, streak: G.maxStreak, near: G.nearMisses,
       late: G.commute ? G.commute.late : 0, pay, success: !!G.success });
@@ -1809,6 +1940,7 @@
       G.newBadges.forEach((b, i) => {
         const sp = document.createElement('span'); sp.className = 'ob-badge';
         sp.innerHTML = ico(b.ico); sp.append(b.name);
+        if (b.tier) sp.firstChild.style.background = tierColor(b.tier);
         ui.overBadges.append(sp);
       });
     } else ui.overBadges.hidden = true;
@@ -1842,6 +1974,7 @@
     let type = weighted(options);
     if (evIs('agm') && rng() < 0.75) type = 'meeting';
     else if (evIs('travel') && rng() < 0.35) type = 'colleague';
+    else if (evIs('netdown') && rng() < 0.4) type = 'network';
     const d = OBSTACLES[type];
     const m = levelMult();
     const sp = rand(d.speed[0], d.speed[1]) * m;
@@ -1897,8 +2030,9 @@
     const fri = G.mode === 'career' && careerDay().type === 'fridays';
     const money = (k) => k === 'salary' || k === 'lunch' || k === 'data';
     const options = Object.entries(ITEMS)
-      .filter(([k, d]) => !d.unlock || G.level >= d.unlock || (k === 'friday' && fri))
-      .map(([k, d]) => [k, (k === 'friday' && G.friday ? d.weight * (fri ? 6 : 2) : d.weight) * (evIs('salary') && money(k) ? 3 : 1)]);
+      .filter(([k, d]) => !d.event && (!d.unlock || G.level >= d.unlock || (k === 'friday' && fri)))
+      .map(([k, d]) => [k, (k === 'friday' && G.friday ? d.weight * (fri ? 6 : 2) : d.weight) * (evIs('salary') && money(k) ? 3 : 1)
+        * (evIs('owambe') && k === 'lunch' ? 3 : 1) * (evIs('netdown') && k === 'data' ? 0.3 : 1)]);
     const type = force || weighted(options);
     const r = 15;
     G.items.push({
@@ -1969,22 +2103,102 @@
   }
 
   /* ==================== Badges ==================== */
-  function checkBadges(live) {
-    let changed = false;
-    for (const b of BADGES) {
-      if (unlocked.has(b.id)) continue;
-      if ((stats[b.stat] || 0) >= b.goal) {
-        unlocked.add(b.id);
-        if (G.newBadges) G.newBadges.push(b);
-        T('badge', { id: b.id });
-        changed = true;
-        if (live) {
-          toast(t('badge') + b.name, 'badge', 2600, b.ico);
-          Sound.play('badge');
-        }
+  /* ---------- Weekly challenges (same three for everyone, new every Monday) ---------- */
+  const WEEKLY_POOL = [
+    { id: 'oga', per: 'shift', ico: 'running', goals: [3, 4, 5], text: (n) => `Outrun Oga ${n} times in one shift`, val: () => G.run.escapes },
+    { id: 'score', per: 'shift', ico: 'trophy', goals: [2500, 4000, 6000], text: (n) => `Score ${fmtNum(n)} in one shift`, val: () => Math.floor(G.scoreF) },
+    { id: 'level', per: 'shift', ico: 'moon', goals: [6, 8, 10], text: (n) => `Reach level ${n} in one shift`, val: () => G.level },
+    { id: 'lunch', per: 'week', ico: 'rice', stat: 'lunch', goals: [40, 80, 120], text: (n) => `Collect ${n} lunch packs` },
+    { id: 'dailies', per: 'week', ico: 'calendar', stat: 'dailies', goals: [2, 3, 4], text: (n) => `Finish ${n} daily shifts` },
+    { id: 'tasks', per: 'week', ico: 'chart', stat: 'tasks', goals: [5, 10, 15], text: (n) => `Submit ${n} reports` },
+    { id: 'ontime', per: 'week', ico: 'bus', stat: 'ontime', goals: [3, 5, 8], text: (n) => `Arrive on time ${n} times` },
+    { id: 'nepa', per: 'week', ico: 'bulb', stat: 'blackouts', goals: [2, 3, 5], text: (n) => `Survive ${n} blackouts without a hit` },
+    { id: 'league', per: 'week', ico: 'leagues', stat: 'leagueShifts', goals: [2, 4, 6], text: (n) => `Play ${n} league shifts` },
+    { id: 'near', per: 'week', ico: 'sweat', stat: 'near', goals: [40, 80, 120], text: (n) => `Get ${n} close calls` },
+    { id: 'events', per: 'week', ico: 'masks', stat: 'events', goals: [5, 10, 15], text: (n) => `Survive ${n} shift events` },
+  ];
+  const WEEKLY_REWARD = [800, 1500, 2500], WEEKLY_BONUS = 2000;
+  function weeklySet(wk) {
+    const r = mulberry32(strHash('weekly:' + wk));
+    const shiftOnes = WEEKLY_POOL.filter((x) => x.per === 'shift'), weekOnes = WEEKLY_POOL.filter((x) => x.per === 'week');
+    const pick = (arr) => arr.splice((r() * arr.length) | 0, 1)[0];
+    const a = [pick(shiftOnes.slice()), pick(weekOnes), pick(weekOnes)];
+    return a.map((x, i) => ({ ...x, goal: x.goals[i], reward: WEEKLY_REWARD[i] }));
+  }
+  let WK = null;
+  function weeklyState() {
+    const wk = weekKeyLocal();
+    if (!WK || WK.week !== wk) {
+      const saved = store.json('ow_weekly', null);
+      if (saved && saved.week === wk) WK = saved;
+      else {
+        WK = { week: wk, base: {}, best: {}, done: [], bonus: false };
+        for (const x of WEEKLY_POOL) if (x.stat) WK.base[x.stat] = stats[x.stat] || 0;
+        store.set('ow_weekly', JSON.stringify(WK));
       }
     }
-    if (changed) saveProgress();
+    return WK;
+  }
+  function weeklyList() {
+    const st = weeklyState();
+    return weeklySet(st.week).map((c) => {
+      const cur = c.per === 'week' ? Math.max(0, (stats[c.stat] || 0) - (st.base[c.stat] || 0)) : st.best[c.id] || 0;
+      return { ...c, cur: Math.min(cur, c.goal), done: st.done.includes(c.id) };
+    });
+  }
+  function weeklyShiftDone() {
+    const st = weeklyState();
+    for (const c of weeklySet(st.week)) if (c.per === 'shift') st.best[c.id] = Math.max(st.best[c.id] || 0, c.val());
+    store.set('ow_weekly', JSON.stringify(st));
+  }
+  function checkWeekly(live) {
+    const st = weeklyState();
+    let msg = '';
+    for (const c of weeklyList()) {
+      if (c.done || c.cur < c.goal) continue;
+      st.done.push(c.id);
+      S.wallet += c.reward; stats.weeklies++;
+      msg = t('weeklyDone')(c.text(c.goal), fmtNum(c.reward));
+      T('badge', { id: 'weekly_' + c.id, tier: 0 });
+    }
+    if (!st.bonus && st.done.length >= 3) { st.bonus = true; S.wallet += WEEKLY_BONUS; msg = t('weeklyAll')(fmtNum(WEEKLY_BONUS)); }
+    if (msg) {
+      saveS.wallet(); store.set('ow_weekly', JSON.stringify(st));
+      if (live) setTimeout(() => { if (G.state === 'playing' || G.state === 'over') toast(msg, 'good', 3200, 'calendar'); }, 1200);
+      else if (G.newBadges) G.newBadges.push({ id: 'weekly', ico: 'calendar', name: msg, tier: 0 });
+    }
+  }
+  const weekDaysLeft = () => { const d = new Date(Date.now() + 3600e3); return 7 - ((d.getUTCDay() + 6) % 7); };
+
+  function checkBadges(live) {
+    let changed = false, best = null, cash = 0;
+    stats.owned = S.owned.size;
+    for (const b of BADGES) {
+      let lv = blevels[b.id] || 0;
+      const have = stats[b.stat] || 0;
+      while (have >= tierGoal(b, lv)) {
+        cash += tierReward(lv);
+        lv++;
+        const nb = { id: b.id, ico: b.ico, name: b.name + ' · ' + tierName(lv), tier: lv };
+        if (G.newBadges) G.newBadges.push(nb);
+        T('badge', { id: b.id, tier: lv });
+        best = nb;
+        changed = true;
+      }
+      if (lv !== (blevels[b.id] || 0)) { blevels[b.id] = lv; unlocked.add(b.id); }
+    }
+    if (cash) { S.wallet += cash; saveS.wallet(); }
+    if (live && best) {
+      toast(t('badge') + best.name + (cash ? ' (+₦' + fmtNum(cash) + ')' : ''), 'badge', 2800, best.ico);
+      Sound.play('badge');
+    }
+    if (!stats.goldSet && GOLD_SET.every((id) => (blevels[id] || 0) >= 3)) {
+      stats.goldSet = 1; S.wallet += 5000; saveS.wallet(); changed = true;
+      T('badge', { id: 'goldset', tier: 1 });
+      setTimeout(() => { toast(t('goldSet'), 'badge', 4000, 'crown'); confetti(60); }, live ? 3000 : 400);
+    }
+    checkWeekly(live);
+    if (changed) { saveProgress(); if (G.state === 'menu') refreshMenu(); }
   }
   function liveStats() {
     stats.maxLevel = Math.max(stats.maxLevel, G.level);
@@ -2041,6 +2255,12 @@
     else { o.r = d.r; o.hr = d.r * 0.8; o.x = lx; o.y = -40; o.vx = 0; o.vy = rand(d.speed[0], d.speed[1]) * m; }
     G.obstacles.push(o);
   }
+  function spawnFuelQueue() {
+    const lanes = laneXs(), lx = lanes[(rng() * lanes.length) | 0];
+    for (let q = 0; q < 4; q++) G.obstacles.push({ type: 'danfo', queue: true, commute: true, t: 0, rot: 0, vr: 0, minD: Infinity, warn: 0, phase: 'move', life: 0, w: 56, h: 92, x: lx, y: -70 - q * 100, vx: 0, vy: ROAD_SPEED });
+    banner(t('fuelQueue'), true); toast(t('fuelQueue_d'), 'info', 2400);
+    T('event_start', { id: 'fuelqueue', level: 0 });
+  }
   function hitCommute(o) {
     const p = G.player;
     const lateStep = [10, 7, 5][Math.min(2, (G.upg && G.upg.danfo) || 0)];
@@ -2066,7 +2286,7 @@
     const late = G.commute.late;
     G.phase = 'office';
     T('commute_end', { late, skipped: !!skipped });
-    G.obstacles = [];
+    G.obstacles = []; G.zones = [];
     G.time = 0;
     G.spawnT = DIFFICULTY.graceSeconds + 0.6;
     G.itemT = 1.4;
@@ -2086,6 +2306,10 @@
     c.t += dt;
     G.scroll += ROAD_SPEED * dt;
     updatePlayer(dt);
+    if (!c.queueDone && c.t > 4) {
+      c.queueDone = true;
+      if (rng() < 0.4) spawnFuelQueue();
+    }
     G.spawnT -= dt;
     if (G.spawnT <= 0) {
       spawnCommuteObstacle();
@@ -2097,39 +2321,190 @@
     if (c.t >= c.dur && G.state === 'playing') arrive(false);
   }
 
-  /* ---------- Shift events ---------- */
-  function startEvent(force) {
-    const options = EVENTS.filter((e) => e !== G.lastEvent && !(e === 'travel' && G.mode === 'career' && careerDay().type === 'escapes'));
-    const id = force || options[(rng() * options.length) | 0];
-    G.event = { id, t: DIFFICULTY.eventLength, dur: DIFFICULTY.eventLength };
+  /* ---------- Shift events (v6: more, more Nigerian, calendar-aware, stack at high levels) ---------- */
+  // w = base weight, from = earliest level. Calendar and season boosts are applied in eventWeight().
+  const EVENT_DEFS = {
+    salary: { w: 1 }, audit: { w: 1 }, travel: { w: 1 }, agm: { w: 1 }, alert: { w: 1 },
+    birthday: { w: 1.1, from: 3 }, flood: { w: 0.5, from: 2 }, mop: { w: 0.9, from: 2 }, hq: { w: 1, from: 3 },
+    genfuel: { w: 0.9, from: 4 }, owambe: { w: 0.8, from: 3 }, netdown: { w: 0.9, from: 2 }, alertdelay: { w: 0.8, from: 2 },
+    cob: { w: 0.9, from: 4 }, harmattan: { w: 0, from: 2 },
+    independence: { w: 0, from: 2 }, detty: { w: 0, from: 2 }, valentine: { w: 0, from: 2 },
+  };
+  const EVENTS = Object.keys(EVENT_DEFS);
+  function lagosNow() { const d = new Date(Date.now() + 3600e3); return { m: d.getUTCMonth() + 1, d: d.getUTCDate(), dow: d.getUTCDay(), last: new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + 1, 0)).getUTCDate() }; }
+  function eventWeight(id) {
+    const n = lagosNow();
+    let w = EVENT_DEFS[id].w;
+    const rainy = n.m >= 4 && n.m <= 10, dry = n.m === 12 || n.m <= 2, payday = n.d >= n.last - 3 || n.d <= 2;
+    if (id === 'flood') w = rainy ? 1.6 : 0.25;
+    if (id === 'harmattan') w = dry ? 1.4 : 0;
+    if (id === 'owambe' && n.dow === 5) w *= 3;
+    if (payday && (id === 'salary' || id === 'alertdelay')) w *= 2.5;
+    if (id === 'independence' && n.m === 10 && n.d === 1) w = 6;
+    if (id === 'detty' && ((n.m === 12) || (n.m === 1 && n.d <= 2))) w = 2.5;
+    if (id === 'valentine' && n.m === 2 && n.d >= 13 && n.d <= 15) w = 4;
+    return w;
+  }
+  const activeEvents = () => [G.event, G.event2].filter(Boolean);
+  const evIs = (id) => !!((G.event && G.event.id === id) || (G.event2 && G.event2.id === id));
+  function startEvent(force, second) {
+    const busy = activeEvents().map((e) => e.id);
+    const options = EVENTS.filter((e) => !busy.includes(e) && e !== G.lastEvent && G.level >= (EVENT_DEFS[e].from || 2)
+      && !(e === 'travel' && G.mode === 'career' && careerDay().type === 'escapes')
+      && !(e === 'genfuel' && G.black) && !(second && (e === 'audit' || e === 'genfuel')))
+      .map((e) => [e, eventWeight(e)]).filter(([, w]) => w > 0);
+    const id = force || (options.length ? weighted(options) : 'salary');
+    const ev = { id, t: DIFFICULTY.eventLength, dur: DIFFICULTY.eventLength, k: 0, n: 0 };
+    if (second) G.event2 = ev; else G.event = ev;
     G.lastEvent = id;
-    T('event_start', { id, level: G.level });
-    banner(t('ev_' + id), id === 'audit' || id === 'agm');
+    T('event_start', { id, level: G.level, stacked: !!second });
+    banner(t('ev_' + id), ['audit', 'agm', 'birthday', 'hq', 'genfuel', 'netdown'].includes(id));
     toast(t('ev_' + id + '_d'), 'info', 2600);
     say('ev_' + id);
     Sound.play('level');
     if (id === 'travel') for (const o of G.obstacles) if (o.boss) leaveBoss(o);
     if (id === 'alert') G.alertT = 0.4;
+    if (id === 'genfuel') G.dim = 0;
+    if (id === 'cob') G.taskT = Math.min(G.taskT, 0.3);
+    if (id === 'independence') confetti(60);
+    if (id === 'hq') G.idleT = 0;
   }
-  function updateEvents(dt) {
-    if (G.event) {
-      G.event.t -= dt;
-      if (G.event.id === 'alert') {
+  function endEvent(slot) {
+    const ev = G[slot];
+    G[slot] = null;
+    stats.events++; G.badgeCheckT = 0;
+    if (ev.id === 'birthday') { spawnItem('cake', true); stats.bdayDodged += Math.max(0, ev.k - ev.n); toast(t('ev_birthday_end'), 'good', 2000); }
+    else if (ev.id === 'genfuel') { G.dim = 0; }
+    else if (ev.id === 'alertdelay') { G.bonusRain = 3; G.alertT = 0.1; toast(t('ev_alertdelay_end'), 'good', 2200); Sound.play('big'); }
+    else if (ev.id === 'netdown') toast(t('ev_netdown_end'), 'good', 1800);
+    else toast(t('evOver'), 'info', 1600);
+    if (slot === 'event' && G.event2) { G.event = G.event2; G.event2 = null; }
+    if (!G.event) {
+      const quick = G.level >= 6 ? 0.72 : 1;
+      G.eventT = rand(DIFFICULTY.eventEvery[0], DIFFICULTY.eventEvery[1]) * quick;
+    }
+  }
+  function tickEvent(ev, dt) {
+    const p = G.player;
+    ev.t -= dt;
+    switch (ev.id) {
+      case 'alert':
         G.alertT -= dt;
         if (G.alertT <= 0) { spawnItem(rng() < 0.05 ? 'friday' : 'salary', true); G.alertT = 0.24; }
+        break;
+      case 'birthday':
+        ev.spawnT = (ev.spawnT ?? 0.6) - dt;
+        if (ev.spawnT <= 0 && ev.t > 2) { spawnCollector(); ev.spawnT = rand(2.2, 3.2); ev.k++; }
+        break;
+      case 'flood': case 'mop':
+        ev.spawnT = (ev.spawnT ?? 0.3) - dt;
+        if (ev.spawnT <= 0 && ev.t > 1.5) { spawnZone(ev.id === 'flood' ? 'puddle' : 'wet'); ev.spawnT = ev.id === 'flood' ? rand(0.7, 1.1) : rand(1.2, 1.8); }
+        break;
+      case 'hq': {
+        const still = Math.hypot(p.vx, p.vy) < 30;
+        G.idleT = still ? (G.idleT || 0) + dt : 0;
+        if (G.idleT > 0.9) {
+          addScore(-30 * dt);
+          ev.warnT = (ev.warnT || 0) - dt;
+          if (ev.warnT <= 0) { floater(t('lookBusy'), p.x, p.y - 44, '#ffb38a', 15); ev.warnT = 1.2; }
+        }
+        break;
       }
-      if (G.event.t <= 0) {
-        stats.events++; G.badgeCheckT = 0;
-        G.event = null;
-        G.eventT = rand(DIFFICULTY.eventEvery[0], DIFFICULTY.eventEvery[1]);
-        toast(t('evOver'), 'info', 1600);
+      case 'genfuel':
+        G.dim = Math.min(0.88, (G.dim || 0) + dt * 0.11);
+        ev.spawnT = (ev.spawnT ?? 4.5) - dt;
+        if (ev.spawnT <= 0 && !G.items.some((i) => i.type === 'fuel')) { spawnItem('fuel'); ev.spawnT = 4; }
+        break;
+      case 'owambe':
+        ev.spawnT = (ev.spawnT ?? 0.5) - dt;
+        if (ev.spawnT <= 0 && ev.t > 2) { spawnDancer('dancer'); ev.spawnT = rand(1.6, 2.4); }
+        break;
+      case 'valentine':
+        ev.spawnT = (ev.spawnT ?? 0.8) - dt;
+        if (ev.spawnT <= 0 && ev.t > 2) { if (rng() < 0.45) spawnDancer('rosey'); else spawnItem('rose', false); ev.spawnT = rand(0.9, 1.4); }
+        break;
+      case 'detty':
+        ev.spawnT = (ev.spawnT ?? 0.6) - dt;
+        if (ev.spawnT <= 0) { spawnItem('gift', false); ev.spawnT = rand(1.0, 1.5); }
+        break;
+      case 'independence':
+        ev.spawnT = (ev.spawnT ?? 2) - dt;
+        if (ev.spawnT <= 0) { confetti(18); ev.spawnT = 2.5; }
+        break;
+      case 'cob':
+        if (!G.task) G.taskT = Math.min(G.taskT, 0.5);
+        break;
+      default:
+    }
+  }
+  function updateEvents(dt) {
+    if (G.bonusRain > 0) {
+      G.bonusRain -= dt; G.alertT -= dt;
+      if (G.alertT <= 0) { spawnItem('salary', true); G.alertT = 0.2; }
+    }
+    if (G.zones.length) updateZones(dt);
+    if (G.event) {
+      tickEvent(G.event, dt);
+      if (G.event2) { tickEvent(G.event2, dt); if (G.event2.t <= 0) endEvent('event2'); }
+      if (G.event && G.event.t <= 0) endEvent('event');
+      else if (G.event && !G.event2 && G.level >= 10 && !G.stackTried && G.event.t < G.event.dur - 3) {
+        G.stackTried = true;
+        if (rng() < (G.level >= 14 ? 0.7 : 0.35)) startEvent(null, true);
       }
     } else if (G.level >= DIFFICULTY.eventFromLevel && !G.black) {
       G.eventT -= dt;
-      if (G.eventT <= 0) startEvent();
+      if (G.eventT <= 0) { G.stackTried = false; startEvent(); }
     }
   }
-  const evIs = (id) => !!(G.event && G.event.id === id);
+
+  // birthday contribution collectors: colleagues with an envelope, take points not lives
+  function spawnCollector() {
+    const fromLeft = rng() < 0.5;
+    const sp = rand(120, 150) * levelMult();
+    G.obstacles.push({ type: 'colleague', collector: true, t: 0, rot: 0, vr: 0, minD: Infinity, warn: 0.6, phase: 'move', side: fromLeft ? 'L' : 'R',
+      r: 17, hr: 14, x: fromLeft ? FX0 - 30 : FX1 + 30, y: rand(minY() - 40, minY() + 120), speed: sp, vx: fromLeft ? sp : -sp, vy: 0, life: 5.5,
+      talk: pickF(t('bdayTalk')) });
+  }
+  // owambe dancers / valentine roses: bump you back, cost points, never lives
+  function spawnDancer(kind) {
+    const x = FX0 + 40 + rng() * Math.max(10, FX1 - FX0 - 80);
+    G.obstacles.push({ type: kind, bump: true, t: 0, rot: 0, vr: 0, minD: Infinity, warn: 0, phase: 'move', r: 18, hr: 15,
+      x, baseX: x, y: -40, vx: 0, vy: floorSpeed() * 1.05 + rand(10, 40), phaseOff: rand(0, TAU) });
+  }
+  // puddles (flood) and wet floor (cleaner mopping)
+  function spawnZone(kind) {
+    const w = kind === 'puddle' ? rand(60, 95) : rand(80, 120), h = kind === 'puddle' ? rand(28, 40) : rand(46, 60);
+    G.zones.push({ kind, x: FX0 + w / 2 + 6 + rng() * Math.max(10, FX1 - FX0 - w - 12), y: -h, w, h, t: 0 });
+  }
+  function updateZones(dt) {
+    const sp = floorSpeed();
+    for (let i = G.zones.length - 1; i >= 0; i--) { const z = G.zones[i]; z.t += dt; z.y += sp * dt; if (z.y - z.h > H + 20) G.zones.splice(i, 1); }
+  }
+  function zoneAt(x, y) {
+    for (const z of G.zones) if (Math.abs(x - z.x) < z.w / 2 && Math.abs(y + 16 - z.y) < z.h / 2) return z;
+    return null;
+  }
+  function bumpPlayer(o) {
+    const p = G.player;
+    const dx = p.x - o.x, dy = p.y - o.y, d = Math.hypot(dx, dy) || 1;
+    p.vx = (dx / d) * 420; p.vy = (dy / d) * 420 + 120;
+    p.x += (dx / d) * 18; p.y += (dy / d) * 18 + 10;
+    p.invuln = 0.7; G.streak = 0; G.shake = 6;
+    addScore(-50);
+    floater(o.type === 'rosey' ? t('roseyBump') : t('danceBump'), p.x, p.y - 44, '#ffb3d1', 15);
+    Sound.play('near');
+    o.hitDone = true;
+  }
+  function payContribution(o) {
+    const p = G.player;
+    addScore(-250);
+    if (G.event && G.event.id === 'birthday') G.event.n++; else if (G.event2 && G.event2.id === 'birthday') G.event2.n++;
+    floater(t('bdayPaid'), p.x, p.y - 44, '#ffb38a', 16);
+    toast(t('bdayPaidToast'), 'bad', 1500);
+    p.invuln = 0.9; G.shake = 5;
+    Sound.play('coin');
+    o.hitDone = true; o.life = Math.min(o.life, 0);
+  }
 
   /* ---------- Bosses ---------- */
   function pickBoss() {
@@ -2287,7 +2662,9 @@
     k.on = Math.hypot(p.x - k.x, p.y - k.y) < 42;
     if (k.on) k.prog += dt / DIFFICULTY.taskSeconds; else k.prog = Math.max(0, k.prog - dt * 0.5);
     if (k.prog >= 1) {
-      addScore(300);
+      const cob = evIs('cob') ? 3 : 1;
+      addScore(300 * cob);
+      if (cob > 1) floater('x3', k.x + 30, k.y - 50, '#ffe066', 18);
       stats.tasks++; G.run.tasks++; G.badgeCheckT = 0;
       T('task_done', { level: G.level });
       floater(t('taskDone'), k.x, k.y - 34, '#7df0b5', 16);
@@ -2652,6 +3029,8 @@
       if (!j || !j.ok) return;
       LG.available = true;
       $('btn-leagues').hidden = false;
+      collectGifts();
+      setTimeout(checkRivals, 1500);
       const code = (new URLSearchParams(location.search).get('league') || '').toUpperCase();
       if (/^[A-HJ-NP-Z2-9]{6}$/.test(code) && !S.leagues.some((l) => l.code === code)) {
         api('/' + code).then((b) => { LG.invite = { code, name: b.name }; refreshMenu(); }).catch(() => {});
@@ -2873,6 +3252,12 @@
       const tt = document.createElement('span'); tt.className = 't';
       tt.textContent = (b.rules.scoring === 'total' ? t('lgPlays')(r.plays) + ' · ' + t('lgBestShort')(fmtNum(r.best)) : t('lgSurvived')(fmtTime(r.duration || 0), r.level || 1, r.plays));
       li.append(n, s, tt);
+      if (!b.legacy && b.me && r.pid !== b.me.pid && !b.me.kicked) {
+        const gb = document.createElement('button');
+        gb.type = 'button'; gb.className = 'gift-btn' + (admin ? ' with-kick' : ''); gb.dataset.gift = r.pid; gb.dataset.name = r.name;
+        gb.setAttribute('aria-label', t('giftTo')(r.name)); gb.innerHTML = ico('lunch-money');
+        li.appendChild(gb);
+      }
       if (admin && !(b.me && r.pid === b.me.pid)) {
         const k = document.createElement('button');
         k.type = 'button'; k.className = 'kick-btn'; k.dataset.kick = r.pid; k.setAttribute('aria-label', t('lgRemove') + ' ' + r.name);
@@ -2882,6 +3267,8 @@
       rows.appendChild(li);
     }
     $('league-board-status').textContent = b.players.length ? '' : (b.round.status === 'upcoming' ? t('lgNotYet') : t('leagueEmpty'));
+    $('lb-wall-box').hidden = !!b.legacy;
+    if (!b.legacy) paintWall(b.wall);
     const h = b.history || [];
     $('lb-history-box').hidden = !h.length;
     $('lb-history').innerHTML = h.map((x) => `<li><span class="h-round">${esc(t('lgRound')(x.n))} · ${esc(new Date(x.end).toLocaleDateString(undefined, { day: 'numeric', month: 'short' }))}</span>` +
@@ -3029,6 +3416,7 @@
       if (G.state === 'leagues') leagueStatus('');
       T('league_play', { shift: r.rules.shiftSecs, tries: r.rules.tries });
       startGame('league');
+      if (r.rules.sameOffice) ghostLoad(code);
     } catch (e) {
       st(e.message || t('leagueOffline'), 'err');
       if (LG.boards[code]) fetchBoard(code).then(() => { if (G.state === 'leagues') { if (LG.current) paintBoard(LG.boards[code]); else paintLeagueList(); } }).catch(() => {});
@@ -3046,8 +3434,11 @@
     msg.textContent = t('lgSubmitting');
     $('btn-again').hidden = false;
     try {
-      const r = await post('/' + L.code + '/score', Object.assign({ playerId: S.playerId, name: S.name, score: run.score, duration: run.duration, level: run.level, runId: L.runId }, myFlair()));
+      const ghost = ghostEncode();
+      const r = await post('/' + L.code + '/score', Object.assign({ playerId: S.playerId, name: S.name, score: run.score, duration: run.duration, level: run.level, runId: L.runId }, myFlair(), ghost ? { ghost } : {}));
       msg.textContent = t('lgSubmitted')(r.rank, r.players, fmtNum(L.rules.scoring === 'total' ? r.total : r.best)) + (r.triesLeft !== null && r.triesLeft !== undefined ? ' · ' + t('lgTriesLeft')(r.triesLeft) : '');
+      const gh = G.ghost;
+      if (gh && !gh.mine && run.score > gh.score) { stats.ghostsBeaten++; checkBadges(true); saveProgress(); msg.textContent += ' · ' + t('ghostBeaten')(gh.name); }
       box.classList.add(r.rank === 1 ? 'is-first' : 'is-ok');
       L.triesLeft = r.triesLeft;
       if (r.triesLeft === 0) $('btn-again').hidden = true;
@@ -3065,6 +3456,183 @@
   function replay() {
     if (G.mode === 'league' && G.league) playLeague(G.league.code);
     else startGame(G.mode);
+  }
+
+  // ----- v6 social: ghost runs, office wall, lunch money, rival alerts -----
+  const WALL_LINES = ['Who send you?', 'Abeg slow down o!', 'Na me be MD now.', 'See as you dey shake!', 'Oga don catch you!',
+    'This board na my own.', 'I dey come for your position.', 'Small small, I go pass you.', 'Share the jollof!', 'Lunch break don finish o.',
+    'Make una stop dey form busy!', 'Who get extra tries? Asking for a friend.', 'NEPA no fit stop me today.', 'Congrats, you try!',
+    'Respect the leader.', 'Rematch tomorrow!', 'The prize na my own this week.', 'My data finish, I go come back.', 'Na God dey give promotion.', 'Good game everybody!'];
+  const REACTS = [['clap', 'clap'], ['laugh', 'laugh'], ['fire', 'fire'], ['heart', 'heart']];
+  const GHOST_STEP = 0.2;
+  function ghostRecordTick(dt) {
+    const r = G.rec;
+    r.acc += dt;
+    while (r.acc >= GHOST_STEP) {
+      r.acc -= GHOST_STEP;
+      if (r.path.length > 22000) return;
+      const p = G.player;
+      r.path.push(clamp(Math.round(((p.x - FX0) / (FX1 - FX0)) * 255), 0, 255), clamp(Math.round((p.y / H) * 255), 0, 255));
+    }
+  }
+  function ghostEncode() {
+    if (!G.rec || !G.rec.path.length) return '';
+    let bin = '';
+    for (const v of G.rec.path) bin += String.fromCharCode(v);
+    return btoa(bin);
+  }
+  function ghostLoad(code) {
+    api('/' + code + '/ghost?me=' + encodeURIComponent(S.playerId)).then((g) => {
+      if (!g || g.none || !G.league || G.league.code !== code || G.state === 'menu') return;
+      const raw = atob(g.path), a = new Uint8Array(raw.length);
+      for (let i = 0; i < raw.length; i++) a[i] = raw.charCodeAt(i);
+      G.ghost = { name: g.name, score: g.score, mine: g.mine, a, step: g.step || GHOST_STEP, t: G.rec ? G.rec.path.length / 2 * GHOST_STEP : 0, passed: false, out: false };
+      toast(g.mine ? t('ghostMine')(fmtNum(g.score)) : t('ghostRace')(g.name, fmtNum(g.score)), 'info', 2600, 'ghost');
+    }).catch(() => {});
+  }
+  function ghostPos() {
+    const g = G.ghost;
+    const n = g.a.length / 2, f = g.t / g.step, i = Math.floor(f);
+    if (i >= n - 1) return null;
+    const k = f - i;
+    const x0 = g.a[i * 2], y0 = g.a[i * 2 + 1], x1 = g.a[i * 2 + 2], y1 = g.a[i * 2 + 3];
+    return { x: FX0 + ((x0 + (x1 - x0) * k) / 255) * (FX1 - FX0), y: ((y0 + (y1 - y0) * k) / 255) * H, vx: (x1 - x0) };
+  }
+  function ghostTick(dt) {
+    const g = G.ghost;
+    g.t += dt;
+    if (!g.out && !ghostPos()) { g.out = true; if (!g.mine) floater(t('ghostOut')(g.name), G.player.x, G.player.y - 60, '#c4b5fd', 14); }
+    if (!g.passed && G.scoreF > g.score) {
+      g.passed = true;
+      toast(g.mine ? t('ghostBeatMine') : t('ghostPassed')(g.name), 'good', 2200, 'ghost');
+      Sound.play('big');
+    }
+  }
+  function drawGhost(c, tm) {
+    const pos = ghostPos();
+    if (!pos) return;
+    c.save();
+    c.globalAlpha = 0.38;
+    c.translate(pos.x, pos.y);
+    drawPerson(c, { shirt: '#c4b5fd', sleeve: '#c4b5fd', pants: '#a78bfa', skin: '#ddd6fe', hair: 'low', hairColor: '#7c3aed', mood: 'happy', walk: tm * 10, s: 1 });
+    c.restore();
+    c.save(); c.globalAlpha = 0.85;
+    drawTag(c, pos.x, pos.y - 46, G.ghost.mine ? t('ghostYou') : G.ghost.name, '#7c3aed', '#fff');
+    c.restore();
+  }
+
+  // office wall
+  const timeAgo = (ts) => { const m = Math.max(0, Math.round((Date.now() - ts) / 60000)); return m < 1 ? t('justNow') : m < 60 ? m + 'm' : m < 1440 ? Math.round(m / 60) + 'h' : Math.round(m / 1440) + 'd'; };
+  function paintWall(posts) {
+    const ul = $('wall-posts');
+    ul.innerHTML = '';
+    if (!posts || !posts.length) { ul.innerHTML = '<li class="wall-empty">' + esc(t('wallEmpty')) + '</li>'; return; }
+    for (const p of posts) {
+      const li = document.createElement('li');
+      li.className = 'wall-post is-' + p.kind;
+      const head = document.createElement('div'); head.className = 'wp-head';
+      head.innerHTML = p.kind === 'gift' ? ico('lunch-money') : p.kind === 'auto' ? ico('trophy') : '';
+      const nm = document.createElement('strong'); nm.textContent = p.kind === 'line' ? p.name : '';
+      const tm = document.createElement('small'); tm.textContent = timeAgo(p.t);
+      head.append(nm, tm);
+      const body = document.createElement('p'); body.className = 'wp-text';
+      body.textContent = p.kind === 'line' ? (WALL_LINES[p.line] || '') : p.text;
+      const rx = document.createElement('div'); rx.className = 'wp-reacts';
+      for (const [k, icn] of REACTS) {
+        const b = document.createElement('button');
+        b.type = 'button'; b.dataset.post = p.id; b.dataset.emoji = k; b.setAttribute('aria-label', k);
+        b.innerHTML = ico(icn) + (p.reacts && p.reacts[k] ? '<span>' + p.reacts[k] + '</span>' : '');
+        rx.appendChild(b);
+      }
+      li.append(head, body, rx);
+      ul.appendChild(li);
+    }
+  }
+  function toggleWallLines() {
+    const box = $('wall-lines');
+    if (!box.firstElementChild) box.innerHTML = WALL_LINES.map((l, i) => `<button type="button" class="wall-line" data-line="${i}">${esc(l)}</button>`).join('');
+    box.hidden = !box.hidden;
+  }
+  async function postWall(line) {
+    if (!S.name) { $('wall-status').textContent = t('leagueNeedName'); return; }
+    $('wall-status').textContent = '';
+    try {
+      const r = await post('/' + LG.current + '/wall', { playerId: S.playerId, name: S.name, line });
+      $('wall-lines').hidden = true;
+      stats.wallPosts++; G.badgeCheckT = 0; checkBadges(true); saveProgress();
+      T('league_admin', { action: 'wall' });
+      paintWall(r.wall);
+      if (LG.boards[LG.current]) LG.boards[LG.current].wall = r.wall;
+    } catch (e) { $('wall-status').textContent = e.message; }
+  }
+  async function reactWall(postId, emoji) {
+    try {
+      const r = await post('/' + LG.current + '/react', { playerId: S.playerId, post: postId, emoji });
+      paintWall(r.wall);
+    } catch (e) { $('wall-status').textContent = e.message; }
+  }
+
+  // lunch money
+  let giftTarget = null;
+  function openGift(pid, name) {
+    giftTarget = { pid, name };
+    $('gift-to').textContent = t('giftTo')(name);
+    $('gift-box').hidden = false;
+    $('gift-box').scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+  }
+  async function sendGift(amount) {
+    if (!giftTarget) return;
+    if (S.wallet < amount) { toast(t('cantAfford'), 'info', 2000); return; }
+    try {
+      const r = await post('/' + LG.current + '/gift', { playerId: S.playerId, name: S.name, to: giftTarget.pid, amount });
+      S.wallet -= amount; saveS.wallet();
+      stats.giftsSent++; G.badgeCheckT = 0; checkBadges(true); saveProgress();
+      T('league_admin', { action: 'gift', amount });
+      toast(t('giftSent')(fmtNum(amount), giftTarget.name, fmtNum(r.leftToday)), 'good', 2600, 'lunch-money');
+      $('gift-box').hidden = true; giftTarget = null;
+      paintBoard(await fetchBoard(LG.current));
+    } catch (e) { toast(e.message, 'bad', 2600); }
+  }
+  function collectGifts() {
+    if (!LG.available) return;
+    api('/gifts?me=' + encodeURIComponent(S.playerId)).then((r) => {
+      if (!r.gifts || !r.gifts.length) return;
+      let sum = 0;
+      for (const g of r.gifts) sum += g.amount;
+      S.wallet += sum; saveS.wallet(); refreshMenu();
+      const g = r.gifts[0];
+      toast(r.gifts.length === 1 ? t('giftGot')(g.from, fmtNum(g.amount), g.league) : t('giftsGot')(r.gifts.length, fmtNum(sum)), 'good', 3600, 'lunch-money');
+      Sound.play('coin');
+    }).catch(() => {});
+  }
+
+  // rival alerts + league wins (on opening the game)
+  async function checkRivals() {
+    if (!LG.available || !S.leagues.length) return;
+    const ranks = store.json('ow_lgranks', {}) || {};
+    const wins = new Set(store.json('ow_lgwins', []) || []);
+    const alerts = [];
+    for (const l of S.leagues) {
+      try {
+        const b = await fetchBoard(l.code);
+        const me = b.me || {};
+        const prev = ranks[l.code];
+        if (me.rank && prev && prev.rank && me.rank > prev.rank && prev.round === b.round.n) {
+          const above = b.players[me.rank - 2];
+          alerts.push(t('rivalPassed')(above ? above.name : '?', b.name, me.rank));
+        }
+        ranks[l.code] = { rank: me.rank || 0, round: b.round.n };
+        for (const h of b.history || []) {
+          const key = l.code + ':' + h.n;
+          const w0 = h.winners[0];
+          if (!wins.has(key) && w0 && (w0.pid ? w0.pid === me.pid : w0.name === S.name)) { wins.add(key); stats.leagueWins++; alerts.push(t('youWon')(b.name, h.n)); }
+        }
+      } catch (e) { /* offline */ }
+    }
+    store.set('ow_lgranks', JSON.stringify(ranks));
+    store.set('ow_lgwins', JSON.stringify([...wins]));
+    checkBadges(true); saveProgress();
+    alerts.slice(0, 2).forEach((a, i) => setTimeout(() => { if (G.state === 'menu' || G.state === 'leagues') toast(a, 'info', 3600, 'bell'); }, 1200 + i * 3800));
   }
 
   /* ---------- Analytics helper ---------- */
@@ -3332,7 +3900,10 @@
     if (keys.has('U')) ay -= 1;
     if (keys.has('D')) ay += 1;
     const coffeeT = [0, 20, 35][Math.min(2, (G.upg && G.upg.coffee) || 0)];
-    const spd = CONFIG.PLAYER_SPEED * (p.fuel > 0 ? 1.45 : 1) * (1 + 0.05 * ((G.upg && G.upg.chair) || 0)) * (G.phase === 'office' && G.time < coffeeT ? 1.2 : 1);
+    const zone = G.zones && G.zones.length ? zoneAt(p.x, p.y) : null;
+    const slip = zone && zone.kind === 'wet';
+    const spd = CONFIG.PLAYER_SPEED * (p.fuel > 0 ? 1.45 : 1) * (1 + 0.05 * ((G.upg && G.upg.chair) || 0)) * (G.phase === 'office' && G.time < coffeeT ? 1.2 : 1) * (zone && zone.kind === 'puddle' ? 0.55 : 1);
+    if (zone && Math.hypot(p.vx, p.vy) > 40 && Math.random() < (hiQ() ? 0.5 : 0.2)) G.particles.push({ x: p.x + frand(-10, 10), y: p.y + 18, vx: frand(-50, 50), vy: frand(-70, -20), life: 0.4, max: 0.4, color: '#9fd8ff', size: frand(2, 3.5) });
     if (S.look.trail && G.state === 'playing' && Math.hypot(p.vx, p.vy) > 60) {
       G.trailT = (G.trailT || 0) - (1 / 60);
       if (G.trailT <= 0) { G.trailT = hiQ() ? 0.09 : 0.2; if (G.particles.length < 300) G.particles.push({ x: p.x + frand(-8, 8), y: p.y + 16, vx: frand(-30, 30), vy: frand(10, 50), life: 0.7, max: 0.7, color: '#7fd18b', size: 3, text: '₦' }); }
@@ -3340,21 +3911,22 @@
     if (ax || ay) {
       const len = Math.hypot(ax, ay);
       const tvx = (ax / len) * spd, tvy = (ay / len) * spd;
-      const k = Math.min(1, dt * 16);
+      const k = Math.min(1, dt * (slip ? 2.2 : 16));
       p.vx += (tvx - p.vx) * k; p.vy += (tvy - p.vy) * k;
       p.x += p.vx * dt; p.y += p.vy * dt;
       p.tx = p.x; p.ty = p.y;
     } else if (drag.used) {
       const dx = p.tx - p.x, dy = p.ty - p.y;
       const dist = Math.hypot(dx, dy);
-      const maxStep = spd * 2.4 * dt;
+      const maxStep = spd * (slip ? 1.1 : 2.4) * dt;
+      if (slip) { p.x += p.vx * 0.5 * dt; p.y += p.vy * 0.5 * dt; }
       if (dist > 0.01) {
         const st = Math.min(dist, maxStep);
         p.vx = (dx / dist) * st / dt; p.vy = (dy / dist) * st / dt;
         p.x += (dx / dist) * st; p.y += (dy / dist) * st;
       } else { p.vx = 0; p.vy = 0; }
     } else {
-      const k = Math.min(1, dt * 12);
+      const k = Math.min(1, dt * (slip ? 1.2 : 12));
       p.vx -= p.vx * k; p.vy -= p.vy * k;
       p.x += p.vx * dt; p.y += p.vy * dt;
       p.tx = p.x; p.ty = p.y;
@@ -3388,7 +3960,7 @@
     Sound.play('hit');
     if (navigator.vibrate) { try { navigator.vibrate(o.type === 'boss' ? [60, 40, 90] : 60); } catch (e) { /* ignore */ } }
     if (G.lives <= 0 && !G.revived && G.upg === S.upg && S.upg.sick > 0) {
-      G.revived = true; S.upg.sick--; saveS.upg();
+      G.revived = true; S.upg.sick--; saveS.upg(); stats.sickUsed++; G.badgeCheckT = 0;
       G.lives = 1; p.invuln = 2.6; G.flash = 0;
       T('powerup_use', { id: 'sick' });
       setTimeout(() => { if (G.state === 'playing') { toast(t('sickBack'), 'good', 2600); confetti(24); } }, 250);
@@ -3435,6 +4007,10 @@
       const nr = updateNewObstacle(o, dt);
       if (nr !== null) remove = nr;
       else switch (o.type) {
+        case 'dancer': case 'rosey':
+          o.y += o.vy * dt;
+          o.x = clamp(o.baseX + Math.sin(o.t * 2.6 + o.phaseOff) * 34, FX0 + 24, FX1 - 24);
+          break;
         case 'meeting':
           o.y += o.vy * dt;
           o.x = clamp(o.baseX + Math.sin(o.t * 2.2 + o.phaseOff) * 38, FX0 + 42, FX1 - 42);
@@ -3520,6 +4096,10 @@
         if (hit) {
           if (o.commute) {
             if (p.invuln <= 0) hitCommute(o);
+          } else if (o.bump) {
+            if (p.leave > 0) { bonk(o); remove = true; } else if (p.invuln <= 0) bumpPlayer(o);
+          } else if (o.collector) {
+            if (p.leave > 0) { toast(t('bdayLeave'), 'good', 1400); o.hitDone = true; o.life = 0; } else if (p.invuln <= 0) payContribution(o);
           } else if (p.leave > 0 && o.type === 'aunty') {
             toast(t('auntyMiss'), 'good', 1600); o.phase = 'leave'; o.hitDone = true;
           } else if (p.leave > 0 && o.type === 'driver') {
@@ -3594,13 +4174,25 @@
     G.maxStreak = Math.max(G.maxStreak, G.streak);
     const mult = streakMult();
     if (d.pts) {
-      const pts = G.frozen > 0 && it.type !== 'friday' ? 0 : Math.round((d.pts + (it.type === 'lunch' ? 25 * ((G.upg && G.upg.canteen) || 0) : 0)) * mult);
+      let evMult = evIs('independence') ? 2 : 1, evNote = '';
+      if (evIs('owambe') && it.type === 'lunch') evMult *= 2;
+      if (evIs('netdown') && it.type === 'data') { evMult = 0; evNote = t('noNetwork'); }
+      if (evIs('alertdelay') && it.type === 'salary') { evMult *= 0.5; evNote = t('pending'); }
+      const pts = G.frozen > 0 && it.type !== 'friday' ? 0 : Math.round((d.pts + (it.type === 'lunch' ? 25 * ((G.upg && G.upg.canteen) || 0) : 0)) * mult * evMult);
       addScore(pts);
-      if (pts === 0) floater(t('frozenPick'), it.x, it.y - 10, '#7fe0ff', 15);
-      else floater('+' + pts + (mult > 1 ? ' (x' + mult + ')' : ''), it.x, it.y - 10, d.color, it.type === 'friday' ? 20 : 16);
+      if (evNote && !pts) floater(evNote, it.x, it.y - 10, '#c7d2fe', 15);
+      else if (evNote) floater('+' + pts + ' ' + evNote, it.x, it.y - 10, '#c7d2fe', 15);
+      else if (pts === 0) floater(t('frozenPick'), it.x, it.y - 10, '#7fe0ff', 15);
+      else if (!evNote) floater('+' + pts + (mult > 1 ? ' (x' + mult + ')' : ''), it.x, it.y - 10, d.color, it.type === 'friday' ? 20 : 16);
     }
     if (d.power === 'leave') { p.leave = d.dur; p.invuln = 0; toast(t('leave'), 'good', 1800); Sound.play('power'); say('leave'); }
-    else if (d.power === 'fuel') { p.fuel = d.dur; toast(t('fuel'), 'good', 1600); Sound.play('power'); }
+    else if (d.power === 'fuel') {
+      p.fuel = d.dur; Sound.play('power');
+      const slot = G.event && G.event.id === 'genfuel' ? 'event' : G.event2 && G.event2.id === 'genfuel' ? 'event2' : '';
+      if (slot) { addScore(200); floater('+200', p.x, p.y - 50, '#ffd34d', 16); G[slot].t = 0; G.dim = 0; toast(t('genOn'), 'good', 2000); }
+      else toast(t('fuel'), 'good', 1600);
+    }
+    else if (d.event) { Sound.play('big'); confetti(it.type === 'cake' ? 30 : 8); if (it.type === 'cake') toast(t('cakeGot'), 'good', 1600); }
     else if (it.type === 'friday') {
       if (G.lives < CONFIG.MAX_LIVES) { G.lives++; floater(t('life'), p.x, p.y - 50, '#ff8a8e', 15); }
       stats.fridays++;
@@ -3647,11 +4239,17 @@
 
   function step(dt) {
     G.t += dt;
-    if (G.state === 'playing' && G.phase === 'commute') {
+    const inCommute = G.state === 'playing' && G.phase === 'commute';
+    if (inCommute) {
       updateCommute(dt);
       updateHud(false);
       perf.sample(dt);
-    } else if (G.state === 'playing') {
+    }
+    if (G.state === 'playing') {
+      if (G.rec) ghostRecordTick(dt);
+      if (G.ghost) ghostTick(dt);
+    }
+    if (inCommute) { /* handled above */ } else if (G.state === 'playing') {
       G.time += dt;
       if (G.limit && G.time >= G.limit) {
         G.time = G.limit; G.timeUp = true; G.lastHit = 'timeup';
@@ -3675,7 +4273,7 @@
         if (G.level === OBSTACLES.printer.unlock) later('printers');
         if (G.level === OBSTACLES.colleague.unlock) later('colleague');
       }
-      addScore(DIFFICULTY.survivalPerSecond * Math.min(G.level, 25) * dt * (evIs('audit') ? 2 : 1));
+      addScore(DIFFICULTY.survivalPerSecond * Math.min(G.level, 25) * dt * (evIs('audit') ? 2 : 1) * (evIs('independence') ? 2 : 1) * (evIs('hq') ? (G.idleT > 0.9 ? 0 : 1.5) : 1));
       G.scroll += floorSpeed() * dt;
 
       updatePlayer(dt);
@@ -4033,6 +4631,55 @@
     c.drawImage(darkC, 0, 0, W, H);
   }
 
+  function drawZones(c, tm) {
+    for (const z of G.zones) {
+      c.save(); c.translate(z.x, z.y);
+      if (z.kind === 'puddle') {
+        c.fillStyle = 'rgba(70,140,210,.55)'; c.beginPath(); c.ellipse(0, 0, z.w / 2, z.h / 2, 0, 0, TAU); c.fill();
+        c.strokeStyle = 'rgba(200,230,255,.6)'; c.lineWidth = 1.5;
+        const r = ((tm * 0.9 + z.x * 0.01) % 1);
+        c.beginPath(); c.ellipse(0, 0, (z.w / 2) * r, (z.h / 2) * r, 0, 0, TAU); c.stroke();
+      } else {
+        c.fillStyle = 'rgba(180,225,255,.35)'; rr(c, -z.w / 2, -z.h / 2, z.w, z.h, 10); c.fill();
+        c.fillStyle = 'rgba(255,255,255,.35)'; c.fillRect(-z.w / 2 + 8, -z.h / 2 + 6, z.w * 0.5, 2.5);
+        // yellow caution sign
+        c.fillStyle = '#facc15'; c.beginPath(); c.moveTo(z.w / 2 - 14, -z.h / 2 - 14); c.lineTo(z.w / 2 - 2, -z.h / 2 + 8); c.lineTo(z.w / 2 - 26, -z.h / 2 + 8); c.closePath(); c.fill();
+        c.fillStyle = '#111827'; c.font = '900 10px system-ui, Arial, sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText('!', z.w / 2 - 14, -z.h / 2 + 1);
+      }
+      c.restore();
+    }
+  }
+  function drawEventOverlay(c, tm) {
+    if (evIs('flood')) {
+      c.strokeStyle = 'rgba(170,200,255,.35)'; c.lineWidth = 1.2;
+      c.beginPath();
+      for (let i = 0; i < (hiQ() ? 70 : 30); i++) {
+        const x = (i * 97.3 + tm * 60) % (W + 40) - 20, y = (i * 53.7 + tm * 620) % (H + 40) - 20;
+        c.moveTo(x, y); c.lineTo(x - 4, y + 14);
+      }
+      c.stroke();
+      c.fillStyle = 'rgba(40,70,110,.12)'; c.fillRect(0, 0, W, H);
+    }
+    if (evIs('harmattan')) {
+      const p = G.player;
+      const g = c.createRadialGradient(p.x, p.y, 60, p.x, p.y, Math.max(W, H) * 0.55);
+      g.addColorStop(0, 'rgba(214,190,150,0)'); g.addColorStop(0.45, 'rgba(214,190,150,.45)'); g.addColorStop(1, 'rgba(214,190,150,.78)');
+      c.fillStyle = g; c.fillRect(0, 0, W, H);
+    }
+    if (evIs('independence')) {
+      c.fillStyle = 'rgba(0,135,81,.85)'; c.fillRect(0, 0, 6, H); c.fillRect(W - 6, 0, 6, H);
+      c.fillStyle = 'rgba(255,255,255,.85)'; c.fillRect(6, 0, 4, H); c.fillRect(W - 10, 0, 4, H);
+    }
+    if (evIs('hq')) {
+      const x = FX1 - 34, y = 96;
+      c.save(); c.translate(x, y);
+      drawPerson(c, { shirt: '#111827', sleeve: '#111827', pants: '#111827', suit: true, tie: '#5ab0ff', skin: '#f1c27d', hair: 'low', hairColor: '#7a4b22', glasses: true, papers: true, mood: 'angry', walk: 0, lookX: -0.6, s: 0.95 });
+      c.restore();
+      drawTag(c, x, y - 52, 'HQ', '#111827', '#fff');
+      if (G.idleT > 0.9) speech(c, t('lookBusy'), x - 10, y - 64);
+    }
+  }
+
   function render() {
     const c = ctx;
     const tm = G.t;
@@ -4045,6 +4692,7 @@
 
     if (playingish) {
       const p = G.player;
+      if (G.zones && G.zones.length) drawZones(c, tm);
       if (G.task) drawTaskDesk(c, G.task, tm);
       for (const it of G.items) {
         drawGlow(c, it.x, it.y, 30, ITEMS[it.type].color, tm + it.wob);
@@ -4072,6 +4720,7 @@
         }
         if (o.type === 'colleague') {
           SPRITES.colleague(c, o.t);
+          if (o.collector) { c.fillStyle = '#fff7d6'; rr(c, 8, -4, 14, 10, 1.5); c.fill(); c.strokeStyle = '#b45309'; c.lineWidth = 1; c.beginPath(); c.moveTo(8, -4); c.lineTo(15, 2); c.lineTo(22, -4); c.stroke(); }
           c.restore();
           if (o.life > 0) speech(c, G.calm > 0 ? t('thanks') : o.talk, o.x, o.y - 34);
           continue;
@@ -4080,6 +4729,7 @@
         SPRITES[o.type](c, o.t);
         c.restore();
       }
+      if (G.ghost) drawGhost(c, tm);
       // player
       const blink = p.invuln > 0 && Math.floor(p.invuln * 10) % 2 === 0;
       if (p.leave > 0) {
@@ -4127,6 +4777,8 @@
     const tint = tintAt(hour);
     if (tint && tint[1] > 0.001) { c.fillStyle = `rgba(${tint[0]},${tint[1]})`; c.fillRect(0, 0, W, H); }
     if (playingish && G.black) drawDarkness(c, blackoutAmount());
+    else if (playingish && G.dim > 0.01) drawDarkness(c, G.dim);
+    if (playingish && G.phase !== 'commute') drawEventOverlay(c, tm);
     if (playingish) {
       if (G.task) drawTaskLabel(c, G.task);
       for (const o of G.obstacles) if (o.warn > 0 && (o.type !== 'boss' || o.phase === 'warn')) drawWarning(c, o, tm);
@@ -4539,6 +5191,10 @@
     ui.menuRank.textContent = myTitle() || RANKS[ri][1];
     ui.menuName.classList.toggle('is-gold', myFlair().gold);
     ui.menuBadges.textContent = unlocked.size + '/' + BADGES.length;
+    const wl = weeklyList(), wd = wl.filter((c) => c.done).length;
+    $('weekly-card-text').textContent = t('weeklyCard')(wd, weekDaysLeft());
+    $('weekly-dots').innerHTML = wl.map((c) => '<i class="' + (c.done ? 'on' : '') + '"></i>').join('');
+    ui.idPhoto.classList.toggle('is-gold-frame', !!stats.goldSet);
     $('menu-wallet').textContent = '₦' + fmtNum(S.wallet);
     $('career-sub').textContent = t('careerSub')(S.career.week, t('days')[S.career.day]) + ': ' + t('goalText')(careerDay().type, goalTarget());
     const inv = LG.invite;
@@ -4575,7 +5231,7 @@
       const hint = document.createElement('small');
       if (!open) {
         const b = BADGES.find((x) => x.id === o.unlock);
-        hint.innerHTML = ico(o.buy ? 'shop' : 'lock'); hint.append(' ' + (b ? b.desc : o.buy ? t('shopOnly') : t('locked')));
+        hint.innerHTML = ico(o.buy ? 'shop' : 'lock'); hint.append(' ' + (b ? b.desc(tierGoal(b, 0)) : o.buy ? t('shopOnly') : t('locked')));
         btn.setAttribute('aria-disabled', 'true');
       }
       btn.append(cv, label, hint);
@@ -4592,21 +5248,52 @@
       grid.appendChild(cell);
       drawPortrait(cv, S.char, o.id, false);
     }
+    renderWeekly();
     const list = $('badge-list');
     list.innerHTML = '';
-    for (const b of BADGES) {
-      const got = unlocked.has(b.id);
+    let levels = 0;
+    const sorted = BADGES.slice().sort((a, b) => (blevels[b.id] || 0) - (blevels[a.id] || 0));
+    for (const b of sorted) {
+      const lv = blevels[b.id] || 0;
+      levels += lv;
+      const next = tierGoal(b, lv), prev = lv ? tierGoal(b, lv - 1) : 0, have = stats[b.stat] || 0;
       const li = document.createElement('li');
-      if (got) li.className = 'is-got';
-      const prog = Math.min(b.goal, stats[b.stat] || 0);
-      li.innerHTML = '<span class="b-ico" aria-hidden="true"></span><span><span class="b-name"></span><br><span class="b-desc"></span></span><span class="b-prog"></span>';
-      li.querySelector('.b-ico').innerHTML = ico(b.ico);
+      if (lv) li.className = 'is-got';
+      li.innerHTML = '<span class="b-ico" aria-hidden="true"></span><span class="b-main"><span class="b-name"></span> <span class="b-tier"></span><span class="b-desc"></span><span class="b-bar"><i></i></span></span><span class="b-prog"></span>';
+      const ic = li.querySelector('.b-ico');
+      ic.innerHTML = ico(b.ico) + (lv > 1 ? '<b>' + lv + '</b>' : '');
+      if (lv) ic.style.background = tierColor(lv);
       li.querySelector('.b-name').textContent = b.name;
-      li.querySelector('.b-desc').textContent = b.desc;
-      if (got) li.querySelector('.b-prog').innerHTML = ico('check-circle'); else li.querySelector('.b-prog').textContent = b.goal > 1 ? fmtNum(prog) + ' / ' + fmtNum(b.goal) : '';
+      const tr = li.querySelector('.b-tier');
+      tr.textContent = lv ? tierName(lv) : t('locked');
+      if (lv) tr.style.color = lv >= 3 ? '#7a5200' : '#4a5570';
+      li.querySelector('.b-desc').textContent = (lv ? t('nextLevel') + ': ' : '') + b.desc(next) + ' · ' + t('rewardTxt')(fmtNum(tierReward(lv)));
+      li.querySelector('.b-bar i').style.width = clamp(((have - prev) / Math.max(1, next - prev)) * 100, 0, 100).toFixed(1) + '%';
+      li.querySelector('.b-prog').textContent = fmtNum(Math.min(have, next)) + ' / ' + fmtNum(next);
       list.appendChild(li);
     }
-    $('badge-count').textContent = unlocked.size + ' / ' + BADGES.length;
+    $('badge-count').textContent = unlocked.size + ' / ' + BADGES.length + ' · ' + t('levelsTotal')(levels);
+    const g = GOLD_SET.filter((id) => (blevels[id] || 0) >= 3).length;
+    $('goldset-line').innerHTML = ico('crown') + ' ';
+    $('goldset-line').append(stats.goldSet ? t('goldSetDone') : t('goldSetProg')(g, GOLD_SET.length));
+    $('goldset-line').classList.toggle('is-done', !!stats.goldSet);
+  }
+  function renderWeekly() {
+    const list = $('weekly-list');
+    list.innerHTML = '';
+    const items = weeklyList();
+    for (const c of items) {
+      const li = document.createElement('li');
+      if (c.done) li.className = 'is-done';
+      li.innerHTML = '<span class="w-ico" aria-hidden="true"></span><span class="w-main"><span class="w-text"></span><span class="b-bar"><i></i></span></span><span class="w-reward"></span>';
+      li.querySelector('.w-ico').innerHTML = ico(c.done ? 'check' : c.ico);
+      li.querySelector('.w-text').textContent = c.text(c.goal) + (c.per === 'week' ? ' ' + t('thisWeek') : '');
+      li.querySelector('.b-bar i').style.width = ((c.cur / c.goal) * 100).toFixed(1) + '%';
+      li.querySelector('.w-reward').textContent = c.done ? t('paid') : (c.per === 'week' ? fmtNum(c.cur) + '/' + fmtNum(c.goal) + ' · ' : '') + '₦' + fmtNum(c.reward);
+      list.appendChild(li);
+    }
+    const st = weeklyState();
+    $('weekly-left').textContent = t('daysLeft')(weekDaysLeft()) + (st.bonus ? '' : ' · ' + t('allBonus')(fmtNum(WEEKLY_BONUS)));
   }
 
   function syncSettingsUi() {
@@ -4831,6 +5518,7 @@
   });
   document.querySelectorAll('.shop-tabs [data-tab]').forEach((b) => b.addEventListener('click', () => { SHOPTAB = b.dataset.tab; T('shop_tab', { tab: SHOPTAB }); renderShop(); $('shop-grid').scrollIntoView({ block: 'nearest' }); }));
   $('skin-pick').addEventListener('click', (e) => { const sk = e.target.closest('[data-skin]'); if (sk) setLook('skin', sk.dataset.skin); });
+  $('weekly-card').addEventListener('click', () => { openSide('wardrobe'); setTimeout(() => $('weekly-title').scrollIntoView({ block: 'start' }), 60); });
   $('btn-wardrobe-shop').addEventListener('click', () => { SHOPTAB = 'looks'; openSide('shop'); });
   $('league-create').addEventListener('submit', (e) => { e.preventDefault(); createLeague(); });
   $('league-join').addEventListener('submit', (e) => { e.preventDefault(); joinLeague($('league-code').value); });
@@ -4845,7 +5533,15 @@
   $('admin-form').addEventListener('submit', adminSave);
   $('btn-admin-end').addEventListener('click', () => adminAction('end'));
   $('btn-admin-new').addEventListener('click', () => adminAction('new'));
-  $('league-rows').addEventListener('click', (e) => { const k = e.target.closest('[data-kick]'); if (k) kickPlayer(k.dataset.kick, k); });
+  $('league-rows').addEventListener('click', (e) => {
+    const k = e.target.closest('[data-kick]'); if (k) { kickPlayer(k.dataset.kick, k); return; }
+    const g = e.target.closest('[data-gift]'); if (g) openGift(g.dataset.gift, g.dataset.name);
+  });
+  $('btn-wall-post').addEventListener('click', toggleWallLines);
+  $('wall-lines').addEventListener('click', (e) => { const b = e.target.closest('[data-line]'); if (b) postWall(+b.dataset.line); });
+  $('wall-posts').addEventListener('click', (e) => { const b = e.target.closest('[data-emoji]'); if (b) reactWall(b.dataset.post, b.dataset.emoji); });
+  document.querySelectorAll('#gift-box [data-amount]').forEach((b) => b.addEventListener('click', () => sendGift(+b.dataset.amount)));
+  $('gift-cancel').addEventListener('click', () => { $('gift-box').hidden = true; giftTarget = null; });
   $('league-player').addEventListener('change', (e) => { saveNameFrom(e.target); refreshMenu(); });
   $('btn-league-back').addEventListener('click', renderLeagueHome);
   $('btn-league-invite').addEventListener('click', inviteLeague);
@@ -4906,8 +5602,8 @@
 
   if (DEBUG) {
     window.__OW = {
-      G, S, stats, unlocked, CONFIG, DIFFICULTY, step, render, spawnBoss, spawnItem, spawnObstacle, startBlackout,
-      startGame, pauseGame, resumeGame, toMenu, spawnOga, spawnDriver, spawnHR, spawnAunty, startEvent, useHeld, arrive,
+      G, S, stats, unlocked, blevels, checkBadges, weeklyList, startEvent, endEvent, EVENT_DEFS, eventWeight, spawnFuelQueue, ghostEncode, collectGifts, checkRivals, CONFIG, DIFFICULTY, step, render, spawnBoss, spawnItem, spawnObstacle, startBlackout,
+      startGame, pauseGame, resumeGame, toMenu, spawnOga, spawnDriver, spawnHR, spawnAunty, useHeld, arrive,
       renderShop, buyItem, buyLook, setLook, LOOKS, OUTFITS, TITLES, SKIN_TONES, drawPortrait, LG, playLeague, openLeagueBoard, renderLeagueHome, ADS, setAds, pickAd, T, Voice, careerDay, goalTarget, isRude, weekKeyLocal, makePromoImage, openPromo, shareText, challengeUrl, makeShareImage, openBossKey, closeBossKey,
       SPRITES, officeClock, setQuality, get quality() { return quality; }, Sound, Music,
     };

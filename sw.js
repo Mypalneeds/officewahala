@@ -1,6 +1,6 @@
 /* Office Wahala service worker: makes the game work offline after the first visit.
    Bump VERSION whenever you deploy changes so players get the new files. */
-const VERSION = 'ow-v5.0.1';
+const VERSION = 'ow-v6.0.0';
 const SHELL = [
   './',
   'index.html',

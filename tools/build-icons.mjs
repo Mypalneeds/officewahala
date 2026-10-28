@@ -44,6 +44,9 @@ export const ICONS = {
   pos: 'solid/cash-register', danfo: 'solid/van-shuttle', coffee: 'solid/mug-hot', sick: 'solid/briefcase-medical',
   trail: 'solid/sack-dollar', title: 'solid/user-tie', palette: 'solid/palette', hair: 'solid/scissors', specs: 'solid/glasses',
   music: 'solid/music', 'next-song': 'solid/forward-step',
+  // v6 social
+  clap: 'solid/hands-clapping', laugh: 'solid/face-laugh-squint', heart: 'solid/heart', ghost: 'solid/ghost', wall: 'solid/comment-dots',
+  'lunch-money': 'solid/hand-holding-dollar', bell: 'solid/bell',
   headphones: 'solid/headphones', gift: 'solid/gift', sparkle: 'solid/wand-magic-sparkles', coins: 'solid/coins',
 };
 

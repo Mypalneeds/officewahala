@@ -15,6 +15,20 @@ Built by **Mmadubuko Micheal**, CEO, [Analaize Limited](https://www.analaize.com
 
 Live: https://officewahala.netlify.app
 
+## What's in version 6
+
+| Feature | What it does |
+|---|---|
+| Badges that never end | Every badge levels up: Bronze → Silver → Gold → Platinum → Diamond, then Diamond II, III and on, with bigger goals each time. Each new level pays naira (₦150 for Bronze up to ₦4,000 for Diamond, then more for each Diamond level). Getting all 19 classic badges to Gold gives a **gold frame** on your ID photo and ₦5,000. |
+| 11 new badges | League champion, Team player, Fashion killer, Doctor's note, Office DJ, Ghostbuster, Generous oga, Office gist, Salary earner, Weekly hustler, Contribution dodger (30 badges in total). |
+| Weekly challenges | Three challenges every Monday, the same for everyone (e.g. "Outrun Oga 4 times in one shift", "Submit 10 reports this week"). ₦800 / ₦1,500 / ₦2,500 each, plus ₦2,000 for doing all three. Shown on the menu and in Wardrobe & badges. |
+| 13 new shift events | Staff birthday (colleagues chase you for cake money; dodge them), Rainy season flood (puddles slow you), Cleaner mopping (wet floor slides you), Visitor from HQ (look busy: standing still costs points), Gen fuel finished (lights die until you grab the jerrycan), Owambe Friday (dancers block the corridor, jollof is double), Network down (data is worthless), Alert never land (salary pays half, then rains), 4:59pm deadline (report desks everywhere, triple points), Harmattan haze (dust; Dec–Feb only), Fuel scarcity queue (on the commute). Calendar events: Independence Day (1 October), Detty December, Valentine's Day. |
+| Events build up | Events come about 30% more often from level 6, and from level 10 two can run at once (e.g. "Flood + Visitor from HQ"). The season and date matter too: floods are likelier in the rainy season, Owambe on Fridays, salary events around month-end payday. |
+| Ghost runs | In leagues with "Same office for everyone", you race a see-through copy of the leader's best run (or your own, if you lead). Passing the ghost's score pops up a notice and counts towards the Ghostbuster badge. |
+| Office wall | Each league has a wall. Post one of 20 ready-made lines ("Who send you?", "Na me be MD now", "Rematch tomorrow!") and react with clap, laugh, fire or heart. The wall also posts automatically when someone takes 1st place, wins a round, or sends lunch money. No free typing, so there's nothing to moderate. |
+| Lunch money | Tap the naira button next to a colleague on a league board to send ₦100, ₦200 or ₦500 from your wallet. You can send up to ₦500 a day and receive up to ₦1,500 a day. It arrives the next time they open the game. Pretend money only; it can never be bought or cashed out. |
+| Rival alerts | When you open the game: "Chidi passed you in Analaize Team. You're now #2", and "You won round 3 of Analaize Team!" |
+
 ## What's in version 5
 
 | Feature | What it does |
@@ -241,6 +255,7 @@ Leagues need a tiny server. It lives in `netlify/functions/league.mjs` and store
 - **What it stores:** league name, code and rules; the admin PIN as a salted hash (never the PIN itself); a hashed ID for the creator's phone; and for each round each player's name, best score, total, tries, time and level, plus any job title or gold name they bought, under a random player ID. No emails, phone numbers or IP addresses are stored. IP is only used briefly to rate-limit league creation. Wrong PINs are limited to 5 per 15 minutes.
 - **Checks:** names, league names and prizes are cleaned and run through a word filter; scores must fit the time survived (one level per 20 s, at most ~900 points/s). Like any browser game, a determined cheater could still fake a believable score.
 - **Rounds:** weekly leagues roll over every Monday, Lagos time, and the top three of the old round are saved under Past winners (the last 12 rounds). Tournaments end at their end time; the admin starts the next one with new dates.
+- **Ghosts, wall and lunch money (v6):** ghost runs are stored only for "same office" leagues, one per player per round (their best run, as a list of screen positions five times a second, about 10 KB for a 3-minute shift). The wall keeps the last 60 posts per league; posts can only be one of the ready-made lines in `WALL_LINES` (in both `league.mjs` and `game.js`), and reactions are stored as hashed player IDs. Lunch money is limited to ₦500 sent and ₦1,500 received per player per day (Lagos time), and only to someone on the current round's board. Because wallets live on each phone, these limits are what stop a cheater from handing out unlimited money.
 - **Leagues created before v5** keep working as weekly leagues with no rules or admin (older copies of the game can still post to them). Create a new league to use rules.
 - **Data:** Netlify dashboard → your site → **Blobs** → store `office-wahala`.
 - If you host somewhere other than Netlify, change `CONFIG.LEAGUE_API` in `game.js` to any server that implements the same routes (listed at the top of `league.mjs`).
@@ -380,6 +395,9 @@ The best score is saved in the browser's `localStorage` under these keys:
 | `ow_vid`, `ow_last`, `ow_track` | Anonymous visitor ID, last activity time, stats on/off (see Analytics dashboard) |
 | `ow_ads` | Last billboard list, so ads still show offline |
 | `ow_look` | Skin tone, hairstyle, accessories, title and extras you're wearing (what you own is in `ow_owned`) |
+| `ow_blevels` | Level reached on each badge |
+| `ow_weekly` | This week's challenge progress |
+| `ow_lgranks`, `ow_lgwins` | Your last known league ranks and rounds won (for rival alerts) |
 
 This data never leaves the device, except your name and weekly best score when you join an Office League, and the anonymous visitor ID sent with gameplay stats (unless switched off). Clearing site data resets it. In private browsing, or if storage is blocked, the game still works and just doesn't remember between visits.
 
@@ -473,7 +491,7 @@ If you change `LEVEL_SECONDS` or the scoring, update the plausibility checks in 
 
 ## Updating the live game
 
-When you change any file, also bump `VERSION` at the top of `sw.js` (for example `ow-v5.0.1`). Players' phones then fetch the new files instead of the copy saved for offline play.
+When you change any file, also bump `VERSION` at the top of `sw.js` (for example `ow-v6.0.1`). Players' phones then fetch the new files instead of the copy saved for offline play.
 
 ## Browser support
 

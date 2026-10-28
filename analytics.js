@@ -10,7 +10,7 @@
   'use strict';
   var SCRIPT = document.currentScript && document.currentScript.src;
   var API = new URL('api/track', SCRIPT || location.href).href;
-  var VERSION = '5.0.0';
+  var VERSION = '6.0.0';
   var MAX_QUEUE = 300;
 
   function get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }

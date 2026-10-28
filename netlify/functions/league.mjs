@@ -11,6 +11,11 @@
      POST /api/league/:code/start            -> start a league shift { playerId, name }     -> { runId, seed, rules, triesLeft }
      POST /api/league/:code/score            -> submit  { playerId, name, score, duration, level, runId }
      POST /api/league/:code/admin            -> { playerId, pin, action: check|rules|kick|end|new, ... }
+     GET  /api/league/:code/ghost?me=         -> best run of the leader (same-office leagues) to race against
+     POST /api/league/:code/wall              -> post a ready-made line { playerId, name, line }
+     POST /api/league/:code/react             -> toggle a reaction { playerId, post, emoji: clap|laugh|fire|heart }
+     POST /api/league/:code/gift              -> send lunch money { playerId, name, to: pid, amount: 100|200|500 } (₦500/day out, ₦1,500/day in)
+     GET  /api/league/gifts?me=<playerId>     -> collect lunch money sent to you
 
    Leagues made before v2 ("legacy") keep working: weekly, no rules, no admin,
    and accept scores without a runId (older cached copies of the game).
@@ -36,6 +41,23 @@ const HOUR = 3600 * 1000, DAY = 24 * HOUR;
 // Job titles players buy in the staff shop (keep in sync with TITLES in game.js). Only these exact titles are shown.
 const TITLES = { dodger: 'Senior Oga-Dodger', latecomer: 'Professional Latecomer', gist: 'Chief Gist Officer', wahala: 'Head of Wahala',
   vibes: 'Director of Vibes', smallchops: 'Minister of Small Chops', ogatrain: 'Oga in Training', legend: 'Office Legend' };
+// League wall: players pick from these lines (no free text = nothing to moderate). Keep in sync with WALL_LINES in game.js.
+export const WALL_LINES = ['Who send you?', 'Abeg slow down o!', 'Na me be MD now.', 'See as you dey shake!', 'Oga don catch you!',
+  'This board na my own.', 'I dey come for your position.', 'Small small, I go pass you.', 'Share the jollof!', 'Lunch break don finish o.',
+  'Make una stop dey form busy!', 'Who get extra tries? Asking for a friend.', 'NEPA no fit stop me today.', 'Congrats, you try!',
+  'Respect the leader.', 'Rematch tomorrow!', 'The prize na my own this week.', 'My data finish, I go come back.', 'Na God dey give promotion.', 'Good game everybody!'];
+const REACTS = ['clap', 'laugh', 'fire', 'heart'];
+const GIFT_AMOUNTS = [100, 200, 500];
+const GIFT_SEND_CAP = 500, GIFT_RECV_CAP = 1500;
+const lagosDay = (now) => new Date(now + HOUR).toISOString().slice(0, 10);
+const publicPost = (p) => ({ id: p.id, t: p.t, kind: p.kind, name: p.name, line: p.line, text: p.text, reacts: p.reacts || {} });
+async function addPost(store, code, post) {
+  const key = `walls/${code}`;
+  const w = (await store.get(key, { type: 'json' }).catch(() => null)) || { posts: [] };
+  w.posts = [{ id: randId(8), t: Date.now(), reacts: {}, rx: [], ...post }, ...w.posts].slice(0, 60);
+  await store.setJSON(key, w);
+  return w;
+}
 const flairOf = (b) => ({ gold: b.gold === true, title: TITLES[b.title] ? b.title : '' });
 const SHIFT_CHOICES = [0, 60, 90, 120, 180, 300];
 const MAX_BOARD = 50;
@@ -158,8 +180,9 @@ async function archive(store, code, L) {
   if (L.round.archived) return;
   const rows = await readRows(store, code, L.round.key, L.rules);
   L.history = [{ n: L.round.n, start: L.round.start, end: Math.min(L.round.end, Date.now()), players: rows.length,
-    winners: rows.slice(0, 3).map((r) => ({ name: r.name, score: scoreOf(r, L.rules) })) }, ...(L.history || [])].slice(0, 12);
+    winners: await Promise.all(rows.slice(0, 3).map(async (r) => ({ name: r.name, score: scoreOf(r, L.rules), pid: await pidOf(r.playerId) }))) }, ...(L.history || [])].slice(0, 12);
   L.round.archived = true;
+  if (rows[0]) await addPost(store, code, { kind: 'auto', name: rows[0].name, text: `Round ${L.round.n} winner: ${rows[0].name} with ${scoreOf(rows[0], L.rules).toLocaleString('en-NG')}!` }).catch(() => {});
 }
 
 async function limited(store, kind, id, seconds) {
@@ -171,9 +194,9 @@ async function limited(store, kind, id, seconds) {
   return false;
 }
 
-async function readBody(req) {
+async function readBody(req, max = 4000) {
   const text = await req.text();
-  if (text.length > 4000) throw new Error('too large');
+  if (text.length > max) throw new Error('too large');
   return JSON.parse(text || '{}');
 }
 
@@ -202,6 +225,21 @@ export default async (req, context) => {
 
   try {
     if (parts[0] === 'health' && req.method === 'GET') return json({ ok: true, v: 2, week: weekKey(now) });
+
+    // ---------- Claim lunch-money gifts sent to me (any league) ----------
+    if (parts[0] === 'gifts' && req.method === 'GET') {
+      const me = url.searchParams.get('me') || '';
+      if (!validPlayer(me)) return fail('Invalid player.');
+      const pid = await pidOf(me);
+      const { blobs } = await store.list({ prefix: `gifts/${pid}/` });
+      const gifts = [];
+      for (const bl of blobs.slice(0, 50)) {
+        const g = await store.get(bl.key, { type: 'json' }).catch(() => null);
+        await store.delete(bl.key).catch(() => {});
+        if (g) gifts.push(g);
+      }
+      return json({ gifts });
+    }
 
     // ---------- Create a league ----------
     if (parts.length === 0 && req.method === 'POST') {
@@ -244,6 +282,9 @@ export default async (req, context) => {
         pid: await pidOf(r.playerId), name: r.name, score: scoreOf(r, rules), best: r.best ?? r.score ?? 0, total: r.total ?? r.score ?? 0,
         plays: r.plays ?? 1, duration: r.duration, level: r.level, gold: !!r.gold, title: TITLES[r.title] || '',
       })));
+      const wall = await store.get(`walls/${code}`, { type: 'json' }).catch(() => null);
+      out.wall = wall ? wall.posts.slice(0, 30).map(publicPost) : [];
+      out.wallLines = WALL_LINES.length;
       const me = url.searchParams.get('me') || '';
       if (validPlayer(me)) {
         const mine = rows.findIndex((r) => r.playerId === me);
@@ -284,7 +325,7 @@ export default async (req, context) => {
 
     // ---------- Submit a score ----------
     if (parts[1] === 'score' && req.method === 'POST') {
-      const b = await readBody(req);
+      const b = await readBody(req, 40000);
       if (!validPlayer(b.playerId)) return fail('Invalid player.');
       const name = cleanName(b.name, 20);
       if (name.length < 1) return fail('Add your name first.');
@@ -322,19 +363,100 @@ export default async (req, context) => {
       if (elapsed > 4 * 3600) return fail('This shift started too long ago.', 409);
       if (duration > elapsed + 5) return fail('Score does not match the time played.');
       if (rules.shiftSecs && duration > rules.shiftSecs + 3) return fail('Score is longer than the league shift length.');
+      const rk = key.split('/')[2];
+      const before = await readRows(store, code, rk, rules);
       rec.run.used = true;
       rec.name = name;
       Object.assign(rec, flairOf(b));
       rec.plays = (rec.plays || 0) + 1;
       rec.total = (rec.total || 0) + score;
-      if (score > (rec.best || 0) || rec.plays === 1) { rec.best = score; rec.duration = duration; rec.level = level; }
+      const newBest = score > (rec.best || 0) || rec.plays === 1;
+      if (newBest) { rec.best = score; rec.duration = duration; rec.level = level; }
       rec.score = rec.best;
       rec.updated = now;
       await store.setJSON(key, rec);
-      const rows = await readRows(store, code, key.split('/')[2], rules);
+      // ghost of your best run (same-office leagues only: everyone gets the same obstacles, so the ghost lines up)
+      if (newBest && rules.sameOffice && typeof b.ghost === 'string' && b.ghost.length <= 30000 && /^[A-Za-z0-9+/=]*$/.test(b.ghost)) {
+        await store.setJSON(`ghosts/${code}/${rk}/${b.playerId}`, { name, score, dur: duration, path: b.ghost, step: 0.2, t: now });
+      }
+      const rows = await readRows(store, code, rk, rules);
+      if (rows[0] && rows[0].playerId === b.playerId && before[0] && before[0].playerId !== b.playerId) {
+        await addPost(store, code, { kind: 'auto', name, text: `${name} took 1st place with ${scoreOf(rows[0], rules).toLocaleString('en-NG')}!` }).catch(() => {});
+      }
       const rank = rows.findIndex((r) => r.playerId === b.playerId) + 1;
       return json({ ok: true, rank, players: rows.length, best: rec.best, total: rec.total,
         triesLeft: rules.tries ? Math.max(0, rules.tries - (rec.tries || 0)) : null });
+    }
+
+    // ---------- Ghost of the leader's best run ----------
+    if (parts[1] === 'ghost' && req.method === 'GET') {
+      if (!rules.sameOffice) return fail('Ghosts need "Same office for everyone".', 409);
+      const me = url.searchParams.get('me') || '';
+      const rows = await readRows(store, code, round.key, rules);
+      const order = rows.filter((r) => r.playerId !== me).concat(rows.filter((r) => r.playerId === me));
+      for (const r of order.slice(0, 6)) {
+        const g = await store.get(`ghosts/${code}/${round.key}/${r.playerId}`, { type: 'json' }).catch(() => null);
+        if (g) return json({ name: g.name, score: g.score, dur: g.dur, path: g.path, step: g.step, mine: r.playerId === me });
+      }
+      return json({ none: true });
+    }
+
+    // ---------- League wall: ready-made lines + reactions ----------
+    if (parts[1] === 'wall' && req.method === 'POST') {
+      const b = await readBody(req);
+      if (!validPlayer(b.playerId)) return fail('Invalid player.');
+      const name = cleanName(b.name, 20);
+      if (!name || isRude(name)) return fail('Add a friendly name first.');
+      const line = Math.floor(Number(b.line));
+      if (!(line >= 0 && line < WALL_LINES.length)) return fail('Pick a line to post.');
+      if ((L.kicked || []).includes(await pidOf(b.playerId))) return fail('The league admin removed you from this league.', 403);
+      if (await limited(store, 'wall', b.playerId, 8)) return fail('Slow down a little.', 429);
+      const w = await addPost(store, code, { kind: 'line', name, line });
+      return json({ ok: true, wall: w.posts.slice(0, 30).map(publicPost) });
+    }
+    if (parts[1] === 'react' && req.method === 'POST') {
+      const b = await readBody(req);
+      if (!validPlayer(b.playerId)) return fail('Invalid player.');
+      if (!REACTS.includes(b.emoji)) return fail('Unknown reaction.');
+      const key = `walls/${code}`;
+      const w = (await store.get(key, { type: 'json' }).catch(() => null)) || { posts: [] };
+      const post = w.posts.find((x) => x.id === b.post);
+      if (!post) return fail('That post is gone.', 404);
+      const tag = (await pidOf(b.playerId)) + ':' + b.emoji;
+      post.rx = post.rx || []; post.reacts = post.reacts || {};
+      if (post.rx.includes(tag)) { post.rx = post.rx.filter((x) => x !== tag); post.reacts[b.emoji] = Math.max(0, (post.reacts[b.emoji] || 1) - 1); }
+      else { post.rx = [...post.rx, tag].slice(-300); post.reacts[b.emoji] = (post.reacts[b.emoji] || 0) + 1; }
+      await store.setJSON(key, w);
+      return json({ ok: true, wall: w.posts.slice(0, 30).map(publicPost) });
+    }
+
+    // ---------- Lunch money gifts (pretend naira, capped per day) ----------
+    if (parts[1] === 'gift' && req.method === 'POST') {
+      const b = await readBody(req);
+      if (!validPlayer(b.playerId)) return fail('Invalid player.');
+      const name = cleanName(b.name, 20);
+      if (!name || isRude(name)) return fail('Add a friendly name first.');
+      const amount = Math.floor(Number(b.amount));
+      if (!GIFT_AMOUNTS.includes(amount)) return fail('Pick ₦100, ₦200 or ₦500.');
+      const myPid = await pidOf(b.playerId);
+      if ((L.kicked || []).includes(myPid)) return fail('The league admin removed you from this league.', 403);
+      const to = String(b.to || '');
+      if (to === myPid) return fail('You cannot send lunch money to yourself.');
+      const rows = await readRows(store, code, round.key, rules);
+      let toRow = null;
+      for (const r of rows) if ((await pidOf(r.playerId)) === to) { toRow = r; break; }
+      if (!toRow) return fail('That colleague is not on this round’s board.', 404);
+      const day = lagosDay(now);
+      const sk = `rl/giftsent/${b.playerId}/${day}`, rk = `rl/giftrecv/${to}/${day}`;
+      const sent = (await store.get(sk, { type: 'json' }).catch(() => null)) || { sum: 0 };
+      const recv = (await store.get(rk, { type: 'json' }).catch(() => null)) || { sum: 0 };
+      if (sent.sum + amount > GIFT_SEND_CAP) return fail(`You can send up to ₦${GIFT_SEND_CAP} a day. You have ₦${Math.max(0, GIFT_SEND_CAP - sent.sum)} left today.`, 429);
+      if (recv.sum + amount > GIFT_RECV_CAP) return fail(`${toRow.name} has received enough lunch money today. Try tomorrow.`, 429);
+      sent.sum += amount; recv.sum += amount;
+      await store.setJSON(sk, sent); await store.setJSON(rk, recv);
+      await store.setJSON(`gifts/${to}/${now}-${randId(6)}`, { from: name, amount, league: L.name, code, t: now });
+      await addPost(store, code, { kind: 'gift', name, text: `${name} sent ${toRow.name} ₦${amount} lunch money` }).catch(() => {});
+      return json({ ok: true, leftToday: GIFT_SEND_CAP - sent.sum });
     }
 
     // ---------- Admin ----------

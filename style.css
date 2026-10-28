@@ -1314,3 +1314,66 @@ kbd {
 .now-playing > .ico { color: var(--green); }
 .now-playing #np-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .np-next { appearance: none; border: 0; border-radius: 99px; padding: 6px 12px; background: var(--ink); color: #fff; font: inherit; font-weight: 800; font-size: 0.8rem; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; }
+
+/* ==========================================================
+   v6 Badges: levels, weekly challenges
+   ========================================================== */
+.badge-list .b-ico { position: relative; }
+.badge-list .b-ico b { position: absolute; right: -4px; bottom: -4px; min-width: 18px; height: 18px; padding: 0 4px; border-radius: 99px; background: var(--ink); color: #fff; font-size: 0.66rem; line-height: 18px; text-align: center; box-sizing: border-box; }
+.badge-list li { grid-template-columns: 40px 1fr auto; }
+.b-main { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0 6px; min-width: 0; }
+.b-tier { font-size: 0.72rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.04em; color: var(--ink-soft); }
+.b-main .b-desc { width: 100%; }
+.b-bar { display: block; width: 100%; height: 6px; border-radius: 99px; background: #dfe2e9; overflow: hidden; margin-top: 4px; }
+.b-bar i { display: block; height: 100%; border-radius: 99px; background: var(--green); }
+.weekly-list { list-style: none; margin: 6px 0 8px; padding: 0; display: grid; gap: 6px; }
+.weekly-list li { display: grid; grid-template-columns: 34px 1fr auto; gap: 10px; align-items: center; padding: 9px 10px; border-radius: var(--radius-sm); background: #ede7ff; }
+.weekly-list li.is-done { background: #e8f6ef; }
+.w-ico { width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center; background: #ffffff; color: #6b4fd8; }
+.weekly-list .is-done .w-ico { background: var(--green); color: #fff; }
+.w-text { display: block; font-weight: 800; font-size: 0.88rem; }
+.w-reward { font-weight: 800; font-size: 0.8rem; color: #6b4b00; white-space: nowrap; }
+.weekly-list .is-done .w-reward { color: var(--green); }
+#weekly-title { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+#weekly-title .ico { color: #6b4fd8; }
+.goldset-line { display: flex; gap: 6px; align-items: flex-start; font-size: 0.82rem; font-weight: 700; color: #6b4b00; background: #fff3c4; padding: 8px 10px; border-radius: var(--radius-sm); margin: 4px 0 0; }
+.goldset-line .ico { color: var(--gold-deep); margin-top: 2px; }
+.weekly-card { display: flex; align-items: center; gap: 8px; width: 100%; margin: 10px 0 0; padding: 9px 12px; border: 0; border-radius: var(--radius-sm); background: #ede7ff; color: #3b2a8c; font: inherit; font-weight: 800; font-size: 0.85rem; text-align: left; cursor: pointer; }
+.weekly-card #weekly-card-text { flex: 1; }
+.wk-dots { display: inline-flex; gap: 4px; }
+.wk-dots i { width: 10px; height: 10px; border-radius: 50%; background: #c9bdf7; }
+.wk-dots i.on { background: var(--green); }
+.id-photo.is-gold-frame { box-shadow: 0 0 0 3px var(--gold), 0 0 0 6px #fff3c4, 0 6px 18px rgba(245, 179, 1, 0.45); }
+.badge-list .b-prog, .badge-list .is-got .b-prog { font-size: 0.78rem; color: var(--ink-soft); white-space: nowrap; }
+
+/* ==========================================================
+   v6 Social: wall, gifts
+   ========================================================== */
+.board-list li:has(.gift-btn) { padding-right: 42px; }
+.board-list li:has(.gift-btn.with-kick) { padding-right: 76px; }
+.gift-btn { position: absolute; right: 6px; top: 50%; transform: translateY(-50%); width: 28px; height: 28px; border: 0; border-radius: 50%; background: #fff3c4; color: var(--gold-deep); cursor: pointer; display: grid; place-items: center; }
+.gift-btn.with-kick { right: 40px; }
+.gift-box { margin: 8px 0; padding: 10px 12px; border-radius: var(--radius-sm); background: #fff3c4; }
+.gift-box[hidden] { display: none; }
+.gift-to { margin: 0 0 8px; font-weight: 800; color: #6b4b00; }
+.gift-amounts { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.league-wall { margin-top: 10px; }
+.league-wall[hidden] { display: none; }
+.league-wall .league-sub .ico { color: #6b4fd8; }
+.wall-lines { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0; }
+.wall-lines[hidden] { display: none; }
+.wall-line { appearance: none; border: 0; padding: 7px 11px; border-radius: 99px; background: #ede7ff; color: #3b2a8c; font: inherit; font-weight: 700; font-size: 0.82rem; cursor: pointer; }
+.wall-line:hover { background: #ddd3ff; }
+.wall-posts { list-style: none; margin: 8px 0 0; padding: 0; display: grid; gap: 6px; }
+.wall-post { padding: 8px 10px; border-radius: var(--radius-sm); background: #f0f1f4; }
+.wall-post.is-auto { background: #fff3c4; }
+.wall-post.is-gift { background: #e8f6ef; }
+.wall-empty { color: var(--ink-soft); font-size: 0.85rem; padding: 6px 0; }
+.wp-head { display: flex; align-items: center; gap: 6px; font-size: 0.8rem; }
+.wp-head .ico { color: var(--gold-deep); }
+.wall-post.is-gift .wp-head .ico { color: var(--green); }
+.wp-head small { margin-left: auto; color: var(--ink-soft); }
+.wp-text { margin: 2px 0 6px; font-weight: 700; font-size: 0.92rem; }
+.wp-reacts { display: flex; gap: 6px; }
+.wp-reacts button { appearance: none; border: 0; border-radius: 99px; padding: 3px 9px; background: #ffffff; color: var(--ink-soft); cursor: pointer; display: inline-flex; align-items: center; gap: 4px; font: inherit; font-weight: 800; font-size: 0.75rem; box-shadow: 0 1px 0 #e2e5ec; }
+.wp-reacts button:hover { color: var(--green); }
