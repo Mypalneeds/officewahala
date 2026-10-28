@@ -149,6 +149,7 @@
           <div class="card w4"><h2>Devices</h2><div id="d-dev"></div></div>
           <div class="card w4"><h2>Browser vs installed app</h2><div id="d-app"></div></div>
           <div class="card w4"><h2>Language <small>device / game</small></h2><div id="d-lang"></div></div>
+          <div class="card w12"><h2>Do new players come back? <small>new visitors per day, and how many returned</small></h2><div id="d-retention"></div></div>
           <div class="card w6"><h2>Pages viewed</h2><div id="d-path"></div></div>
           <div class="card w6"><h2>Screens opened in the game</h2><div id="d-screen"></div></div>
 
@@ -162,6 +163,10 @@
           <div class="card w4"><h2>Bosses spawned</h2><div id="d-boss"></div></div>
           <div class="card w4"><h2>Shift events</h2><div id="d-event"></div></div>
           <div class="card w4"><h2>Power-ups <small>picked / used</small></h2><div id="d-power"></div></div>
+          <div class="card w4"><h2>Offices played</h2><div id="d-office"></div></div>
+          <div class="card w4"><h2>Missions &amp; 5pm meetings</h2><div id="d-mission"></div></div>
+          <div class="card w4"><h2>Attendance register</h2><div id="d-attendance"></div></div>
+          <div class="card w6"><h2>State Wars: players by state</h2><div id="d-statewar"></div></div>
           <div class="card w6"><h2>Career days</h2><div id="d-career"></div></div>
           <div class="card w6"><h2>Badges unlocked</h2><div id="d-badge"></div></div>
 
@@ -269,6 +274,8 @@
     const avgPlay = T.visitors ? T.playSeconds / T.visitors : 0;
     const k = [
       ['Visitors', fmt(T.visitors), `${fmt(T.newVisitors)} new · ${fmt(T.returning)} returning`],
+      ['Came back next day', d.retention && d.retention.d1.cohort ? pct(d.retention.d1.back, d.retention.d1.cohort) : '–', d.retention && d.retention.d1.cohort ? `${fmt(d.retention.d1.back)} of ${fmt(d.retention.d1.cohort)} new visitors (D1)` : 'needs 2+ days of data'],
+      ['Came back within a week', d.retention && d.retention.d7.cohort ? pct(d.retention.d7.back, d.retention.d7.cohort) : '–', d.retention && d.retention.d7.cohort ? `${fmt(d.retention.d7.back)} of ${fmt(d.retention.d7.cohort)} new visitors (D7)` : 'pick 30 or 90 days'],
       ['Sessions', fmt(T.sessions), `${fmt(T.pageViews)} page views`],
       ['Games started', fmt(T.gamesStarted), `${fmt(T.gamesFinished)} finished`],
       ['Total playtime', dur(T.playSeconds), 'all shifts, wall-clock'],
@@ -301,6 +308,9 @@
     bars($('d-app'), D.app, { share: true });
     bars($('d-lang'), (D.lang || []).concat((D.gl || []).map(([k2, v]) => ['game: ' + (k2 === 'pcm' ? 'Pidgin' : 'English'), v])), { share: false });
     bars($('d-path'), D.path, { share: true });
+    const R = (d.retention && d.retention.daily) || [];
+    $('d-retention').innerHTML = R.length ? '<table><thead><tr><th>First visit</th><th class="n">New visitors</th><th class="n">Back next day</th><th class="n">Back within 7 days</th></tr></thead><tbody>' +
+      R.slice().reverse().map((r) => `<tr><td>${esc(r.day)}</td><td class="n">${fmt(r.new)}</td><td class="n">${r.d1 === null ? '<span style="color:var(--muted)">not yet</span>' : fmt(r.d1) + ' <small style="color:var(--muted)">' + pct(r.d1, r.new) + '</small>'}</td><td class="n">${r.d7 === null ? '<span style="color:var(--muted)">not yet</span>' : fmt(r.d7) + ' <small style="color:var(--muted)">' + pct(r.d7, r.new) + '</small>'}</td></tr>`).join('') + '</tbody></table>' : '<p class="empty">No data yet.</p>';
     bars($('d-screen'), D.screen);
     bars($('d-mode'), D.mode, { label: nm, share: true, color: 'var(--gold)' });
     bars($('d-cause'), D.cause, { label: nm, share: true, color: 'var(--red)' });
@@ -314,6 +324,7 @@
     bars($('d-event'), D.event, { label: nm, color: 'var(--purple)' });
     bars($('d-power'), (D.pick || []).map(([k2, v]) => ['picked: ' + nm(k2), v]).concat((D.power || []).map(([k2, v]) => ['used: ' + nm(k2), v])), { limit: 8 });
     bars($('d-career'), D.career);
+    bars($('d-office'), D.office, { share: true }); bars($('d-mission'), D.mission, { limit: 14, color: 'var(--purple)' }); bars($('d-attendance'), D.attendance, { color: 'var(--gold)' }); bars($('d-statewar'), D.statewar, { limit: 37 });
     bars($('d-badge'), D.badge, { limit: 20, color: 'var(--gold)' });
     bars($('d-shop'), D.shop, { label: nm, color: 'var(--gold)' });
     bars($('d-outfit'), D.outfit, { color: 'var(--gold)' });

@@ -146,6 +146,15 @@
       if (this.running) this.fadeTo(this.targetVol(), 0.6);
       return this.songName;
     },
+    // Switch to a named song (each office has its own favourite).
+    playSong(name) {
+      const i = SONGS.findIndex((s) => s.name === name);
+      if (i < 0 || this.tracks.length) return this.songName;
+      this.song = i; this.step = 0; this.songBars = 0; this.switchAt = -1; this.fillAt = -1;
+      this.bpm = this.songBpm();
+      if (this.running) this.fadeTo(this.targetVol(), 0.6);
+      return this.songName;
+    },
     setMode(mode) { this.mode = mode; if (this.running) this.fadeTo(this.targetVol(), 0.5); },
     setLevel(level) {
       this.level = level;

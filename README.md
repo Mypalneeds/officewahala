@@ -15,6 +15,28 @@ Built by **Mmadubuko Micheal**, CEO, [Analaize Limited](https://www.analaize.com
 
 Live: https://officewahala.netlify.app
 
+## What's in version 7
+
+Built to make every visit worth coming back for, **without sign-ups or accounts**. Everything stays tied to the random ID on the player's device (hashed on the server). Naira in the game is still pretend money: it can't be bought or cashed out, and nothing is sold in random boxes.
+
+| Feature | What it does |
+|---|---|
+| "One more shift" | The performance appraisal now shows the 2–3 goals you're closest to, with progress bars: "Only 340 points to your best", "4 more close calls for Silver Dodger", "1,200 points to unlock Bank HQ", "Tomorrow's register pays ₦300". |
+| Mini-missions | Every 20–30 seconds a short mission pops up in the HUD ("Grab 3 lunch packs in 16s", "Don't get hit for 12 seconds", "Get 2 close calls"). +150 points and ₦80–₦150 each. |
+| 5pm emergency meeting | When the office clock hits 5pm, the boss calls everyone in and throws agenda papers in fans, rings and aimed volleys for 20 seconds. Survive it for +1,000 points and ₦500. |
+| New offices | Promotions transfer you: Lagos ad agency → Bank HQ, Marina (ATM queues, Branch Manager) → Federal ministry, Abuja (protocol convoys, Hon. Director) → Oil & gas company, Port Harcourt (falling hard hats, gas-leak wind gusts, Site Supervisor) → Yaba tech startup (surprise stand-up meetings, Founder). Each has its own colours, decor, window skyline, door signs, song, hazard and boss lines. Unlock with career weeks, or 30k / 100k / 250k / 500k total points. Switch any time from the menu. Daily shifts and league shifts always use the Lagos agency so scores stay fair. |
+| Attendance register | Sign once a day: ₦100, ₦200, ₦300, ₦400, ₦500, ₦700, then ₦1,000 and a sticker on day 7. Miss one day and the streak survives (once per streak); miss more and it gently restarts at day 1. No penalties. Every 4 full weeks earns the "Employee of the month" certificate for your desk. |
+| Monthly seasons | Each month has a name (October is "Independence", December "Detty December") and a free 12-tier reward track: naira, stickers, and ₦3,000 plus a season badge at the end. XP comes from shifts, missions, the 5pm meeting and the register. A season leaderboard shows the month's best single shifts. |
+| My desk | Decorate your desk with items from the new Desk tab in the shop (plant, fan, "I better pass my neighbour" generator, laptop, lamp, mug…) plus free items you earn (framed promotion letter, Employee of the month, badge shelf, sticker board). Colleagues in your leagues can tap the desk button on the board to see it. |
+| Sticker album | 24 stickers in 4 sets (Lagos life, Office life, Chop life, Owambe), some rare. Envelopes fall during shifts (about 1 in 45 items, never in league or daily shifts), and the register and seasons give more. Doubles become ₦50; finishing a set pays ₦3,000. Never sold. |
+| State Wars | Pick your state (36 + FCT) in Settings or on the State Wars screen. Every finished shift adds your score to your state's weekly total. Sort by total or per player. Resets Monday; your state is fixed for the week once chosen. |
+| Invite a friend | Share your invite link. When the friend finishes their first shift, both of you get ₦1,000 (the inviter's arrives like lunch money). One bonus per new player, at most 20 a month per inviter. |
+| Reminders (opt-in) | Off by default. When switched on in Settings, browsers that support it check about twice a day and send at most one notification a day: a league rival passed you, the register is open, or new weekly challenges. Everything runs on the device; there is no push server and nothing to subscribe to. |
+| Retention on the dashboard | New "Came back next day" (D1) and "Came back within a week" (D7) cards and a daily table, plus offices played, missions and meetings, register days and State Wars players by state. |
+| 5 new badges | Mission man, Survived the 5pm meeting, Never absent, Sticker book, Season veteran. |
+
+The new server routes live in `netlify/functions/hub.mjs` (`/api/hub/*`: State Wars, season board, referrals, desks). If the function isn't deployed, the Season, State Wars and Invite buttons stay hidden and everything else works offline.
+
 ## What's in version 6
 
 | Feature | What it does |
@@ -113,6 +135,7 @@ office-wahala/
 ├── screenshots/         Real gameplay screenshots used by the pages and the sitemap
 ├── netlify/functions/
 │   ├── league.mjs       Office Leagues API (Netlify Function + Netlify Blobs storage)
+│   ├── hub.mjs          State Wars, season board, invites and shared desks (/api/hub/*)
 │   ├── track.mjs        Receives analytics batches (POST /api/track)
 │   ├── stats.mjs        Dashboard numbers (GET /api/stats, needs DASHBOARD_KEY)
 │   └── ads.mjs          Billboard ads (GET public, POST from the dashboard)

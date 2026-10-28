@@ -47,7 +47,15 @@ export const ICONS = {
   // v6 social
   clap: 'solid/hands-clapping', laugh: 'solid/face-laugh-squint', heart: 'solid/heart', ghost: 'solid/ghost', wall: 'solid/comment-dots',
   'lunch-money': 'solid/hand-holding-dollar', bell: 'solid/bell',
+  // v7: stickers, desk, offices, State Wars, seasons
+  okada: 'solid/motorcycle', keke: 'solid/taxi', suya: 'solid/drumstick-bite', agbero: 'solid/user-ninja', bridge: 'solid/bridge',
+  stapler: 'solid/paperclip', bill: 'solid/file-invoice-dollar', generator: 'solid/plug', folder: 'solid/folder', idcard: 'solid/id-card',
+  puff: 'solid/cookie', pepper: 'solid/pepper-hot', chinchin: 'solid/cookie-bite', zobo: 'solid/glass-water', boli: 'solid/carrot',
+  spray: 'solid/money-bill-wave', cake: 'solid/cake-candles', drum: 'solid/drum', map: 'solid/map-location-dot', flag: 'solid/flag',
+  desk: 'solid/computer', season: 'solid/calendar-days', invite2: 'solid/share-from-square', reminder: 'solid/bell', mission: 'solid/clipboard-user',
+  office: 'solid/briefcase', pin: 'solid/location-dot', rank: 'solid/ranking-star', clock: 'solid/clock', fan: 'solid/fan',
   headphones: 'solid/headphones', gift: 'solid/gift', sparkle: 'solid/wand-magic-sparkles', coins: 'solid/coins',
+  plant: 'solid/seedling', laptop: 'solid/laptop', radio: 'solid/radio', mug: 'solid/mug-hot', frame: 'solid/image',
 };
 
 function symbol(name, file) {

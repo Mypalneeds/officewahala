@@ -13,6 +13,9 @@ Key facts:
 - Modes: normal shift, daily shift (same pattern for everyone each day), career mode (Monday to Friday goals ending in a promotion letter), challenge links and private office leagues (weekly or tournament, with rules set by the creator: shift length, tries, same office for everyone, upgrades on or off, prize).
 - Badges level up forever (Bronze to Diamond and beyond); weekly challenges every Monday; shift events include staff birthday contributions, rainy season floods, visitor from HQ, generator fuel, Owambe Friday, network down, "alert never land", 4:59pm deadline, harmattan, Independence Day, Detty December and Valentine's Day.
 - Office leagues also have ghost runs, an office wall with ready-made lines and reactions, and small lunch-money gifts (pretend money).
+- Promotions transfer the player to new offices, each with its own boss and hazards: Lagos ad agency, Bank HQ in Marina (ATM queues), a federal ministry in Abuja (protocol convoys), an oil and gas company in Port Harcourt (falling hard hats, gas-leak gusts) and a Yaba tech startup (surprise stand-ups).
+- Every long shift has mini-missions and a 5pm emergency meeting where the boss throws agenda papers for 20 seconds.
+- Coming back: a daily attendance register (₦100 to ₦1,000, one missed day forgiven), free monthly seasons with 12 reward tiers, collectible sticker sets (never sold), a desk to decorate that league colleagues can view, State Wars (36 states + FCT, weekly) and a ₦1,000 invite bonus. Optional reminders run on the device only. None of it needs an account.
 - Staff shop: upgrades, hairstyles, accessories, free skin tones, 16 outfits, job titles. Soundtrack: six original Afrobeats, Amapiano and highlife-style songs generated in code.
 - Privacy: no cookies; progress stays on the player's device; optional anonymous gameplay statistics.
 - Developer contact: +234 706 645 9689 (phone/WhatsApp), https://www.analaize.com.ng

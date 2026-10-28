@@ -6,7 +6,7 @@ export const EVENTS = new Set([
   'page_view', 'visible_time', 'screen', 'js_error',
   'game_start', 'commute_end', 'level_up', 'boss', 'event_start', 'blackout', 'powerup_pick', 'powerup_use', 'task_done',
   'game_over', 'career_day', 'promotion', 'badge', 'boss_key',
-  'share', 'challenge_open', 'review_submit', 'league_create', 'league_join', 'league_play', 'league_admin', 'shop_tab', 'look_buy',
+  'share', 'challenge_open', 'review_submit', 'league_create', 'league_join', 'league_play', 'league_admin', 'shop_tab', 'look_buy', 'mission', 'meeting5', 'attendance', 'season_tier', 'sticker', 'desk', 'statewar', 'invite',
   'shop_buy', 'outfit_buy', 'setting', 'install_prompt', 'install_click', 'install_done',
   'ad_view', 'ad_click',
 ]);
@@ -71,7 +71,7 @@ export function cleanBatch(body, now = Date.now()) {
 
 /* ---------------- aggregation ---------------- */
 const DIMS = ['path', 'ref', 'src', 'country', 'dev', 'lang', 'gl', 'app', 'mode', 'cause', 'level', 'scoreb', 'boss', 'event', 'pick', 'power',
-  'commute', 'blackout', 'shop', 'outfit', 'badge', 'setting', 'share', 'screen', 'career', 'adv', 'adc', 'install'];
+  'commute', 'blackout', 'shop', 'outfit', 'badge', 'setting', 'share', 'screen', 'career', 'adv', 'adc', 'install', 'office', 'mission', 'attendance', 'statewar'];
 const FUNNEL = ['view', 'start', 'arrive', 'lvl3', 'over', 'share'];
 
 export function emptyAgg() {
@@ -112,7 +112,13 @@ export function addBatch(a, b) {
       case 'visible_time': a.visible += Math.min(3600, Math.max(0, p.secs || 0)); break;
       case 'screen': inc(a.dims.screen, p.name); break;
       case 'js_error': if (Object.keys(a.errors).length < 60 || a.errors[p.m]) inc(a.errors, (p.m || 'unknown') + (p.src ? ' @ ' + p.src : '')); break;
-      case 'game_start': a.games++; a.hours[h].g++; inc(a.dims.mode, p.mode || 'normal'); a.funnel.start[s] = 1; break;
+      case 'game_start': a.games++; a.hours[h].g++; inc(a.dims.mode, p.mode || 'normal'); inc(a.dims.office, p.office || 'agency'); a.funnel.start[s] = 1; break;
+      case 'mission': inc(a.dims.mission, (p.id || '?') + ' ' + (p.phase || '')); break;
+      case 'meeting5': inc(a.dims.mission, '5pm meeting ' + (p.phase || '')); break;
+      case 'attendance': inc(a.dims.attendance, 'day ' + (p.day || '?')); break;
+      case 'statewar': if (p.state) inc(a.dims.statewar, p.state); break;
+      case 'invite': inc(a.dims.share, 'invite ' + (p.action || '')); break;
+      case 'sticker': inc(a.dims.badge, 'sticker'); break;
       case 'commute_end': a.funnel.arrive[s] = 1; inc(a.dims.commute, p.skipped ? 'skipped' : p.late > 0 ? 'late' : 'on time'); break;
       case 'level_up': if ((p.level || 0) >= 3) a.funnel.lvl3[s] = 1; break;
       case 'boss': inc(a.dims.boss, p.type); break;

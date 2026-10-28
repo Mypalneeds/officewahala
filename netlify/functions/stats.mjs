@@ -66,5 +66,21 @@ export default async (req) => {
       pageViews: a.pv, games: a.games, finished: a.overs, playSeconds: Math.round(a.play) };
   });
   const live = Object.values(total.last).filter((t) => now - t < 5 * 60 * 1000).length;
-  return json({ generated: new Date(now).toISOString(), timezone: 'Africa/Lagos', from: list[0], to: list[list.length - 1], days, live, series, total: summarize(total) });
+  // Retention: of the visitors who were new on a day, how many came back the next day (D1) and within 7 days (D7).
+  const retention = { d1: { cohort: 0, back: 0 }, d7: { cohort: 0, back: 0 }, daily: [] };
+  for (let i = 0; i < dayAggs.length; i++) {
+    const cohort = Object.keys(dayAggs[i].newv);
+    if (!cohort.length) continue;
+    let d1 = null, d7 = null;
+    if (i + 1 < dayAggs.length) {
+      d1 = cohort.filter((v) => dayAggs[i + 1].vids[v]).length;
+      retention.d1.cohort += cohort.length; retention.d1.back += d1;
+    }
+    if (i + 7 < dayAggs.length) {
+      d7 = cohort.filter((v) => dayAggs.slice(i + 1, i + 8).some((a) => a.vids[v])).length;
+      retention.d7.cohort += cohort.length; retention.d7.back += d7;
+    }
+    retention.daily.push({ day: list[i], new: cohort.length, d1, d7 });
+  }
+  return json({ generated: new Date(now).toISOString(), timezone: 'Africa/Lagos', from: list[0], to: list[list.length - 1], days, live, series, retention, total: summarize(total) });
 };
