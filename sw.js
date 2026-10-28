@@ -1,6 +1,6 @@
 /* Office Wahala service worker: makes the game work offline after the first visit.
    Bump VERSION whenever you deploy changes so players get the new files. */
-const VERSION = 'ow-v6.0.0';
+const VERSION = 'ow-v6.1.0';
 const SHELL = [
   './',
   'index.html',
@@ -13,6 +13,9 @@ const SHELL = [
   'icons/icon-192.png',
   'icons/icon-512.png',
   'icons/apple-touch-icon.png',
+  'icons/favicon-32.png',
+  'icons/logo-mark-96.webp',
+  'favicon.ico',
 ];
 
 self.addEventListener('install', (event) => {

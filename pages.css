@@ -34,9 +34,8 @@ a:hover { color: var(--green); }
 }
 .site-head .wrap { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; padding-top: 12px; padding-bottom: 12px; }
 .brand { display: flex; align-items: center; gap: 10px; color: #fff; text-decoration: none; }
-.brand .flag { display: inline-flex; width: 28px; height: 19px; border-radius: 3px; overflow: hidden; }
-.brand .flag i { flex: 1; background: var(--green); }
-.brand .flag i:nth-child(2) { background: #fff; }
+.brand-logo { width: 40px; height: 40px; border-radius: 10px; flex: none; background: #fbfaf6; box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.15); }
+.logo-hero { display: block; width: 220px; height: 220px; margin: 0 0 18px; border-radius: 28px; box-shadow: 0 10px 30px rgba(13, 21, 38, 0.18); }
 .brand strong { font-family: var(--font-display); font-weight: 900; font-synthesis: none; font-size: 1.35rem; letter-spacing: 0.02em; text-transform: uppercase; }
 .site-nav { display: flex; gap: 4px 16px; flex-wrap: wrap; margin-left: auto; align-items: center; font-size: 0.95rem; }
 .site-nav a { color: #c7cfe0; text-decoration: none; padding: 4px 0; }

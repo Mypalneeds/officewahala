@@ -5,7 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="robots" content="noindex,nofollow">
   <title>Office Wahala Analytics</title>
-  <link rel="icon" href="/icons/icon-192.png" type="image/png">
+  <link rel="icon" href="/favicon.ico" sizes="any">
+  <link rel="icon" href="/icons/favicon-32.png" type="image/png" sizes="32x32">
   <style>
     :root {
       --bg: #0b1222; --panel: #131c33; --panel-2: #1a2542; --line: #24304f; --text: #e8ecf5; --muted: #93a0bd;
@@ -22,6 +23,9 @@
     .top .in { max-width: 1240px; margin: 0 auto; padding: 10px 16px; display: flex; gap: 10px 16px; align-items: center; flex-wrap: wrap; }
     .brand { font-family: var(--display); font-weight: 900; font-synthesis: none; font-size: 1.15rem; text-transform: uppercase; letter-spacing: 0.02em; }
     .brand span { color: var(--green); }
+    .brand { display: inline-flex; align-items: center; gap: 8px; }
+    .brand img { border-radius: 8px; }
+    .login-logo { display: block; width: 120px; height: 120px; border-radius: 22px; margin: 0 auto 10px; }
     .live { display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px; border-radius: 99px; background: var(--panel-2); color: var(--muted); font-weight: 700; font-size: 0.85rem; }
     .live i { width: 8px; height: 8px; border-radius: 50%; background: var(--green); box-shadow: 0 0 0 3px rgba(25, 195, 125, 0.25); }
     .tabs, .range { display: inline-flex; background: var(--panel); border-radius: 99px; padding: 3px; }
@@ -92,6 +96,7 @@
 </head>
 <body>
   <section id="login" class="login hidden" aria-labelledby="login-title">
+    <img class="login-logo" src="/icons/logo-512.webp" width="120" height="120" alt="Office Wahala logo">
     <h1 id="login-title">Office Wahala Analytics</h1>
     <p class="meta">Enter the dashboard key you set as <code>DASHBOARD_KEY</code> in Netlify.</p>
     <form id="login-form">
@@ -105,7 +110,7 @@
   <div id="app" class="hidden">
     <header class="top">
       <div class="in">
-        <div class="brand">Office <span>Wahala</span> analytics</div>
+        <div class="brand"><img src="/icons/logo-mark-96.webp" width="32" height="32" alt="">Office <span>Wahala</span> analytics</div>
         <span class="live" title="Visitors active in the last 5 minutes"><i></i><span id="live">0</span>&nbsp;live now</span>
         <div class="tabs" role="tablist">
           <button role="tab" aria-selected="true" data-tab="overview">Overview</button>

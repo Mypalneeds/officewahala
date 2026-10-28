@@ -122,7 +122,8 @@ office-wahala/
 ├── sw.js                Service worker: offline play after the first visit
 ├── manifest.webmanifest App name, colours and icons for "install to home screen"
 ├── netlify.toml         Netlify settings: copies the game into dist/, builds the function
-├── icons/               App icons and the social preview image (og-image.png)
+├── icons/               Logo (logo-512/1080), header mark, favicons, app icons (incl. maskable) and the social preview image (og-image.png)
+├── favicon.ico          Browser-tab icon (also in icons/)
 ├── supabase/
 │   └── schema.sql       Optional: database setup for the global leaderboard
 ├── README.md
