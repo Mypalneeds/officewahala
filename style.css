@@ -1546,3 +1546,40 @@ body.is-home .mode-row[hidden] { display: none; }
 .legend-home { display: none; }
 body.is-home .legend-home { display: grid; }
 body.is-home .legend-office { display: none; }
+
+/* ---------- v8.1: iPhone quick install ---------- */
+.ios-card { display: flex; align-items: center; gap: 10px; width: 100%; margin: 10px 0 0; padding: 10px 12px; border: 0; border-radius: var(--radius-sm); background: #111827; color: #fff; font: inherit; font-weight: 800; font-size: 0.86rem; text-align: left; cursor: pointer; }
+.ios-card[hidden] { display: none; }
+.ios-card span { flex: 1; }
+.ios-card .ico { font-size: 1.1rem; }
+.ios-card .ios-go { color: #60a5fa; }
+.ios-card:focus-visible { outline: none; box-shadow: var(--focus); }
+.ios-sheet { position: fixed; inset: 0; z-index: 60; background: rgba(8, 13, 26, 0.6); display: flex; align-items: flex-end; justify-content: center; opacity: 0; transition: opacity 0.2s ease; }
+.ios-sheet[hidden] { display: none; }
+.ios-sheet.is-open { opacity: 1; }
+.ios-panel { width: min(100%, 460px); max-height: 88vh; overflow: auto; background: var(--paper); color: var(--ink); border-radius: 22px 22px 0 0; padding: 20px 18px calc(18px + env(safe-area-inset-bottom)); transform: translateY(24px); transition: transform 0.22s ease; text-align: center; }
+.ios-sheet.is-open .ios-panel { transform: none; }
+.ios-logo { border-radius: 14px; box-shadow: 0 4px 14px rgba(0, 0, 0, 0.2); }
+.ios-panel h2 { margin: 10px 0 4px; font-size: 1.25rem; }
+.ios-sub { margin: 0 0 12px; color: var(--ink-soft); font-size: 0.9rem; }
+.ios-steps { list-style: none; margin: 0 0 14px; padding: 0; display: grid; gap: 8px; text-align: left; }
+.ios-steps li { display: grid; grid-template-columns: 22px 42px 1fr; align-items: center; gap: 10px; padding: 10px; border-radius: 14px; background: #f0f1f4; }
+.ios-steps b { display: block; font-size: 0.95rem; }
+.ios-steps small { display: block; color: var(--ink-soft); font-size: 0.78rem; margin-top: 2px; }
+.ios-n { width: 22px; height: 22px; border-radius: 50%; background: var(--ink); color: #fff; display: grid; place-items: center; font-weight: 900; font-size: 0.78rem; }
+.ios-icon { width: 42px; height: 42px; border-radius: 10px; background: #fff; display: grid; place-items: center; color: #0a84ff; font-size: 1.3rem; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12); }
+.ios-icon.ios-add { font-size: 0.85rem; font-weight: 800; }
+.ios-inapp { margin: 0 0 12px; padding: 10px; border-radius: 12px; background: #fff3c4; color: #6b4b00; font-size: 0.85rem; font-weight: 700; text-align: left; }
+.ios-inapp p { margin: 0 0 8px; display: flex; gap: 8px; align-items: flex-start; }
+.ios-pointer { position: fixed; left: 50%; bottom: 6px; transform: translateX(-50%); color: #fff; display: none; flex-direction: column; align-items: center; font-weight: 900; font-size: 1.3rem; animation: ios-bob 1s ease-in-out infinite; pointer-events: none; }
+@keyframes ios-bob { 50% { transform: translate(-50%, 6px); } }
+@media (prefers-reduced-motion: reduce) { .ios-pointer { animation: none; } }
+
+/* ---------- v8.1: Home Wahala leagues ---------- */
+.rule-world label b .ico { color: var(--green); }
+.rule-world label:last-of-type b .ico { color: #ea580c; }
+.league-card.is-home { border-left: 5px solid #ea580c; }
+.league-card.is-home .rule-chips li:first-child { background: #ffedd5; color: #9a3412; }
+body.is-home .over-actions .btn-gold { background: #ea580c; color: #fff; box-shadow: 0 4px 0 #9a3412; }
+body.is-home .appraisal h2 { color: #9a3412; }
+body.is-home .row-score { background: #7c2d12; }

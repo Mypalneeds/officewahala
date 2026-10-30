@@ -1594,9 +1594,9 @@
 
   function newRound(mode) {
     G.mode = mode || 'normal';
-    G.world = G.mode === 'home' ? 'home' : 'office';
     G.dailyKey = todayKey();
     G.league = G.mode === 'league' ? LG.run : null;
+    G.world = G.mode === 'home' || (G.league && G.league.rules && G.league.rules.world === 'home') ? 'home' : 'office';
     const LR = G.league ? G.league.rules : null;
     rng = G.mode === 'daily' ? mulberry32(strHash('office-wahala:' + G.dailyKey))
       : G.league && G.league.seed ? mulberry32(strHash('league:' + G.league.seed)) : Math.random;
@@ -1652,7 +1652,7 @@
     G.task = null;
     G.taskT = G.mode === 'career' && careerDay().type === 'tasks' ? 6 : rand(DIFFICULTY.taskEvery[0], DIFFICULTY.taskEvery[1]) * 0.7;
     G.held = null; G.calm = 0; G.frozen = 0; G.fade = 0; G.alertT = 0; G.revived = false; G.trailT = 0;
-    G.office = G.world === 'home' ? homeById(S.home) : G.mode === 'daily' || G.mode === 'league' ? OFFICES[0] : officeById(S.office);
+    G.office = G.world === 'home' ? (G.mode === 'league' ? HOMES[0] : homeById(S.home)) : G.mode === 'daily' || G.mode === 'league' ? OFFICES[0] : officeById(S.office);
     G.hazT = 8; G.gust = null; G.gustT = 14; G.mission = null; G.missionT = 14; G.meet = null; G.met5 = false; G.stateNote = '';
     G.event2 = null; G.zones = []; G.dim = 0; G.bonusRain = 0; G.idleT = 0; G.stackTried = false;
     G.run = { lunch: 0, tasks: 0, escapes: 0, fridays: 0 };
@@ -1917,13 +1917,15 @@
 
   function startGame(mode) {
     if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
-    if (mode !== 'home' && officeClosed()) { setWorld('home', true); toast(t('hm_closed'), 'info', 3200, 'home'); return; }
-    if (mode === 'home' && S.world !== 'home') setWorld('home', true);
-    if (mode !== 'home' && S.world !== 'office') setWorld('office', true);
+    const homeLeague = mode === 'league' && LG.run && LG.run.rules && LG.run.rules.world === 'home';
+    const wantHome = mode === 'home' || homeLeague;
+    if (!wantHome && officeClosed()) { setWorld('home', true); toast(t('hm_closed'), 'info', 3200, 'home'); return; }
+    if (wantHome && S.world !== 'home') setWorld('home', true);
+    if (!wantHome && S.world !== 'office') setWorld('office', true);
     store.set('ow_played', '1');
     resize();
     newRound(mode === 'daily' || mode === 'career' || mode === 'home' || (mode === 'league' && LG.run) ? mode : 'normal');
-    if (G.upg === S.upg && S.upg.pocket > 0) { G.held = 'autoreply'; S.upg.pocket--; saveS.upg(); }
+    if (G.world !== 'home' && G.upg === S.upg && S.upg.pocket > 0) { G.held = 'autoreply'; S.upg.pocket--; saveS.upg(); }
     $('btn-restart').hidden = G.mode === 'league';
     if (Voice) Voice.lang = S.lang;
     keys.clear();
@@ -1940,7 +1942,8 @@
     G.startedAt = performance.now();
     ADS.seen = new Set(); ADS.views = 0;
     T('game_start', { mode: G.mode, commute: G.phase === 'commute', held: G.held || '', office: G.office ? G.office.id : 'agency' });
-    if (G.world === 'home') toast(coarse ? t('hm_startTouch') : t('hm_start'), 'info', 2600);
+    if (G.world === 'home' && G.mode === 'league') toast(t('lgHomeStart')(G.league.name, G.limit), 'info', 2800);
+    else if (G.world === 'home') toast(coarse ? t('hm_startTouch') : t('hm_start'), 'info', 2600);
     else if (G.phase === 'commute') { toast(t('commuteStart'), 'info', 2600); say('commute'); }
     else if (G.mode === 'career') toast(t('days')[S.career.day] + ': ' + t('goalText')(careerDay().type, goalTarget()), 'info', 2800);
     else if (G.mode === 'league') toast(t('lgStartToast')(G.league.name, G.limit), 'info', 2800);
@@ -2131,6 +2134,7 @@
     if (G.promoPending) setTimeout(() => { if (G.state === 'over') openPromo(); }, 1300);
     refreshMenu();
     makeShareImage().then((b) => { G.shareBlob = b; }).catch(() => { G.shareBlob = null; });
+    if (window.__owIosNudge) window.__owIosNudge();
     if (Music && Sound.musicOn) setTimeout(() => { if (G.state === 'over') { Music.muffle(false); Music.start('menu'); Music.setMode('menu'); } }, 1600);
   }
 
@@ -3271,13 +3275,15 @@
   }
   function ruleChips(rules) {
     const c = [];
+    const home = rules.world === 'home';
+    c.push(home ? ['home', t('lgHomeChip')] : ['office', t('lgOfficeChip')]);
     c.push(rules.schedule === 'week' ? ['daily', t('lgWeekly')] : ['calendar', t('lgTournament')]);
     c.push(['stopwatch', rules.shiftSecs ? t('lgShift')(rules.shiftSecs) : t('lgNoLimit')]);
     c.push(['again', rules.tries ? t('lgTries')(rules.tries) : t('lgTriesAny')]);
     c.push(['trophy', rules.scoring === 'total' ? t('lgTotal') : t('lgBest')]);
-    if (rules.sameOffice) c.push(['leagues', t('lgSame')]);
+    if (rules.sameOffice) c.push(['leagues', home ? t('lgSameHome') : t('lgSame')]);
     if (!rules.upgrades) c.push(['lock', t('lgNoUpg')]);
-    c.push(['bus', rules.commute ? t('lgCommute') : t('lgNoCommute')]);
+    if (!home) c.push(['bus', rules.commute ? t('lgCommute') : t('lgNoCommute')]);
     return c;
   }
   function chipsHtml(rules, max) {
@@ -3286,6 +3292,7 @@
   function canPlay(b) {
     if (!b || !b.round) return { ok: true, why: '' };
     if (b.me && b.me.kicked) return { ok: false, why: t('lgKicked') };
+    if (b.rules && b.rules.world !== 'home' && officeClosed()) return { ok: false, why: t('hm_closedLeague') };
     if (b.round.status === 'upcoming') return { ok: false, why: t('lgNotYet') };
     if (b.round.status === 'ended') return { ok: false, why: t('lgEnded') };
     if (b.me && b.me.triesLeft === 0) return { ok: false, why: t('lgNoTries') };
@@ -3304,12 +3311,18 @@
   // ----- rules form (shared by create + admin) -----
   function toLocalInput(ts) { const d = new Date(ts - new Date(ts).getTimezoneOffset() * 60000); return d.toISOString().slice(0, 16); }
   function renderRulesFields(box, rules) {
-    const r = Object.assign({ schedule: 'week', shiftSecs: 0, tries: 0, scoring: 'best', sameOffice: false, upgrades: true, commute: true, prize: '' }, rules || {});
+    const r = Object.assign({ schedule: 'week', shiftSecs: 0, tries: 0, scoring: 'best', sameOffice: false, upgrades: true, commute: true, prize: '', world: S.world === 'home' ? 'home' : 'office' }, rules || {});
     const id = box.dataset.rules;
+    const fixed = id !== 'create';
     const now = Date.now();
     const start = r.start || Math.ceil(now / 900000) * 900000, end = r.end || start + 2 * 3600 * 1000;
     const opt = (list, cur) => list.map(([v, l]) => `<option value="${v}"${String(v) === String(cur) ? ' selected' : ''}>${esc(l)}</option>`).join('');
     box.innerHTML = `
+      <fieldset class="rule-type rule-world"><legend>${esc(t('lgWorld'))}</legend>
+        <label><input type="radio" name="${id}-world" value="office"${r.world !== 'home' ? ' checked' : ''}${fixed ? ' disabled' : ''}><span><b>${ico('office')} ${esc(t('lgWorldOffice'))}</b><small>${esc(t('lgWorldOfficeHelp'))}</small></span></label>
+        <label><input type="radio" name="${id}-world" value="home"${r.world === 'home' ? ' checked' : ''}${fixed ? ' disabled' : ''}><span><b>${ico('home')} ${esc(t('lgWorldHome'))}</b><small>${esc(t('lgWorldHomeHelp'))}</small></span></label>
+        ${fixed ? '<p class="setting-help">' + esc(t('lgWorldFixed')) + '</p>' : ''}
+      </fieldset>
       <fieldset class="rule-type"><legend>${esc(t('lgType'))}</legend>
         <label><input type="radio" name="${id}-schedule" value="week"${r.schedule === 'week' ? ' checked' : ''}><span><b>${esc(t('lgWeekly'))}</b><small>${esc(t('lgWeeklyHelp'))}</small></span></label>
         <label><input type="radio" name="${id}-schedule" value="custom"${r.schedule === 'custom' ? ' checked' : ''}><span><b>${esc(t('lgTournament'))}</b><small>${esc(t('lgTournamentHelp'))}</small></span></label>
@@ -3326,9 +3339,15 @@
       <div class="rule-checks">
         <label><input type="checkbox" data-r="sameOffice"${r.sameOffice ? ' checked' : ''}><span><b>${esc(t('lgSame'))}</b><small>${esc(t('lgSameHelp'))}</small></span></label>
         <label><input type="checkbox" data-r="upgrades"${r.upgrades ? ' checked' : ''}><span><b>${esc(t('lgUpg'))}</b><small>${esc(t('lgUpgHelp'))}</small></span></label>
-        <label><input type="checkbox" data-r="commute"${r.commute ? ' checked' : ''}><span><b>${esc(t('lgCommute'))}</b><small>${esc(t('lgCommuteHelp'))}</small></span></label>
+        <label class="rule-commute"${r.world === 'home' ? ' hidden' : ''}><input type="checkbox" data-r="commute"${r.commute ? ' checked' : ''}><span><b>${esc(t('lgCommute'))}</b><small>${esc(t('lgCommuteHelp'))}</small></span></label>
       </div>
       <label>${esc(t('lgPrize'))}<input type="text" data-r="prize" maxlength="80" placeholder="${esc(t('lgPrizeEg'))}" value="${esc(r.prize || '')}"></label>`;
+    box.querySelectorAll(`input[name="${id}-world"]`).forEach((el) => el.addEventListener('change', () => {
+      const home = box.querySelector(`input[name="${id}-world"]:checked`).value === 'home';
+      box.querySelector('.rule-commute').hidden = home;
+      box.querySelector('[data-r="sameOffice"]').nextElementSibling.firstElementChild.textContent = home ? t('lgSameHome') : t('lgSame');
+    }));
+    if (r.world === 'home') box.querySelector('[data-r="sameOffice"]').nextElementSibling.firstElementChild.textContent = t('lgSameHome');
     box.querySelectorAll(`input[name="${id}-schedule"]`).forEach((el) => el.addEventListener('change', () => {
       box.querySelector('.rule-dates').hidden = box.querySelector(`input[name="${id}-schedule"]:checked`).value !== 'custom';
     }));
@@ -3341,6 +3360,8 @@
       shiftSecs: +v('shiftSecs').value, tries: +v('tries').value, scoring: v('scoring').value,
       sameOffice: v('sameOffice').checked, upgrades: v('upgrades').checked, commute: v('commute').checked, prize: v('prize').value.trim(),
     };
+    const w = box.querySelector(`input[name="${id}-world"]:checked`);
+    if (w && !w.disabled) r.world = w.value;
     if (r.schedule === 'custom') { r.start = new Date(v('start').value).getTime(); r.end = new Date(v('end').value).getTime(); }
     return r;
   }
@@ -3349,7 +3370,7 @@
   function leagueCard(l) {
     const b = LG.boards[l.code];
     const li = document.createElement('li');
-    li.className = 'league-card';
+    li.className = 'league-card' + (b && b.rules && b.rules.world === 'home' ? ' is-home' : '');
     li.dataset.code = l.code;
     const cp = canPlay(b);
     const leader = b && b.players && b.players[0];
@@ -3380,7 +3401,7 @@
     $('league-name-need').hidden = !!S.name;
     $('league-player').value = S.name;
     const box = document.querySelector('[data-rules="create"]');
-    if (!box.firstElementChild) renderRulesFields(box, null);
+    if (!box.firstElementChild || box.dataset.w !== S.world) { renderRulesFields(box, null); box.dataset.w = S.world; }
     $('league-create-box').open = !S.leagues.length && $('league-create-box').open;
     paintLeagueList();
     for (const l of S.leagues) {
@@ -3608,7 +3629,11 @@
 
   // ----- playing for a league -----
   async function playLeague(code) {
-    if (officeClosed()) { const m = t('hm_closedLeague'); if (G.state === 'leagues') leagueStatus(m, 'err'); else toast(m, 'info', 2800); return; }
+    if (officeClosed()) {
+      let bb = LG.boards[code];
+      if (!bb || !bb.rules) { try { bb = await fetchBoard(code); } catch (e) { bb = null; } }
+      if (!bb || !bb.rules || bb.rules.world !== 'home') { const m = t('hm_closedLeague'); if (G.state === 'leagues') leagueStatus(m, 'err'); else toast(m, 'info', 2800); return; }
+    }
     if (!S.name) {
       if (G.state !== 'leagues') openSide('leagues');
       needName();
@@ -5066,6 +5091,13 @@
     ev_h_visitors: 'Visitors are coming!', ev_h_visitors_d: 'Stand next to each aunty to greet her.',
     hm_eventOver: 'Back to normal… for now.',
     nav_house: 'Your house',
+    lgWorld: 'Which game?', lgWorldOffice: 'Office Wahala', lgWorldOfficeHelp: 'Office shifts. Closed on Saturdays and Sundays.',
+    lgWorldHome: 'Home Wahala', lgWorldHomeHelp: 'A day with Mummy. Open every day, weekends too.', lgWorldFixed: 'The game can\'t be changed after the league is created.',
+    lgSameHome: 'Same day at home for everyone', lgHomeChip: 'Home Wahala', lgOfficeChip: 'Office Wahala', lgHomeStart: (n, s) => `Home league: ${n}` + (s ? ` · ${s}s` : '') + '. Mummy is watching!',
+    ios_btn: 'Install on iPhone', ios_title: 'Put it on your iPhone home screen', ios_sub: 'Three taps. It opens full screen like an app and works without data.',
+    ios_s1: 'Tap the Share button', ios_s1b: 'At the bottom of Safari (on iPad, at the top right).', ios_s2: 'Tap “Add to Home Screen”', ios_s2b: 'Scroll down the list if you don\'t see it.',
+    ios_s3: 'Tap “Add”', ios_s3b: 'The game appears on your home screen with its logo.', ios_inapp: 'You\'re inside another app\'s browser. Open this page in Safari first:',
+    ios_copy: 'Copy link', ios_copied: 'Link copied. Paste it in Safari.', ios_gotit: 'Got it', ios_card: 'Install on your iPhone: 3 quick taps',
   });
   Object.assign(STR.pcm, {
     hm_play: 'Start the day', hm_closed: 'Office don close for weekend. Go house go greet your mama!',
@@ -5076,7 +5108,10 @@
     hm_meat2: 'Ehn?! TWO meat?! Who send you?', hm_tvCaught: 'Off that TV! Go read your book!', hm_whoDrank: 'Mummy: "Who drink my Malt?!"',
     hm_spilled: 'You don pour the water! Go back to tap!', hm_wrong: 'I talk TITUS, no be Kote!', hm_changeBad: (n) => 'Mummy: "Where my change?!" (₦' + n + ' dey miss)',
     hm_sleeping: 'You dey sleep for church!', hm_dad: 'Daddy don come house… and e hear everything.',
+    ios_btn: 'Install for iPhone', ios_title: 'Put am for your iPhone home screen', ios_sub: 'Three taps. E go open full screen like app and e no need data.',
+    ios_s1: 'Press Share button', ios_s2: 'Press “Add to Home Screen”', ios_s3: 'Press “Add”', ios_gotit: 'I don see am', ios_card: 'Install for your iPhone: 3 quick taps',
   });
+  Object.assign(UI_PCM, { ios_title: 'Put am for your iPhone home screen', ios_sub: 'Three taps. E go open full screen like app and e no need data.', ios_s1: 'Press Share button', ios_s2: 'Press “Add to Home Screen”', ios_s3: 'Press “Add”', ios_gotit: 'I don see am' });
 
   /* ---------- Items and obstacles ---------- */
   Object.assign(ITEMS, {
@@ -5115,15 +5150,15 @@
     const d = HOME_OBS[type], m = levelMult(), sp = rand(d.speed[0], d.speed[1]) * m;
     const o = { type, hobs: true, t: 0, rot: rand(-0.4, 0.4), vr: rand(-2.5, 2.5), minD: Infinity, warn: 0, phase: 'move', life: 0 };
     if (type === 'broom' || type === 'fowl') {
-      const fromLeft = Math.random() < 0.5;
+      const fromLeft = rng() < 0.5;
       if (type === 'broom') { o.w = d.w; o.h = d.h; } else { o.r = d.r; o.hr = d.r * 0.8; }
       o.y = clamp(G.player.y + rand(-80, 60), minY(), maxY());
       o.x = fromLeft ? FX0 - 40 : FX1 + 40; o.vx = (fromLeft ? 1 : -1) * sp; o.vy = 0; o.dir = fromLeft ? 1 : -1;
       o.warn = type === 'broom' ? 0.9 : 0.6; o.side = fromLeft ? 'L' : 'R'; o.rot = 0; o.vr = 0;
     } else {
       o.r = d.r; o.hr = d.r * 0.82;
-      o.x = FX0 + d.r + 6 + Math.random() * (FX1 - FX0 - 2 * (d.r + 6)); o.y = -d.r - 20; o.vx = 0; o.vy = sp;
-      if (type === 'ball') { o.vx = (Math.random() < 0.5 ? -1 : 1) * rand(90, 140) * m; o.vr = o.vx / 20; }
+      o.x = FX0 + d.r + 6 + rng() * (FX1 - FX0 - 2 * (d.r + 6)); o.y = -d.r - 20; o.vx = 0; o.vy = sp;
+      if (type === 'ball') { o.vx = (rng() < 0.5 ? -1 : 1) * rand(90, 140) * m; o.vr = o.vx / 20; }
       if (type === 'homework') o.vr *= 0.4;
     }
     G.obstacles.push(o);
@@ -5133,14 +5168,14 @@
     let type = force;
     if (!type) {
       const M = G.mission;
-      if (M && !M.carry && M.items && Math.random() < 0.45) {
+      if (M && !M.carry && M.items && rng() < 0.45) {
         type = M.id === 'shop' ? pickF(M.items.filter((x) => !M.got[x])) || pickF(M.items) : M.items[0];
-        if (M.id === 'swap' && Math.random() < 0.45) type = 'kote';
-      } else if (Math.random() < 0.02) type = 'sticker';
-      else type = weightedR(HOME_ITEM_W.filter(([k]) => !HOME_ITEM_UNLOCK[k] || G.level >= HOME_ITEM_UNLOCK[k]));
+        if (M.id === 'swap' && rng() < 0.45) type = 'kote';
+      } else if (rng() < 0.02) type = 'sticker';
+      else type = weighted(HOME_ITEM_W.filter(([k]) => !HOME_ITEM_UNLOCK[k] || G.level >= HOME_ITEM_UNLOCK[k]));
     }
     const r = 15;
-    G.items.push({ type, r, x: FX0 + r + 10 + Math.random() * (FX1 - FX0 - 2 * (r + 10)), y: -r - 20,
+    G.items.push({ type, r, x: FX0 + r + 10 + rng() * (FX1 - FX0 - 2 * (r + 10)), y: -r - 20,
       vy: fast ? rand(210, 260) : rand(120, 165) * (0.85 + 0.15 * levelMult()), t: rand(0, 3), wob: rand(0, TAU) });
   }
 
@@ -5154,12 +5189,12 @@
   function spawnMum(opts = {}) {
     if (G.obstacles.some((o) => o.type === 'mum' && o.phase !== 'leave')) return null;
     const p = G.player;
-    const side = opts.count ? 'T' : ['L', 'R', 'T'][(Math.random() * 3) | 0];
+    const side = opts.count ? 'T' : ['L', 'R', 'T'][(rng() * 3) | 0];
     const o = { type: 'mum', npc: true, boss: true, side, phase: opts.count ? 'count' : 'warn', warn: opts.count ? 0 : opts.fast ? 0.8 : 1.4,
       t: 0, r: 22, hr: 18, minD: Infinity, vx: 0, vy: 0, talkT: 0, talk: '', throwT: 1.3 };
     if (opts.count) {
-      o.x = clamp(p.x + frand(-110, 110), FX0 + 50, FX1 - 50);
-      o.y = clamp(p.y - frand(180, 250), minY() + 10, maxY() - 140);
+      o.x = clamp(p.x + rand(-110, 110), FX0 + 50, FX1 - 50);
+      o.y = clamp(p.y - rand(180, 250), minY() + 10, maxY() - 140);
       o.cnt = 3.8; o.talk = t('hm_count'); o.talkT = 99;
     } else if (side === 'L') { o.x = FX0 - 40; o.y = clamp(p.y, minY(), maxY()); }
     else if (side === 'R') { o.x = FX1 + 40; o.y = clamp(p.y, minY(), maxY()); }
@@ -5187,30 +5222,30 @@
   function spawnHomeBoss() {
     if (G.daddyT > 0 || dishesOn()) { G.bossT = 3; return; }
     if (G.obstacles.some((o) => o.boss && o.phase !== 'leave')) return;
-    if (G.level >= 7 && !G.dadDone && Math.random() < 0.3) { spawnDad(); T('boss', { type: 'dad', level: G.level }); return; }
+    if (G.level >= 7 && !G.dadDone && rng() < 0.3) { spawnDad(); T('boss', { type: 'dad', level: G.level }); return; }
     if (spawnMum()) T('boss', { type: 'mum', level: G.level });
   }
   function spawnSister() {
     if (G.obstacles.some((o) => o.type === 'sister')) return;
-    const fromLeft = Math.random() < 0.5;
+    const fromLeft = rng() < 0.5;
     G.obstacles.push({ type: 'sister', npc: true, t: 0, r: 15, hr: 12, minD: Infinity, warn: 0.6, side: fromLeft ? 'L' : 'R', phase: 'follow',
-      x: fromLeft ? FX0 - 30 : FX1 + 30, y: clamp(G.player.y + frand(-60, 40), minY(), maxY()), vx: 0, vy: 0, life: 7,
+      x: fromLeft ? FX0 - 30 : FX1 + 30, y: clamp(G.player.y + rand(-60, 40), minY(), maxY()), vx: 0, vy: 0, life: 7,
       speed: CONFIG.PLAYER_SPEED * (0.6 + Math.min(0.12, G.level * 0.01)), talk: pickF(homeMsgs().sisterTalk), talkT: 2 });
     say('h_tattle_warn');
   }
   function spawnNeighbour() {
     if (G.obstacles.some((o) => o.type === 'neighbour')) return;
-    const fromLeft = Math.random() < 0.5;
+    const fromLeft = rng() < 0.5;
     G.obstacles.push({ type: 'neighbour', npc: true, t: 0, r: 18, hr: 15, minD: Infinity, warn: 0.7, side: fromLeft ? 'L' : 'R', phase: 'walk',
-      x: fromLeft ? FX0 - 30 : FX1 + 30, y: clamp(G.player.y + frand(-120, 30), minY(), maxY()), vx: (fromLeft ? 1 : -1) * frand(65, 85), vy: 0,
+      x: fromLeft ? FX0 - 30 : FX1 + 30, y: clamp(G.player.y + rand(-120, 30), minY(), maxY()), vx: (fromLeft ? 1 : -1) * rand(65, 85), vy: 0,
       talk: pickF(homeMsgs().ngTalk), talkT: 2.4 });
   }
   function spawnVisitor() {
     if (G.obstacles.filter((o) => o.type === 'visitor').length >= (evIs('h_visitors') || evIs('h_xmas') ? 2 : 1)) return;
-    const fromLeft = Math.random() < 0.5;
+    const fromLeft = rng() < 0.5;
     const o = { type: 'visitor', npc: true, t: 0, r: 18, hr: 15, minD: Infinity, warn: 0, phase: 'in', fromLeft,
-      x: fromLeft ? FX0 - 30 : FX1 + 30, tx: fromLeft ? FX0 + 52 : FX1 - 52, y: clamp(frand(minY() + 20, maxY() - 120), minY() + 20, maxY() - 40),
-      vx: 0, vy: 0, wait: 6.5, greet: 0, greeted: false, money: Math.random() < 0.6, talk: pickF(homeMsgs().visitorTalk),
+      x: fromLeft ? FX0 - 30 : FX1 + 30, tx: fromLeft ? FX0 + 52 : FX1 - 52, y: clamp(rand(minY() + 20, maxY() - 120), minY() + 20, maxY() - 40),
+      vx: 0, vy: 0, wait: 6.5, greet: 0, greeted: false, money: rng() < 0.6, talk: pickF(homeMsgs().visitorTalk),
       look: pickF([{ c: 'pattern:aso', g: 'pattern:aso' }, { c: 'pattern:ankara', g: '#0ea5e9' }, { c: '#7c3aed', g: '#f5b301' }, { c: 'pattern:ankara2', g: '#d62f3a' }]) };
     G.obstacles.push(o);
   }
@@ -5427,7 +5462,7 @@
   const CARRY_TEXT = { water: ['Carry the water home', 'Carry the water go house'], shop: ['Bring back my change', 'Bring my change come'] };
   function startHomeErrand() {
     const pool = HOME_ERRANDS.filter((e) => e.id !== G.lastErrand);
-    const def = pickF(pool);
+    const def = pool[(rng() * pool.length) | 0];
     G.lastErrand = def.id;
     const hard = G.level >= 6 ? 1 : 0;
     const say1 = S.lang === 'pcm' ? ERRAND_PCM[def.id] : def.text;
@@ -5511,7 +5546,7 @@
   };
   function startHomeEvent(force) {
     const opts = Object.entries(HOME_EVENTS).filter(([k]) => k !== G.lastEvent).map(([k, e]) => [k, e.w()]).filter(([, w]) => w > 0);
-    const id = force || weightedR(opts);
+    const id = force || weighted(opts);
     const def = HOME_EVENTS[id];
     G.event = { id, t: def.dur, dur: def.dur, k: 0.6, n: 2, home: true };
     G.lastEvent = id;
@@ -5543,13 +5578,13 @@
         break;
       case 'h_party': case 'h_xmas':
         ev.k -= dt;
-        if (ev.k <= 0) { spawnHomeItem(Math.random() < 0.45 ? 'meat' : 'jollof', true); ev.k = rand(0.7, 1.3); }
+        if (ev.k <= 0) { spawnHomeItem(rng() < 0.45 ? 'meat' : 'jollof', true); ev.k = rand(0.7, 1.3); }
         if (ev.id === 'h_party') { ev.n -= dt; if (ev.n <= 0) { spawnDancer('dancer'); ev.n = rand(2.4, 3.6); } }
         break;
       case 'h_tv':
         ev.k -= dt;
         if (ev.k <= 0 && G.items.filter((i) => i.type === 'remote').length < 2) {
-          G.items.push({ type: 'remote', r: 15, x: FX0 + 30 + Math.random() * (FX1 - FX0 - 60), y: -20, vy: 70, t: 0, wob: rand(0, TAU) });
+          G.items.push({ type: 'remote', r: 15, x: FX0 + 30 + rng() * (FX1 - FX0 - 60), y: -20, vy: 70, t: 0, wob: rand(0, TAU) });
           ev.k = rand(2, 3.2);
         }
         break;
@@ -5568,7 +5603,7 @@
     G.stars = Math.max(0, (G.stars || 0) - dt);
     G.hideT = Math.max(0, (G.hideT || 0) - dt);
     G.eyes.t -= dt;
-    if (G.eyes.t <= 0) { G.eyes.open = !G.eyes.open; G.eyes.t = G.eyes.open ? frand(2.2, 4.2) : frand(1.6, 3); }
+    if (G.eyes.t <= 0) { G.eyes.open = !G.eyes.open; G.eyes.t = G.eyes.open ? rand(2.2, 4.2) : rand(1.6, 3); }
     if (G.anger >= 99.5 && !mumPresent() && G.daddyT <= 0 && !dishesOn()) { G.anger = 45; spawnMum({ vexed: true }); }
     else if (G.daddyT <= 0) G.anger = Math.max(0, G.anger - dt * 1.2);
     G.visT -= dt;
@@ -7149,7 +7184,7 @@
     const full = url ? text + ' ' + url : text;
     if (navigator.share) {
       try {
-        const file = G.shareBlob ? new File([G.shareBlob], 'office-wahala-score.png', { type: 'image/png' }) : null;
+        const file = G.shareBlob ? new File([G.shareBlob], (G.world === 'home' ? 'home' : 'office') + '-wahala-score.png', { type: 'image/png' }) : null;
         if (file && navigator.canShare && navigator.canShare({ files: [file] })) {
           await navigator.share({ files: [file], text: full, title: CONFIG.TITLE });
           T('share', { kind: 'challenge', via: 'native-image', score: Math.floor(G.scoreF) });
@@ -7184,13 +7219,15 @@
         cv.width = Wc; cv.height = Hc;
         const c = cv.getContext('2d');
         const DISPLAY = 'Impact, "Arial Black", "Arial Narrow Bold", system-ui, sans-serif';
-        // background: office carpet
-        c.fillStyle = '#0d1526'; c.fillRect(0, 0, Wc, Hc);
-        c.strokeStyle = '#17233e'; c.lineWidth = 4;
+        const HOMEIMG = G.world === 'home';
+        const ACC = HOMEIMG ? '#ea580c' : '#008751';
+        // background: office carpet, or the compound floor at home
+        c.fillStyle = HOMEIMG ? '#1f140c' : '#0d1526'; c.fillRect(0, 0, Wc, Hc);
+        c.strokeStyle = HOMEIMG ? '#2f2014' : '#17233e'; c.lineWidth = 4;
         for (let x = 0; x < Wc; x += 120) { c.beginPath(); c.moveTo(x, 0); c.lineTo(x, Hc); c.stroke(); }
         for (let y = 0; y < Hc; y += 120) { c.beginPath(); c.moveTo(0, y); c.lineTo(Wc, y); c.stroke(); }
         const glow = c.createRadialGradient(Wc / 2, 600, 40, Wc / 2, 600, 520);
-        glow.addColorStop(0, 'rgba(0,135,81,.35)'); glow.addColorStop(1, 'rgba(0,135,81,0)');
+        glow.addColorStop(0, HOMEIMG ? 'rgba(234,88,12,.42)' : 'rgba(0,135,81,.35)'); glow.addColorStop(1, HOMEIMG ? 'rgba(234,88,12,0)' : 'rgba(0,135,81,0)');
         c.fillStyle = glow; c.fillRect(0, 0, Wc, 1200);
         // flag stripe
         c.fillStyle = '#008751'; c.fillRect(0, 0, Wc / 3, 22); c.fillRect((Wc * 2) / 3, 0, Wc / 3, 22);
@@ -7203,10 +7240,19 @@
         c.font = `900 210px ${DISPLAY}`;
         c.fillStyle = '#17203a'; c.fillText('WAHALA', 14, 14);
         c.fillStyle = '#f5b301'; c.fillText('WAHALA', 7, 7);
-        c.fillStyle = '#008751'; c.fillText('WAHALA', 0, 0);
+        c.fillStyle = ACC; c.fillText('WAHALA', 0, 0);
         c.restore();
+        if (HOMEIMG) {
+          // Mummy watching from behind, slipper in hand
+          c.save(); c.translate(Wc / 2 + 300, 600); c.scale(-1, 1);
+          SPRITES.mum(c, 0.4, { s: 3.6, mood: 'angry', lookX: 1, lookY: 0.3 });
+          c.restore();
+          c.save(); c.font = `900 40px ${DISPLAY}`; c.textAlign = 'center';
+          c.fillStyle = '#ffffff'; c.fillText('"COME HERE!"', Wc / 2 + 300, 420);
+          c.restore();
+        }
         // worker
-        c.save(); c.translate(Wc / 2, 566);
+        c.save(); c.translate(HOMEIMG ? Wc / 2 - 110 : Wc / 2, 566);
         SPRITES.player(c, 0.4, { walk: 0.6, mood: G.newBadges && G.newBadges.length ? 'cool' : 'happy', s: 4.6, lookY: 0.2, kid: G.world === 'home' });
         c.restore();
         // appraisal card
@@ -7219,9 +7265,9 @@
         c.textAlign = 'left';
         c.fillStyle = '#55607a'; c.font = '700 30px system-ui, Arial, sans-serif';
         c.fillText(G.world === 'home' ? 'Home Wahala · ' + (G.office ? G.office.city : '') : 'Wahala & Sons Ltd.', x0 + 56, y0 + 80);
-        c.fillStyle = '#17203a'; c.font = `900 60px ${DISPLAY}`;
+        c.fillStyle = HOMEIMG ? '#7c2d12' : '#17203a'; c.font = `900 60px ${DISPLAY}`;
         c.fillText(G.world === 'home' ? "MUMMY'S REPORT" : 'PERFORMANCE APPRAISAL', x0 + 56, y0 + 152, cw - 112);
-        c.fillRect(x0 + 56, y0 + 178, cw - 112, 6);
+        c.fillStyle = HOMEIMG ? ACC : '#17203a'; c.fillRect(x0 + 56, y0 + 178, cw - 112, 6);
         // stamp
         c.save(); c.translate(x0 + cw - 150, y0 + 6); c.rotate(0.1);
         const best = G.stampText === t('newBestStamp');
@@ -7238,9 +7284,9 @@
         lines.forEach((ln, i) => c.fillText(ln, x0 + 56, y0 + 252 + i * 52));
         // score block
         const sy = y0 + 270 + lines.length * 52;
-        c.fillStyle = '#17203a'; rr(c, x0 + 56, sy, cw - 112, 220, 26); c.fill();
-        c.fillStyle = '#aab3c8'; c.font = '700 32px system-ui, Arial, sans-serif';
-        c.fillText(G.mode === 'daily' ? 'Score · daily shift' : G.mode === 'career' ? 'Score · career, ' + STR.en.days[S.career.day] : 'Score', x0 + 96, sy + 58);
+        c.fillStyle = HOMEIMG ? '#7c2d12' : '#17203a'; rr(c, x0 + 56, sy, cw - 112, 220, 26); c.fill();
+        c.fillStyle = HOMEIMG ? '#fed7aa' : '#aab3c8'; c.font = '700 32px system-ui, Arial, sans-serif';
+        c.fillText(HOMEIMG ? (G.mode === 'league' ? 'Score · home league' : 'Score · a day at home') : G.mode === 'daily' ? 'Score · daily shift' : G.mode === 'career' ? 'Score · career, ' + STR.en.days[S.career.day] : 'Score', x0 + 96, sy + 58);
         c.fillStyle = '#f5b301'; c.font = `900 150px ${DISPLAY}`;
         c.fillText(fmtNum(G.scoreF), x0 + 92, sy + 192, cw - 190);
         // stats
@@ -7252,18 +7298,18 @@
         cells.forEach((cell, i) => {
           const cx = x0 + 56 + (i % 2) * ((cw - 112) / 2 + 8);
           const cy = sy + 246 + Math.floor(i / 2) * 124;
-          c.fillStyle = '#f0f1f4'; rr(c, cx, cy, (cw - 112) / 2 - 8, 110, 20); c.fill();
+          c.fillStyle = HOMEIMG ? '#ffedd5' : '#f0f1f4'; rr(c, cx, cy, (cw - 112) / 2 - 8, 110, 20); c.fill();
           c.fillStyle = '#55607a'; c.font = '600 28px system-ui, Arial, sans-serif'; c.fillText(cell[0], cx + 26, cy + 42);
           c.fillStyle = '#17203a'; c.font = '800 44px system-ui, Arial, sans-serif'; c.fillText(cell[1], cx + 26, cy + 92);
         });
         // footer
         c.textAlign = 'center';
         c.fillStyle = '#ffffff'; c.font = `900 76px ${DISPLAY}`;
-        c.fillText('CAN YOU BEAT ME?', Wc / 2, 1750);
+        c.fillText(HOMEIMG ? 'CAN YOU SURVIVE MUMMY?' : 'CAN YOU BEAT ME?', Wc / 2, 1750, Wc - 80);
         const base = shareBase();
         const host = base ? base.replace(/^https?:\/\//, '').replace(/\/$/, '') : '';
         c.fillStyle = '#f5b301'; c.font = '800 44px system-ui, Arial, sans-serif';
-        if (host) c.fillText('Play free: ' + host, Wc / 2, 1820);
+        if (host) c.fillText('Play free: ' + host + (HOMEIMG ? ' · Home Wahala' : ''), Wc / 2, 1820, Wc - 80);
         c.fillStyle = '#8f9bb8'; c.font = '600 28px system-ui, Arial, sans-serif';
         c.fillText(CONFIG.CREDIT, Wc / 2, 1880);
         cv.toBlob((b) => (b ? resolve(b) : reject(new Error('no blob'))), 'image/png');
@@ -7276,7 +7322,7 @@
       const blob = G.shareBlob || (await makeShareImage());
       const a = document.createElement('a');
       a.href = URL.createObjectURL(blob);
-      a.download = 'office-wahala-' + Math.floor(G.scoreF) + '.png';
+      a.download = (G.world === 'home' ? 'home' : 'office') + '-wahala-' + Math.floor(G.scoreF) + '.png';
       T('share', { kind: 'image' });
       document.body.appendChild(a);
       a.click();
@@ -7668,6 +7714,7 @@
   });
   window.addEventListener('appinstalled', () => { $('btn-install').hidden = true; installEvt = null; T('install_done'); });
   $('btn-install').addEventListener('click', async () => {
+    if ($('btn-install').dataset.ios === '1') { openIosInstall('menu'); return; }
     if (!installEvt) return;
     T('install_click');
     installEvt.prompt();
@@ -7677,7 +7724,26 @@
   });
   const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
   const standalone = window.navigator.standalone || (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches);
-  $('ios-install').hidden = !(isIOS && !standalone);
+  const iosCan = isIOS && !standalone;
+  const inApp = /FBAN|FBAV|Instagram|Line\/|Snapchat|TikTok|musical_ly|Twitter|LinkedInApp|GSA\//i.test(navigator.userAgent);
+  $('ios-install').hidden = !iosCan;
+  if (iosCan) { $('btn-install').hidden = false; $('btn-install').dataset.ios = '1'; const sp = $('btn-install').querySelector('[data-i18n]'); sp.dataset.en = t('ios_btn'); sp.textContent = t('ios_btn'); }
+  $('ios-card-text').textContent = t('ios_card');
+  function openIosInstall(src) {
+    const sh = $('ios-sheet');
+    $('ios-inapp').hidden = !inApp;
+    sh.hidden = false;
+    requestAnimationFrame(() => sh.classList.add('is-open'));
+    T('install_click', { via: 'ios-' + (src || 'menu') });
+    try { $('ios-gotit').focus({ preventScroll: true }); } catch (e) { /* ignore */ }
+  }
+  function closeIosInstall() { const sh = $('ios-sheet'); sh.classList.remove('is-open'); setTimeout(() => { sh.hidden = true; }, 220); }
+  $('ios-install').addEventListener('click', () => openIosInstall('card'));
+  $('ios-gotit').addEventListener('click', closeIosInstall);
+  $('ios-sheet').addEventListener('click', (e) => { if (e.target.id === 'ios-sheet') closeIosInstall(); });
+  $('ios-copy').addEventListener('click', async () => { const ok = await copyText(location.origin + '/'); toast(ok ? t('ios_copied') : location.origin, 'good', 2400); });
+  // suggest it once, after a player has enjoyed three games
+  window.__owIosNudge = () => { if (iosCan && stats.games >= 3 && store.get('ow_ios_nudged', '') !== '1') { store.set('ow_ios_nudged', '1'); setTimeout(() => { if (G.state === 'over' || G.state === 'menu') openIosInstall('nudge'); }, 2200); } };
   if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1')) {
     window.addEventListener('load', () => { navigator.serviceWorker.register('sw.js').catch(() => {}); });
   }
@@ -7926,7 +7992,7 @@
       SPRITES, officeClock, setQuality, get quality() { return quality; }, Sound, Music,
       OFFICES, officeUnlocked, setOffice, renderOffices, curOffice, spawnHazard, startMission, endMission, missionProgress, startMeeting, MISSIONS,
       attPreview, signRegister, renderRegister, get ATT() { return ATT; }, seasonXp, renderSeason, get SEASON() { return SEASON; }, grantSticker, STICKERS, MYSTICK, renderAlbum,
-      HOMES, setWorld, setHouse, spawnMum, spawnDad, spawnSister, spawnNeighbour, spawnVisitor, startHomeErrand, endHomeErrand, startHomeEvent, homeUnlocked, officeClosed, homeBestV, applyWorldText,
+      HOMES, setWorld, setHouse, renderRulesFields, readRules, ruleChips, canPlay, spawnMum, spawnDad, spawnSister, spawnNeighbour, spawnVisitor, startHomeErrand, endHomeErrand, startHomeEvent, homeUnlocked, officeClosed, homeBestV, applyWorldText,
       DESK_ITEMS, deskData, renderDesk, viewDesk, HUB, setState, renderStates, myPid, inviteFriend, nudges, renderNudges, setReminders, syncReminderConfig,
     };
   }

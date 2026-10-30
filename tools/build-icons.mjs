@@ -58,6 +58,7 @@ export const ICONS = {
   plant: 'solid/seedling', laptop: 'solid/laptop', radio: 'solid/radio', mug: 'solid/mug-hot', frame: 'solid/image',
   // v8: Home Wahala
   bucket: 'solid/bucket', bread: 'solid/bread-slice', fish: 'solid/fish', utensils: 'solid/utensils', shoe: 'solid/shoe-prints',
+  'ios-share': 'solid/arrow-up-from-bracket', 'add-square': 'regular/square-plus', copy: 'regular/copy', safari: 'brands/safari', apple: 'brands/apple',
 };
 
 function symbol(name, file) {

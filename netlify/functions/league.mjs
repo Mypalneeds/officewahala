@@ -107,9 +107,16 @@ async function sha(s) {
 export const pidOf = async (playerId) => (await sha('pid:' + playerId)).slice(0, 12);
 const randId = (n = 12) => [...crypto.getRandomValues(new Uint8Array(n))].map((b) => CODE_CHARS[b % CODE_CHARS.length]).join('');
 
-export const DEFAULT_RULES = { schedule: 'week', start: 0, end: 0, shiftSecs: 0, tries: 0, sameOffice: false, upgrades: true, commute: true, scoring: 'best', prize: '' };
+export const DEFAULT_RULES = { schedule: 'week', start: 0, end: 0, shiftSecs: 0, tries: 0, sameOffice: false, upgrades: true, commute: true, scoring: 'best', prize: '', world: 'office' };
 
 // Validate rules from the creator. Throws with a readable message.
+// Office Wahala is closed on Saturdays and Sundays (Lagos time, UTC+1). Home leagues play every day.
+export function officeClosedNow(now = Date.now()) {
+  const forced = process.env.OW_FORCE_DOW;
+  const d = forced !== undefined && forced !== '' ? Number(forced) : new Date(now + 3600e3).getUTCDay();
+  return d === 0 || d === 6;
+}
+
 export function cleanRules(r, now = Date.now()) {
   r = r || {};
   const out = { ...DEFAULT_RULES };
@@ -131,6 +138,7 @@ export function cleanRules(r, now = Date.now()) {
   out.upgrades = r.upgrades !== false;
   out.commute = r.commute !== false;
   out.scoring = r.scoring === 'total' ? 'total' : 'best';
+  out.world = r.world === 'home' ? 'home' : 'office';
   out.prize = cleanText(r.prize, 80);
   if (out.prize && isRude(out.prize)) throw new Error('Please keep the prize note friendly.');
   return out;
@@ -310,6 +318,7 @@ export default async (req, context) => {
       const status = roundStatus(round, now);
       if (status === 'upcoming') return fail('This league has not started yet.', 409);
       if (status === 'ended') return fail('This round has ended. Wait for the admin to start a new one.', 409);
+      if (rules.world !== 'home' && officeClosedNow(now)) return fail('Office is closed on Saturdays and Sundays. League shifts open again on Monday.', 409);
       if (await limited(store, 'start', b.playerId, 4)) return fail('Slow down a little.', 429);
       const key = `scores/${code}/${round.key}/${b.playerId}`;
       const rec = (await store.get(key, { type: 'json' }).catch(() => null)) || { name, best: 0, total: 0, plays: 0, tries: 0 };
@@ -485,7 +494,7 @@ export default async (req, context) => {
         if (name.length < 2) return fail('Give your league a name (at least 2 letters).');
         if (isRude(name)) return fail('Please choose a friendlier league name.');
         let next;
-        try { next = cleanRules({ ...L.rules, ...(b.rules || {}) }, now); } catch (e) { return fail(e.message); }
+        try { next = cleanRules({ ...L.rules, ...(b.rules || {}), world: L.rules.world || 'office' }, now); } catch (e) { return fail(e.message); }
         // Schedule changes apply from the next round; the rest apply right away.
         const scheduleChanged = next.schedule !== L.rules.schedule || next.start !== L.rules.start || next.end !== L.rules.end;
         L.name = name;

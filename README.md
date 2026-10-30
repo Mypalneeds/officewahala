@@ -15,6 +15,15 @@ Built by **Mmadubuko Micheal**, CEO, [Analaize Limited](https://www.analaize.com
 
 Live: https://officewahala.netlify.app
 
+## What's in version 8.1
+
+| Feature | What it does |
+|---|---|
+| Home Wahala leagues | When creating a league, pick the game: Office Wahala or Home Wahala (defaults to whichever you're on). Home leagues run a day at home in the Mushin yard, open every day including weekends. "Same day for everyone" seeds the home obstacles too, so ghosts are fair. The game can't be changed after creation (the server keeps it). Office leagues refuse new shifts on Saturdays and Sundays, on the client and on the server (`/start` returns 409; set `OW_FORCE_DOW` to test). |
+| Orange share card | Home Wahala scores share as an orange card: "HOME WAHALA", Mummy with her slipper ("COME HERE!"), "Mummy's report" and "Can you survive Mummy?". The end-of-day screen is orange too. Files are named `home-wahala-<score>.png`. |
+| Install on iPhone | On iPhone and iPad (Safari, not yet installed), the menu shows **Install on iPhone** and a card. Both open a three-step sheet (Share → Add to Home Screen → Add). Inside Instagram/Facebook/TikTok browsers it asks you to open Safari first and offers Copy link. It also opens once by itself after a player's third game. |
+| Pages, SEO, AEO, GEO | New Home Wahala sections and FAQs (leagues, iPhone install, weekends) with FAQPage structured data on `/home-wahala/` and `/faq/`; How to play, About (8.1 row), Privacy, llms.txt and the sitemap updated; the home page's structured data now includes Home Wahala as a part of the game, plus its screenshots and keywords. |
+
 ## What's in version 8: Home Wahala
 
 A second game on the same page, about growing up with an African mum. The menu has an **Office | Home** switch. **Office Wahala is closed on Saturdays and Sundays (Lagos time)**: normal shifts, the daily shift, career mode and league shifts all refuse to start, and the menu switches to Home Wahala. Home Wahala is open every day.
