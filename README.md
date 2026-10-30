@@ -15,6 +15,27 @@ Built by **Mmadubuko Micheal**, CEO, [Analaize Limited](https://www.analaize.com
 
 Live: https://officewahala.netlify.app
 
+## What's in version 8: Home Wahala
+
+A second game on the same page, about growing up with an African mum. The menu has an **Office | Home** switch. **Office Wahala is closed on Saturdays and Sundays (Lagos time)**: normal shifts, the daily shift, career mode and league shifts all refuse to start, and the menu switches to Home Wahala. Home Wahala is open every day.
+
+| Feature | What it does |
+|---|---|
+| Mummy | Chases you from the side or top and throws her slipper (it curves towards you). Outrun her for +120; getting caught costs two lives and a lecture ("Will you do it again?!"). Cartoon only: stars spin, nobody is shown being hit. |
+| "I will count to three" | Mummy stands still and counts 1… 2… 3. Reach her in time for +200, or she comes for you faster. |
+| Mummy's mood | A meter in the HUD. Rises when you skip a greeting, fail an errand, take two meats, get reported or take Aunty's money in front of her. When it fills, she comes vexed. |
+| Errands | Fetch water (carry the keg home; one hit spills it), buy bread and Maggi (bring back the ₦200 change; each hit costs ₦50), return it ("Titus, not Kote!"), wash the plates before she wakes up. |
+| Home training | Greet visiting aunties by standing next to them (+150). After greeting, Aunty may offer ₦500: a little window shows Mummy's face, so take it only when she looks away. One meat at parties. |
+| Family | Big sister (touch her and she tells Mummy), Mama Ngozi next door (stops you for gist and reports you), Daddy late in the day (slow, but if he catches you the day is over), Grandma (power-up shield). |
+| Power-ups | Grandma, cold Malt (speed; "Who drank my Malt?!"), Daddy home early (Mummy busy), report card (Mummy calms down), under the bed (keep for later, hide when she comes). |
+| Events | Sunday service (keep moving or fall asleep), compound party, Christmas rice (December), lesson teacher, "Off that TV!", visitors. NEPA still takes light. |
+| Houses | Face-me-I-face-you yard (Mushin), family house (Ibadan, 15k home points), family compound (Enugu, 50k), estate duplex (Gwarinpa, 120k), the village (every December or 250k). Each has its own floor, decor and Mummy's wrapper and gele. |
+| Shared progress | Pocket money goes into the same wallet. Home days count for seasons, State Wars, weekly challenges, the register and badges. Home best score is kept separately. Five home badges: Errand pikin, Well brought up, Slipper no fit catch me, Correct change, Weekend at home. |
+| Music and voice | Two new songs that only play at home ("Mummy's Kitchen", "Saturday Chores") and new voice lines for Mummy, Daddy and big sister. |
+| Guide page | `/home-wahala/` with FAQ structured data, linked from every guide page and the sitemap. |
+
+Testing tip: add `?debug&dow=6` to the URL to pretend it's Saturday (`dow=0` Sunday, `1`–`5` weekdays).
+
 ## What's in version 7
 
 Built to make every visit worth coming back for, **without sign-ups or accounts**. Everything stays tied to the random ID on the player's device (hashed on the server). Naira in the game is still pretend money: it can't be bought or cashed out, and nothing is sold in random boxes.

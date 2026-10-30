@@ -1509,3 +1509,40 @@ kbd {
 .states-list li.is-top .sw-rank { color: var(--gold-deep); }
 .states-list li.is-me { background: #e3f4ec; box-shadow: inset 0 0 0 2px var(--green); }
 .states-list li small { grid-column: 2 / -1; margin-top: -4px; font-size: 0.7rem; color: var(--ink-soft); font-weight: 600; }
+
+/* ==========================================================
+   v8 — Home Wahala
+   ========================================================== */
+.world-switch { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; margin: 14px 0 0; padding: 4px; border-radius: 14px; background: #e9ebf0; }
+.world-switch button { appearance: none; border: 0; background: transparent; color: var(--ink-soft); font: inherit; font-weight: 800; font-size: 0.88rem; padding: 7px 8px; border-radius: 10px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 7px; text-align: left; line-height: 1.1; }
+.world-switch button > span { display: flex; flex-direction: column; }
+.world-switch button small { font-size: 0.66rem; font-weight: 700; opacity: 0.75; }
+.world-switch button .ico { font-size: 1.1rem; flex-shrink: 0; }
+.world-switch button[aria-pressed="true"] { background: #ffffff; color: var(--green); box-shadow: 0 1px 3px rgba(23, 32, 58, 0.15); }
+.world-switch button[data-world="home"][aria-pressed="true"] { color: #c2410c; }
+.world-switch button.is-closed small { color: var(--red); opacity: 1; }
+.world-switch button.is-closed:not([aria-pressed="true"]) { opacity: 0.8; }
+.world-switch button:focus-visible { outline: none; box-shadow: var(--focus); }
+
+body.is-home .title-wahala { color: #ea580c; }
+body.is-home .id-kind { background: #ea580c; }
+body.is-home .btn-play { background: #ea580c; box-shadow: 0 4px 0 #9a3412; }
+body.is-home .btn-play:hover { background: #f97316; }
+body.is-home .btn-play:active { box-shadow: 0 1px 0 #9a3412; }
+body.is-home .office-card { background: #ffedd5; color: #7c2d12; }
+body.is-home .office-card .oc-more { background: #ea580c; }
+body.is-home .mode-row[hidden] { display: none; }
+.mode-row[hidden] { display: none; }
+
+.hud-anger { position: relative; overflow: hidden; background: rgba(10, 17, 32, 0.7); color: var(--white); padding-right: 12px; font-weight: 800; }
+.hud-anger span { position: relative; z-index: 1; }
+.hud-anger i { position: absolute; left: 0; bottom: 0; height: 3px; background: #19c37d; width: 0; transition: width 0.25s linear; }
+.hud-anger[data-lv="1"] i { background: #f5b301; }
+.hud-anger[data-lv="2"] i { background: #f97316; }
+.hud-anger[data-lv="3"] { background: rgba(229, 72, 77, 0.92); animation: anger-shake 0.4s ease-in-out infinite; }
+.hud-anger[data-lv="3"] i { background: #fff; }
+@keyframes anger-shake { 25% { transform: translateX(-1.5px); } 75% { transform: translateX(1.5px); } }
+@media (prefers-reduced-motion: reduce) { .hud-anger[data-lv="3"] { animation: none; } }
+.legend-home { display: none; }
+body.is-home .legend-home { display: grid; }
+body.is-home .legend-office { display: none; }

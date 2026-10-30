@@ -61,6 +61,13 @@
     { name: 'TGIF Piano', gain: 0.84, bpm: 113, kick: 'kickAmapi', kick2: 'kickAmapi', clap: 'clap', log: 'logBusy', keys: 'keysPiano', guitar: false, shakerUp: true,
       lead: 'pluck', melody: [7, -1, 6, -1, 4, -1, -1, 6, 7, -1, 6, -1, 4, -1, 2, -1, 3, -1, 4, -1, 6, -1, -1, 4, 3, -1, 2, -1, 0, -1, -1, -1],
       prog: [C(-17, [-5, -2, 2, 5]), C(-10, [2, 5, 9, 12]), C(-12, [0, 3, 7, 10]), C(-14, [-2, 2, 5, 9])] }, // Em7 Bm7? -> Em C Am G feel
+    // Home Wahala songs (only play in Home Wahala)
+    { name: "Mummy's Kitchen", home: true, gain: 1.35, bpm: 100, menu: true, kick: 'kickHalf', kick2: 'kickAfro', clap: 'clap', log: 'logSparse', keys: 'keysOff', guitar: true, bells: true,
+      lead: 'guitar', melody: [4, -1, 2, -1, 4, 5, 4, -1, 2, -1, 0, -1, 1, -1, -1, -1, 2, -1, 4, -1, 6, -1, 5, 4, 2, -1, 1, -1, 0, -1, -1, -1],
+      prog: [C(-14, [-2, 2, 5, 10]), C(-9, [3, 7, 10, 15]), C(-12, [0, 3, 7, 12]), C(-7, [5, 9, 12, 17])] }, // G C Am D (highlife)
+    { name: 'Saturday Chores', home: true, gain: 0.78, bpm: 108, menu: true, kick: 'kickFour', kick2: 'kickAfro', clap: 'clapAfro', log: 'log', bass: true, keys: 'keysPiano', guitar: true, talk: true,
+      lead: 'bell', melody: [0, -1, 0, 2, -1, 4, -1, 2, 3, -1, 2, -1, 0, -1, -1, -1, 4, -1, 4, 5, -1, 6, -1, 5, 4, -1, 2, -1, 3, -1, -1, -1],
+      prog: [C(-16, [-4, 0, 3, 8]), C(-9, [3, 7, 10, 15]), C(-11, [1, 5, 8, 13]), C(-9, [3, 7, 10, 15])] }, // F C Bb C
   ];
 
   const M = {
@@ -105,7 +112,7 @@
       const d = this.noise.getChannelData(0);
       for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
       this.tracks = Array.isArray(tracks) ? tracks.filter(Boolean) : [];
-      this.song = Math.floor(Math.random() * SONGS.length);
+      { const pool = SONGS.map((x, i) => i).filter((i) => !!SONGS[i].home === (this.world === 'home')); this.song = pool[Math.floor(Math.random() * pool.length)]; }
     },
 
     /* ---------- public controls ---------- */
@@ -155,6 +162,13 @@
       if (this.running) this.fadeTo(this.targetVol(), 0.6);
       return this.songName;
     },
+    // Office and Home Wahala each have their own songs.
+    setWorld(w) {
+      if (this.world === w) return;
+      this.world = w;
+      if (!this.ctx || this.tracks.length) return;
+      if (!!SONGS[this.song].home !== (w === 'home')) { this.pickSong(this.mode, true); this.step = 0; this.songBars = 0; this.bpm = this.songBpm(); }
+    },
     setMode(mode) { this.mode = mode; if (this.running) this.fadeTo(this.targetVol(), 0.5); },
     setLevel(level) {
       this.level = level;
@@ -182,7 +196,7 @@
       return this.mode === 'game' ? Math.min(s.bpm + 18, s.bpm + (this.level - 1) * 2) : s.bpm - 4;
     },
     pickSong(mode, quiet) {
-      const pool = SONGS.map((s, i) => i).filter((i) => i !== this.song && (mode !== 'menu' || SONGS[i].menu));
+      const pool = SONGS.map((s, i) => i).filter((i) => i !== this.song && !!SONGS[i].home === (this.world === 'home') && (mode !== 'menu' || SONGS[i].menu));
       this.song = pool[Math.floor(Math.random() * pool.length)];
       if (!quiet && typeof this.onSong === 'function') { try { this.onSong(SONGS[this.song].name); } catch (e) { /* ignore */ } }
     },

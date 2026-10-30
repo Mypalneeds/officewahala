@@ -167,6 +167,7 @@
           <div class="card w4"><h2>Missions &amp; 5pm meetings</h2><div id="d-mission"></div></div>
           <div class="card w4"><h2>Attendance register</h2><div id="d-attendance"></div></div>
           <div class="card w6"><h2>State Wars: players by state</h2><div id="d-statewar"></div></div>
+          <div class="card w6"><h2>Office ↔ Home switches</h2><div id="d-world"></div></div>
           <div class="card w6"><h2>Career days</h2><div id="d-career"></div></div>
           <div class="card w6"><h2>Badges unlocked</h2><div id="d-badge"></div></div>
 
@@ -264,6 +265,7 @@
     salary: 'Salary week', audit: 'Audit', travel: 'Oga travelling', agm: 'AGM day', alert: 'Bank alert', birthday: 'Staff birthday', flood: 'Rain / flood', mop: 'Cleaner mopping', hq: 'HQ visitor', genfuel: 'Gen fuel finished', owambe: 'Owambe Friday', netdown: 'Network down', alertdelay: 'Alert never land', cob: '4:59pm deadline', harmattan: 'Harmattan', independence: 'Independence Day', detty: 'Detty December', valentine: 'Valentine', fuelqueue: 'Fuel queue (commute)', dancer: 'Owambe dancer', rosey: 'Valentine colleague', collector: 'Birthday collector', autoreply: 'Auto-reply', fakecall: 'Fake call', puffpuff: 'Puff-puff',
     normal: 'Normal shift', daily: 'Daily shift', career: 'Career', league: 'League shift', timeup: 'Time up (league)', chair: 'Ergonomic chair', stab: 'Stabilizer', canteen: 'Canteen card', life: 'Health insurance', pocket: 'Pocket auto-reply',
     direct: 'Direct / unknown', prompt: 'Prompt shown', click: 'Install tapped', done: 'Installed',
+    home: 'Home Wahala', mum: 'Mummy', dad: 'Daddy', slipper: 'Slipper', spoon: 'Wooden spoon', homework: 'Homework', ball: 'Football', fowl: 'Fowl', broom: 'Broom', h_church: 'Sunday service', h_party: 'Compound party', h_xmas: 'Christmas rice', h_lesson: 'Lesson teacher', h_tv: 'Off that TV', h_visitors: 'Visitors',
   };
   const nm = (k) => NAMES[k] || k;
 
@@ -324,7 +326,7 @@
     bars($('d-event'), D.event, { label: nm, color: 'var(--purple)' });
     bars($('d-power'), (D.pick || []).map(([k2, v]) => ['picked: ' + nm(k2), v]).concat((D.power || []).map(([k2, v]) => ['used: ' + nm(k2), v])), { limit: 8 });
     bars($('d-career'), D.career);
-    bars($('d-office'), D.office, { share: true }); bars($('d-mission'), D.mission, { limit: 14, color: 'var(--purple)' }); bars($('d-attendance'), D.attendance, { color: 'var(--gold)' }); bars($('d-statewar'), D.statewar, { limit: 37 });
+    bars($('d-office'), D.office, { share: true }); bars($('d-mission'), D.mission, { limit: 14, color: 'var(--purple)' }); bars($('d-attendance'), D.attendance, { color: 'var(--gold)' }); bars($('d-statewar'), D.statewar, { limit: 37 }); bars($('d-world'), D.world, { share: true });
     bars($('d-badge'), D.badge, { limit: 20, color: 'var(--gold)' });
     bars($('d-shop'), D.shop, { label: nm, color: 'var(--gold)' });
     bars($('d-outfit'), D.outfit, { color: 'var(--gold)' });

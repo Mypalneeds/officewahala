@@ -55,7 +55,18 @@
     "a5":  { "who": "colleague", "prio": 0, "en": "Who ate my jollof in the office fridge?", "pcm": "Who chop my jollof for office fridge?" },
     "a6":  { "who": "colleague", "prio": 0, "en": "Just one small task.", "pcm": "Na just one small task." },
     "a7":  { "who": "colleague", "prio": 0, "en": "Abeg, let me breathe!", "pcm": "Abeg, make I breathe!" },
-    "a8":  { "who": "colleague", "prio": 0, "en": "Send me the soft copy.", "pcm": "Send me the soft copy." }
+    "a8":  { "who": "colleague", "prio": 0, "en": "Send me the soft copy.", "pcm": "Send me the soft copy." },
+    "h_mum_coming":  { "who": "narrator", "prio": 3, "en": "Mummy is coming!", "pcm": "Mummy dey come!" },
+    "h_count":       { "who": "mum", "prio": 3, "en": "Come here! I will count to three!", "pcm": "Come here! I go count reach three!" },
+    "h_caught":      { "who": "mum", "prio": 3, "en": "Will you do it again?", "pcm": "You go do am again?" },
+    "h_escaped":     { "who": "narrator", "prio": 2, "en": "You escaped Mummy!", "pcm": "You don run pass Mummy!" },
+    "h_dad":         { "who": "dad", "prio": 3, "en": "Who did this? Come to my room.", "pcm": "Who do this one? Come my room." },
+    "h_dad_caught":  { "who": "dad", "prio": 3, "en": "Come to my room. Now.", "pcm": "Come my room. Now now." },
+    "h_tattle":      { "who": "sister", "prio": 3, "en": "Mummy! Come and see what he did!", "pcm": "Mummy! Come see wetin e do!" },
+    "h_tattle_warn": { "who": "sister", "prio": 1, "en": "I am watching you.", "pcm": "I dey watch you o." },
+    "h_change":      { "who": "mum", "prio": 3, "en": "Where is my change?", "pcm": "Where my change?" },
+    "h_grandma":     { "who": "narrator", "prio": 2, "en": "Grandma is here!", "pcm": "Grandma don come!" },
+    "h_over":        { "who": "mum", "prio": 3, "en": "Go and sleep. Tomorrow is another day.", "pcm": "Go sleep. Tomorrow na another day." }
   };
   /*LINES_END*/
 
@@ -68,6 +79,9 @@
     hr: [1.1, 1.0, 'f'],
     aunty: [1.25, 1.0, 'f'],
     colleague: [1.05, 1.08, 'm'],
+    mum: [1.12, 1.08, 'f'],
+    dad: [0.62, 0.9, 'm'],
+    sister: [1.45, 1.15, 'f'],
   };
 
   const V = {

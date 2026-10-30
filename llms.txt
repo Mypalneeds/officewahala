@@ -16,6 +16,7 @@ Key facts:
 - Promotions transfer the player to new offices, each with its own boss and hazards: Lagos ad agency, Bank HQ in Marina (ATM queues), a federal ministry in Abuja (protocol convoys), an oil and gas company in Port Harcourt (falling hard hats, gas-leak gusts) and a Yaba tech startup (surprise stand-ups).
 - Every long shift has mini-missions and a 5pm emergency meeting where the boss throws agenda papers for 20 seconds.
 - Coming back: a daily attendance register (₦100 to ₦1,000, one missed day forgiven), free monthly seasons with 12 reward tiers, collectible sticker sets (never sold), a desk to decorate that league colleagues can view, State Wars (36 states + FCT, weekly) and a ₦1,000 invite bonus. Optional reminders run on the device only. None of it needs an account.
+- Home Wahala (second game on the same page): a day at home with an African mum. She chases you with her slipper and the broom, counts to three, sends you on errands (fetch water, buy bread and bring back the change, return the wrong item, wash the plates) and expects you to greet visiting aunties and refuse their money while she is watching. Big sister reports you, Mama Ngozi next door stops you for gist, Grandma protects you, Daddy ends the day. Office Wahala is closed on Saturdays and Sundays (Lagos time); Home Wahala is open every day. Guide: https://officewahala.netlify.app/home-wahala/
 - Staff shop: upgrades, hairstyles, accessories, free skin tones, 16 outfits, job titles. Soundtrack: six original Afrobeats, Amapiano and highlife-style songs generated in code.
 - Privacy: no cookies; progress stays on the player's device; optional anonymous gameplay statistics.
 - Developer contact: +234 706 645 9689 (phone/WhatsApp), https://www.analaize.com.ng
@@ -23,6 +24,7 @@ Key facts:
 ## Guides
 
 - [How to play](https://officewahala.netlify.app/how-to-play/): controls, scoring, commute, pickups, power-ups, obstacles, bosses, events, modes, shop and tips
+- [Home Wahala](https://officewahala.netlify.app/home-wahala/): the African mum game, its rules, errands, family, power-ups and houses
 - [FAQ](https://officewahala.netlify.app/faq/): free, offline, phones, who made it, how to beat Oga, leagues, Pidgin, privacy
 - [Nigerian office slang glossary](https://officewahala.netlify.app/nigerian-office-slang/): Oga, wahala, do the needful, revert, NEPA took light, query, danfo, okada, agbero and more
 - [About](https://officewahala.netlify.app/about/): what the game is, why it exists, the developer and version history

@@ -1594,6 +1594,7 @@
 
   function newRound(mode) {
     G.mode = mode || 'normal';
+    G.world = G.mode === 'home' ? 'home' : 'office';
     G.dailyKey = todayKey();
     G.league = G.mode === 'league' ? LG.run : null;
     const LR = G.league ? G.league.rules : null;
@@ -1626,7 +1627,7 @@
     G.items = [];
     G.particles = [];
     G.floaters = [];
-    G.bestAtStart = G.mode === 'daily' ? dailyBest() : G.best;
+    G.bestAtStart = G.mode === 'daily' ? dailyBest() : G.world === 'home' ? homeBestV() : G.best;
     G.beatBestLive = false;
     G.challengeBeaten = false;
     G.newBadges = [];
@@ -1643,7 +1644,7 @@
     G.shareBlob = null;
     G.upg = G.mode === 'daily' || (LR && !LR.upgrades) ? {} : S.upg;
     G.lives = CONFIG.START_LIVES + (G.upg.life ? 1 : 0);
-    G.phase = (LR ? LR.commute : S.commute) ? 'commute' : 'office';
+    G.phase = G.world !== 'home' && (LR ? LR.commute : S.commute) ? 'commute' : 'office';
     G.commute = { t: 0, late: 0, dur: DIFFICULTY.commuteSeconds };
     if (G.phase === 'commute') G.spawnT = 1.0;
     G.event = null; G.lastEvent = null;
@@ -1651,13 +1652,14 @@
     G.task = null;
     G.taskT = G.mode === 'career' && careerDay().type === 'tasks' ? 6 : rand(DIFFICULTY.taskEvery[0], DIFFICULTY.taskEvery[1]) * 0.7;
     G.held = null; G.calm = 0; G.frozen = 0; G.fade = 0; G.alertT = 0; G.revived = false; G.trailT = 0;
-    G.office = G.mode === 'daily' || G.mode === 'league' ? OFFICES[0] : officeById(S.office);
+    G.office = G.world === 'home' ? homeById(S.home) : G.mode === 'daily' || G.mode === 'league' ? OFFICES[0] : officeById(S.office);
     G.hazT = 8; G.gust = null; G.gustT = 14; G.mission = null; G.missionT = 14; G.meet = null; G.met5 = false; G.stateNote = '';
     G.event2 = null; G.zones = []; G.dim = 0; G.bonusRain = 0; G.idleT = 0; G.stackTried = false;
     G.run = { lunch: 0, tasks: 0, escapes: 0, fridays: 0 };
     G.goalDone = false; G.goalEndT = 0; G.success = false; G.promoPending = null;
     if (G.mode === 'career' && careerDay().type === 'escapes') G.bossT = 8;
     G.friday = isFridayNow() || (G.mode === 'career' && careerDay().type === 'fridays');
+    if (G.world === 'home') { G.friday = false; homeRoundInit(); }
     perf.reset();
   }
 
@@ -1667,6 +1669,7 @@
   const activeTarget = () => {
     const c = G.challenge;
     if (!c) return null;
+    if (!!c.home !== (G.world === 'home')) return null;
     if (c.daily && (G.mode !== 'daily' || c.d !== G.dailyKey)) return null;
     if (!c.daily && G.mode === 'daily') return null;
     return c;
@@ -1711,7 +1714,7 @@
       }
     } else if (e.code === 'Enter' || e.code === 'NumpadEnter') {
       if (onButton || e.repeat) return;
-      if (G.state === 'menu' || G.state === 'over') { e.preventDefault(); if (G.state === 'over') replay(); else startGame('normal'); }
+      if (G.state === 'menu' || G.state === 'over') { e.preventDefault(); if (G.state === 'over') replay(); else startGame(S.world === 'home' ? 'home' : 'normal'); }
       else if (G.state === 'paused') { e.preventDefault(); resumeGame(); }
       else if (G.state === 'board') { e.preventDefault(); closeBoard(); }
     } else if (e.code === 'Escape' || e.code === 'KeyP') {
@@ -1844,6 +1847,7 @@
     const M = G.mission;
     let mtxt = '';
     if (G.meet) mtxt = t('meetChip')(Math.ceil(Math.max(0, G.meet.t)));
+    else if (M && M.carry) mtxt = M.text + (M.change !== undefined ? ' · ₦' + M.change : '') + ' · ' + Math.ceil(Math.max(0, M.t)) + 's';
     else if (M) mtxt = M.text + (M.id === 'nohit' ? ' · ' + Math.ceil(Math.max(0, M.t)) + 's' : ' · ' + Math.min(M.have, M.need) + '/' + M.need + ' · ' + Math.ceil(Math.max(0, M.t)) + 's');
     if (force || c.mission !== mtxt) {
       const el = $('hud-mission');
@@ -1852,6 +1856,19 @@
       if (mtxt) el.appendChild(document.createTextNode(mtxt));
       el.classList.toggle('is-urgent', !!G.meet || (!!M && M.t < 5 && M.id !== 'nohit'));
       c.mission = mtxt;
+    }
+    // v8: Mummy's mood (home)
+    const ak = G.world === 'home' ? Math.round(G.anger || 0) : -1;
+    if (force || c.anger !== ak) {
+      const el = $('hud-anger');
+      el.hidden = ak < 0;
+      if (ak >= 0) {
+        const lv = ak >= 85 ? 3 : ak >= 55 ? 2 : ak >= 25 ? 1 : 0;
+        el.firstElementChild.textContent = t('hm_moodLabel') + ': ' + t('hm_mood')[lv];
+        el.lastElementChild.style.width = ak + '%';
+        el.dataset.lv = lv;
+      }
+      c.anger = ak;
     }
     // goal / commute status
     let gtxt = '';
@@ -1900,9 +1917,12 @@
 
   function startGame(mode) {
     if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
+    if (mode !== 'home' && officeClosed()) { setWorld('home', true); toast(t('hm_closed'), 'info', 3200, 'home'); return; }
+    if (mode === 'home' && S.world !== 'home') setWorld('home', true);
+    if (mode !== 'home' && S.world !== 'office') setWorld('office', true);
     store.set('ow_played', '1');
     resize();
-    newRound(mode === 'daily' || mode === 'career' || (mode === 'league' && LG.run) ? mode : 'normal');
+    newRound(mode === 'daily' || mode === 'career' || mode === 'home' || (mode === 'league' && LG.run) ? mode : 'normal');
     if (G.upg === S.upg && S.upg.pocket > 0) { G.held = 'autoreply'; S.upg.pocket--; saveS.upg(); }
     $('btn-restart').hidden = G.mode === 'league';
     if (Voice) Voice.lang = S.lang;
@@ -1914,13 +1934,14 @@
     updateHud(true);
     Sound.wake();
     Sound.play('start');
-    if (Music) { if (Music.next) Music.next(); if (Music.playSong && G.office && G.office.id !== 'agency' && Math.random() < 0.6) Music.playSong(G.office.song); Music.mode = 'game'; Music.setLevel(1); }
+    if (Music) { if (Music.setWorld) Music.setWorld(G.world); if (Music.next) Music.next(); if (Music.playSong && G.office && G.office.id !== 'agency' && Math.random() < 0.6) Music.playSong(G.office.song); Music.mode = 'game'; Music.setLevel(1); }
     if (Music && Sound.musicOn) { Music.muffle(false); Music.start('game'); Music.setMode('game'); }
     const coarse = window.matchMedia && window.matchMedia('(pointer: coarse)').matches;
     G.startedAt = performance.now();
     ADS.seen = new Set(); ADS.views = 0;
     T('game_start', { mode: G.mode, commute: G.phase === 'commute', held: G.held || '', office: G.office ? G.office.id : 'agency' });
-    if (G.phase === 'commute') { toast(t('commuteStart'), 'info', 2600); say('commute'); }
+    if (G.world === 'home') toast(coarse ? t('hm_startTouch') : t('hm_start'), 'info', 2600);
+    else if (G.phase === 'commute') { toast(t('commuteStart'), 'info', 2600); say('commute'); }
     else if (G.mode === 'career') toast(t('days')[S.career.day] + ': ' + t('goalText')(careerDay().type, goalTarget()), 'info', 2800);
     else if (G.mode === 'league') toast(t('lgStartToast')(G.league.name, G.limit), 'info', 2800);
     else toast(G.mode === 'daily' ? t('dailyStart') : coarse ? t('clockInTouch') : t('clockIn'), 'info', 2400);
@@ -1999,9 +2020,12 @@
       if (score > dailyBest()) store.set('ow_daily_' + G.dailyKey, score);
       stats.dailies++;
     }
-    if (score > G.best) { G.best = score; store.set('ow_best', score); }
+    const HOME = G.world === 'home';
+    if (HOME) { if (score > homeBestV()) store.set('ow_best_home', score); stats.homeBest = Math.max(stats.homeBest || 0, score); }
+    else if (score > G.best) { G.best = score; store.set('ow_best', score); }
+    const housesBefore = homeUnlockedIds();
     // salary + career
-    let pay = Math.floor(score / 5);
+    let pay = Math.floor(score / 5) + (HOME ? G.pocket || 0 : 0);
     let careerMsg = '', careerWon = false;
     if (G.mode === 'career') {
       const di = S.career.day, w = S.career.week, dname = t('days')[di];
@@ -2022,13 +2046,13 @@
     S.wallet += pay;
     saveS.wallet();
     const offBefore = unlockedIds();
-    stats.earned += pay; stats.totalScore += score;
+    stats.earned += pay; if (HOME) { stats.homeTotal += score; stats.homeGames++; } else stats.totalScore += score;
     if (G.time >= 60) stats.longShifts++;
     if (G.mode === 'league') stats.leagueShifts++;
     weeklyShiftDone();
     T('game_over', { mode: G.mode, score, secs: Math.floor(G.time), real: Math.round((performance.now() - (G.startedAt || performance.now())) / 1000),
       level: G.level, cause: G.success ? 'goal' : (G.lastHit || 'unknown'), items: G.collected, streak: G.maxStreak, near: G.nearMisses,
-      late: G.commute ? G.commute.late : 0, pay, success: !!G.success });
+      late: G.commute ? G.commute.late : 0, pay, success: !!G.success, world: G.world });
     if (G.mode === 'career') T('career_day', { day: careerWon ? (S.career.day + 4) % 5 : S.career.day, week: careerWon && S.career.day === 0 ? S.career.week - 1 : S.career.week, success: careerWon });
     $('btn-again').hidden = false;
     if (G.mode === 'league') submitLeagueRun({ score, duration: Math.max(1, Math.floor(G.time)), level: G.level });
@@ -2043,17 +2067,19 @@
     ui.overTime.textContent = fmtTime(G.time);
     const ck = officeClock(G.time);
     ui.overClock.textContent = ck.text + ck.ap + (ck.nextDay ? ' (' + t('nextDay') + ')' : '');
-    ui.overBest.textContent = fmtNum(G.mode === 'daily' ? dailyBest() : G.best);
+    ui.overBest.textContent = fmtNum(G.mode === 'daily' ? dailyBest() : HOME ? homeBestV() : G.best);
     ui.overItems.textContent = G.collected;
     ui.overStreak.textContent = G.maxStreak;
     ui.overNear.textContent = G.nearMisses;
     const m = msgs();
-    const tier = m.over.find((x) => score <= x.max) || m.over[m.over.length - 1];
+    const OVR = HOME ? homeMsgs().over : m.over;
+    const tier = OVR.find((x) => score <= x.max) || OVR[OVR.length - 1];
     const beatOld = isBest && prevBest > 0;
     G.verdict = beatOld ? m.newBest + ' ' + tier.text : tier.text;
     ui.overMsg.textContent = G.verdict;
     G.stampText = G.timeUp ? t('lgTimeUpStamp') : beatOld ? t('newBestStamp') : prevBest === 0 ? t('firstShift') : t('shiftOver');
     if (careerWon) G.stampText = t('dayStamp');
+    if (HOME && !G.timeUp && !beatOld) G.stampText = prevBest === 0 ? t('hm_firstDay') : t('hm_stamp');
     ui.overStamp.textContent = G.stampText;
     ui.overStamp.classList.toggle('is-best', beatOld || careerWon);
     $('over-pay').textContent = '₦' + fmtNum(pay);
@@ -2085,7 +2111,7 @@
 
     ui.playerName.value = S.name;
     if (LB.enabled) {
-      ui.lbForm.hidden = score <= 0;
+      ui.lbForm.hidden = score <= 0 || HOME;
       ui.lbStatus.textContent = '';
       ui.lbStatus.className = 'lb-status';
       ui.lbSubmit.disabled = false;
@@ -2095,8 +2121,11 @@
     renderNudges(score);
     const newOffices = officeNewlyUnlocked(offBefore);
     if (newOffices.length) setTimeout(() => { toast(t('officeUnlocked')(newOffices[0].name, newOffices[0].city), 'good', 4200, 'office'); confetti(60); }, G.promoPending ? 4200 : 1600);
+    const newHouses = homeNewlyUnlocked(housesBefore);
+    if (newHouses.length) setTimeout(() => { toast(t('hm_houseUnlocked')(newHouses[0].name, newHouses[0].city), 'good', 4200, 'home'); confetti(60); }, 1600);
     Sound.play('over');
-    if (Voice) { Voice.stop(); say(beatOld ? 'new_best' : careerWon ? 'goal_done' : 'game_over'); }
+    if (Voice) { Voice.stop(); say(beatOld ? 'new_best' : careerWon ? 'goal_done' : HOME ? 'h_over' : 'game_over'); }
+    applyWorldText();
     showScreen('over');
     showOverSponsor();
     if (G.promoPending) setTimeout(() => { if (G.state === 'over') openPromo(); }, 1300);
@@ -2113,6 +2142,7 @@
   }
 
   function spawnObstacle() {
+    if (G.world === 'home') return spawnHomeObstacle();
     const options = Object.entries(OBSTACLES).filter(([, d]) => G.level >= d.unlock).map(([k, d]) => [k, d.weight]);
     let type = weighted(options);
     if (evIs('agm') && rng() < 0.75) type = 'meeting';
@@ -2169,6 +2199,7 @@
   }
 
   function spawnItem(force, fast) {
+    if (G.world === 'home') return spawnHomeItem(force, fast);
     if (!force && evIs('audit')) return;
     const fri = G.mode === 'career' && careerDay().type === 'fridays';
     const money = (k) => k === 'salary' || k === 'lunch' || k === 'data';
@@ -2583,6 +2614,7 @@
     }
   }
   function updateEvents(dt) {
+    if (G.world === 'home') return updateHomeEvents(dt);
     if (G.bonusRain > 0) {
       G.bonusRain -= dt; G.alertT -= dt;
       if (G.alertT <= 0) { spawnItem('salary', true); G.alertT = 0.2; }
@@ -2659,6 +2691,7 @@
     return opts.length ? weighted(opts) : null;
   }
   function spawnBoss() {
+    if (G.world === 'home') return spawnHomeBoss();
     if (G.obstacles.some((o) => o.boss)) return;
     const k = pickBoss();
     if (!k) return;
@@ -2711,6 +2744,7 @@
   // movement for the new obstacle types; returns true when the obstacle should be removed
   function updateNewObstacle(o, dt) {
     const p = G.player;
+    if (G.world === 'home') { const hr = updateHomeObstacle(o, dt); if (hr !== null) return hr; }
     if (o.type === 'agenda') {
       o.x += o.vx * dt; o.y += o.vy * dt; o.life -= dt;
       return o.life <= 0 || o.y > H + 40 || o.y < -40 || o.x < FX0 - 40 || o.x > FX1 + 40;
@@ -2779,7 +2813,7 @@
     }
     return null; // not a new type
   }
-  const bossActive = (o) => (o.type === 'boss' ? o.phase === 'chase' : o.type === 'driver' ? o.phase === 'dash' : o.type === 'aunty' ? o.phase === 'chase' : o.type !== 'hr');
+  const bossActive = (o) => (o.npc ? npcActive(o) : o.type === 'boss' ? o.phase === 'chase' : o.type === 'driver' ? o.phase === 'dash' : o.type === 'aunty' ? o.phase === 'chase' : o.type !== 'hr');
   function freezeSalary(o) {
     G.frozen = 6;
     o.phase = 'leave'; o.hitDone = true;
@@ -2792,6 +2826,7 @@
 
   /* ---------- Report desks (quick tasks) ---------- */
   function updateTask(dt) {
+    if (G.world === 'home') return;
     const careerWed = G.mode === 'career' && careerDay().type === 'tasks';
     if (!G.task) {
       if (G.level >= (careerWed ? 1 : DIFFICULTY.taskFromLevel)) {
@@ -2855,6 +2890,10 @@
       G.calm = 8;
       toast(t('used_puffpuff'), 'good', 2200);
       say('use_puffpuff');
+    } else if (h === 'underbed') {
+      G.player.invuln = 4; G.hideT = 4;
+      for (const o of G.obstacles) if ((o.type === 'mum' || o.type === 'dad' || o.type === 'sister') && o.phase !== 'leave') { o.phase = 'leave'; o.hitDone = true; }
+      toast(t('hm_underbed'), 'good', 2000);
     }
     Sound.play('power');
     updateUseBtn();
@@ -3569,6 +3608,7 @@
 
   // ----- playing for a league -----
   async function playLeague(code) {
+    if (officeClosed()) { const m = t('hm_closedLeague'); if (G.state === 'leagues') leagueStatus(m, 'err'); else toast(m, 'info', 2800); return; }
     if (!S.name) {
       if (G.state !== 'leagues') openSide('leagues');
       needName();
@@ -4105,7 +4145,11 @@
   const officeUnlocked = (o) => o.weeks === 0 || stats.weeks >= o.weeks || (stats.totalScore || 0) >= o.score;
   S.office = store.get('ow_office', 'agency');
   if (!officeUnlocked(officeById(S.office))) S.office = 'agency';
-  const curOffice = () => G.office || officeById(S.office);
+  const curOffice = () => {
+    const home = IN_RENDER ? RENDER_HOME : G.state === 'playing' || G.state === 'paused' || G.state === 'dying' ? G.world === 'home' : S.world === 'home';
+    if (home) return G.office && G.office.home ? G.office : homeById(S.home);
+    return G.office && !G.office.home ? G.office : officeById(S.office);
+  };
   const carpetCache = {};
   function carpetFor(off) {
     if (carpetCache[off.id]) return carpetCache[off.id];
@@ -4191,7 +4235,7 @@
         c.fillStyle = '#6b7280'; c.fillRect(-12, 14, 3, 10); c.fillRect(9, 14, 3, 10);
         return true;
     }
-    return false;
+    return drawDecorHome(c, kind, side, tm);
   }
   // landmarks in the window, per city
   function drawSkylineLandmark(c, kind, day) {
@@ -4236,6 +4280,7 @@
     }
   }
   function tickHazards(dt) {
+    if (G.world === 'home') return;
     const off = curOffice();
     if (!off.hazard || G.level < 2 || G.meet) return;
     G.hazT -= dt;
@@ -4273,6 +4318,7 @@
     { id: 'streak', need: [6, 8], time: 20, text: (n) => `Reach a streak of ${n}`, ico: 'fire' },
   ];
   function startMission() {
+    if (G.world === 'home') return startHomeErrand();
     const def = pickR(MISSIONS);
     const hard = G.level >= 6 ? 1 : 0;
     const need = def.need[hard];
@@ -4283,6 +4329,7 @@
     T('mission', { id: def.id, phase: 'start' });
   }
   function missionProgress(kind, item) {
+    if (G.world === 'home') return homeErrandProgress(kind, item);
     const M = G.mission;
     if (!M || M.done) return;
     if (kind === 'item' && M.item === item) M.have++;
@@ -4292,6 +4339,7 @@
     if (M.id !== 'nohit' && M.have >= M.need) endMission(true);
   }
   function endMission(ok) {
+    if (G.world === 'home') return endHomeErrand(ok);
     const M = G.mission;
     if (!M) return;
     G.mission = null;
@@ -4306,6 +4354,7 @@
     T('mission', { id: M.id, phase: ok ? 'done' : 'fail' });
   }
   function tickMission(dt) {
+    if (G.world === 'home') return tickHomeErrand(dt);
     if (G.meet) return;
     const M = G.mission;
     if (M) {
@@ -4346,6 +4395,7 @@
     Sound.play('near');
   }
   function tickMeeting(dt) {
+    if (G.world === 'home') return;
     if (!G.meet) {
       if (!G.met5 && G.phase === 'office' && officeClock(G.time).hour >= 17 && !G.black) startMeeting();
       return;
@@ -4769,7 +4819,9 @@
     if (bb && bb.k > 0.25) add(8 + bb.k * 10, bb.b.ico, t('nudgeBadge')(bb.b.desc(bb.goal), bb.b.name, tierName(bb.lv + 1), fmtNum(tierReward(bb.lv))), bb.k);
     const wk = weeklyList().filter((c) => !c.done).sort((a, b) => b.cur / b.goal - a.cur / a.goal)[0];
     if (wk && wk.cur > 0) add(9 + (wk.cur / wk.goal) * 8, 'calendar', t('nudgeWeekly')(wk.text(wk.goal), fmtNum(wk.cur), fmtNum(wk.goal), fmtNum(wk.reward)), wk.cur / wk.goal);
-    const nextOff = OFFICES.find((o) => !officeUnlocked(o));
+    const nextOff = G.world === 'home' ? null : OFFICES.find((o) => !officeUnlocked(o));
+    const nextHouse = G.world === 'home' ? HOMES.find((h) => !homeUnlocked(h) && !h.xmas) : null;
+    if (nextHouse) add(6 + ((stats.homeTotal || 0) / nextHouse.score) * 6, 'home', t('hm_nudgeHome')(fmtNum(Math.max(0, nextHouse.score - (stats.homeTotal || 0))), nextHouse.name), (stats.homeTotal || 0) / nextHouse.score);
     if (nextOff) add(6 + ((stats.totalScore || 0) / nextOff.score) * 6, 'office', t('nudgeOffice')(fmtNum(Math.max(0, nextOff.score - (stats.totalScore || 0))), nextOff.name, nextOff.weeks), (stats.totalScore || 0) / nextOff.score);
     const sx = SEASON.tier < SEASON_REWARDS.length ? (SEASON.tier + 1) * SEASON_TIER_XP - SEASON.xp : 0;
     if (sx > 0) add(5, 'season', t('nudgeSeason')(fmtNum(sx), SEASON.tier + 1), 1 - sx / SEASON_TIER_XP);
@@ -4797,6 +4849,7 @@
 
   /* ---------- Offices screen ---------- */
   function renderOffices() {
+    if (S.world === 'home') return renderHomes();
     const box = $('office-list'); box.innerHTML = '';
     for (const o of OFFICES) {
       const open = officeUnlocked(o), on = S.office === o.id;
@@ -4872,6 +4925,1196 @@
     syncReminderConfig();
   }
 
+  /* ====================================================================
+     HOME WAHALA: the other half of the game. A day at home with Mummy:
+     errands, slippers, the broom, "I'll count to three", visitors to greet,
+     money you must not collect while she is watching.
+     Office Wahala is closed on Saturdays and Sundays (Lagos time).
+     ==================================================================== */
+  const DEBUG_DOW = (() => { const m = /[?&]dow=(\d)/.exec(location.search); return DEBUG && m ? +m[1] : -1; })();
+  const lagosDow = () => (DEBUG_DOW >= 0 ? DEBUG_DOW : new Date(Date.now() + 3600e3).getUTCDay());
+  const officeClosed = () => { const d = lagosDow(); return d === 0 || d === 6; };
+  const isDecember = () => new Date(Date.now() + 3600e3).getUTCMonth() === 11;
+  S.world = officeClosed() || store.get('ow_world', '') === 'home' || /[?&]w=home\b/.test(location.search) ? 'home' : 'office';
+  let RENDER_HOME = false, IN_RENDER = false;
+  for (const k of ['homeGames', 'homeTotal', 'homeBest', 'errands', 'greets', 'mumEscapes', 'fullChange', 'slippers', 'counts', 'vmoney'])
+    if (stats[k] === undefined) stats[k] = 0;
+  const homeBestV = () => parseInt(store.get('ow_best_home', '0'), 10) || 0;
+
+  /* ---------- Houses (unlocked with home points; the village opens every December) ---------- */
+  const HOMES = [
+    { id: 'yard', home: true, name: 'Face-me-I-face-you yard', city: 'Mushin, Lagos', score: 0, song: "Mummy's Kitchen",
+      wall: '#1b130d', floor: '#4b4038', line: '#5a4d43', runner: '245,179,1', edge: '#6b4f3a', accent: '#f97316',
+      decor: ['hdoor', 'drum', 'clothesline', 'plant', 'hdoor', 'bench', 'mortar', 'gen', 'window', 'adscreen'], doors: ['PARLOUR', 'KITCHEN'],
+      mum: { wrap: 'pattern:ankara', gele: '#d62f3a' }, skyline: 'lagos', boss: { title: 'MUMMY' },
+      blurb: 'Eight families, one tap, one toilet, and everybody knows your business.' },
+    { id: 'ibadan', home: true, name: 'Family house', city: 'Mokola, Ibadan', score: 15000, song: 'Saturday Chores',
+      wall: '#1d1208', floor: '#6b4a2f', line: '#7a5638', runner: '220,38,38', edge: '#7c4a23', accent: '#ef4444',
+      decor: ['hdoor', 'mortar', 'drum', 'bench', 'plant', 'hdoor', 'clothesline', 'pot', 'window', 'adscreen'], doors: ["GRANDPA'S ROOM", 'PARLOUR'],
+      mum: { wrap: 'pattern:aso', gele: '#7c3aed' }, skyline: 'lagos', boss: { title: 'MUMMY' },
+      blurb: "Grandpa's house: rusty roofs, a mortar in the corner and aunties everywhere." },
+    { id: 'enugu', home: true, name: 'Family compound', city: 'Independence Layout, Enugu', score: 50000, song: "Mummy's Kitchen",
+      wall: '#0e1610', floor: '#3f4a3a', line: '#4c5946', runner: '0,135,81', edge: '#4a5a3f', accent: '#22c55e',
+      decor: ['hdoor', 'plant', 'drum', 'clothesline', 'bench', 'plant', 'gen', 'pot', 'window', 'adscreen'], doors: ['PARLOUR', 'BOYS QUARTERS'],
+      mum: { wrap: 'pattern:ankara2', gele: '#f5b301' }, skyline: 'lagos', boss: { title: 'MUMMY' },
+      blurb: 'A big compound with a mango tree, a gateman and a very loud generator.' },
+    { id: 'abuja', home: true, name: 'Estate duplex', city: 'Gwarinpa, Abuja', score: 120000, song: 'Saturday Chores',
+      wall: '#121522', floor: '#575d6e', line: '#666d80', runner: '59,130,246', edge: '#4b5368', accent: '#60a5fa',
+      decor: ['hdoor', 'plant', 'tv', 'bench', 'window', 'gen', 'plant', 'hdoor', 'tv', 'adscreen'], doors: ['SITTING ROOM', 'STUDY'],
+      mum: { wrap: 'pattern:aso', gele: '#0ea5e9' }, skyline: 'abuja', boss: { title: 'MUMMY' },
+      blurb: 'Interlocking tiles, a big TV you must not touch and a security man who reports to Mummy.' },
+    { id: 'village', home: true, xmas: true, name: 'The village at Christmas', city: 'Home town', score: 250000, song: "Mummy's Kitchen",
+      wall: '#120d07', floor: '#6b4423', line: '#7a5030', runner: '245,179,1', edge: '#5b3a22', accent: '#f59e0b',
+      decor: ['hdoor', 'mortar', 'pot', 'bench', 'drum', 'plant', 'hdoor', 'clothesline', 'pot', 'adscreen'], doors: ["GRANDMA'S ROOM", 'KITCHEN'],
+      mum: { wrap: 'pattern:ankara', gele: '#16a34a' }, skyline: 'village', boss: { title: 'MUMMY' },
+      blurb: 'Open every December, or with 250,000 home points. Rice, chicken and one hundred relatives.' },
+  ];
+  const homeById = (id) => HOMES.find((h) => h.id === id) || HOMES[0];
+  const homeUnlocked = (h) => h.score === 0 || (stats.homeTotal || 0) >= h.score || (h.xmas && isDecember());
+  S.home = store.get('ow_home', 'yard');
+  if (!homeUnlocked(homeById(S.home))) S.home = 'yard';
+  const homeUnlockedIds = () => HOMES.filter(homeUnlocked).map((h) => h.id);
+
+  const HOME_RANKS = [[0, 'Small pikin'], [1500, 'Errand pikin'], [4000, "Mummy's helper"], [8000, 'Senior prefect'], [14000, "Mummy's favourite"], [22000, 'Head of the children']];
+  const homeRank = (s) => { let r = HOME_RANKS[0][1]; for (const [min, n] of HOME_RANKS) if (s >= min) r = n; return r; };
+
+  /* ---------- Words ---------- */
+  const HOME_MSG = {
+    en: {
+      ambient: ['Who finished the bread?', 'Did you lock the gate?', 'Off that light! Are you the one paying NEPA bill?', 'Go and greet your uncle.',
+        "Is it me you're talking to like that?", "You're looking at me?", 'Will you come and eat?', 'Did I send you?', 'Who opened the pot?',
+        'We have food at home.', "Close that fridge! It's not a TV.", 'Go and read your books.', "Answer me when I'm talking to you!", "Don't let me come there!",
+        'When your father comes back, you will explain.', 'Is that how I trained you?'],
+      mumTalk: ['Come here!', 'Will you come here!', 'If I catch you ehn…', "Don't let me come there!", "Is it me you're running from?", 'You will come back home!', 'Answer me!', 'Shey you think I am your mate?'],
+      dadTalk: ['Come to my room.', 'Who did this?', 'Where is your mother?', 'So this is what you do when I am not around?'],
+      sisterTalk: ["I'll tell Mummy!", 'Mummy! Come and see!', 'You are in trouble!', 'I saw you!'],
+      ngTalk: ['Ehen! I will tell your mother!', 'Is this how they train you?', 'Come and greet me!', 'Your mother will hear this!'],
+      visitorTalk: ['Ah! See how you have grown!', 'Is this the small one?', 'Come and greet me!', 'You have grown tall o!'],
+      visitorReply: ['Good child!', 'Take this for biscuit!', 'Well brought up!', 'God bless you, my dear.'],
+      greet: ['Good afternoon, Aunty!', 'Welcome, Aunty!', 'Good afternoon ma!', 'Aunty, welcome!'],
+      lecture: ['Will you do it again?!', 'Is that how I trained you?!', 'Did I send you?!', 'Look at me when I am talking to you!', 'Shey you think I am your mate?!'],
+      hit: { spoon: 'Wooden spoon from the kitchen!', homework: 'Have you done your homework?', ball: 'Who is playing ball in the house?!', fowl: "Mama Tunde's fowl again!",
+        broom: 'The broom found you!', slipper: 'The slipper never misses!', mum: 'Mummy caught you!', dad: 'Daddy: "Come to my room."' },
+      over: [
+        { max: 500, text: 'Mummy: "Is it this small work that is tiring you?"' },
+        { max: 1500, text: 'You tried. But the plates are still in the sink.' },
+        { max: 3000, text: 'Mummy said "well done" without looking up. That is a lot.' },
+        { max: 6000, text: 'Errands done, change complete. Mummy is telling her friends about you.' },
+        { max: 10000, text: "Mummy's favourite child. Your siblings are not happy." },
+        { max: Infinity, text: 'Legend of the compound. Even Mama Ngozi has nothing to report.' },
+      ],
+    },
+    pcm: {
+      ambient: ['Who finish the bread?', 'You lock the gate?', 'Off that light! Na you dey pay NEPA bill?', 'Go greet your uncle.',
+        'Na me you dey talk to like that?', 'You dey look me?', 'You no go come chop?', 'I send you?', 'Who open the pot?',
+        'We get food for house.', 'Close that fridge! E no be TV.', 'Go read your book.', 'Answer me when I dey talk!', 'No let me come there o!',
+        'When your papa come back, you go explain.', 'Na so I train you?'],
+      mumTalk: ['Come here!', 'You no go come here?', 'If I catch you ehn…', 'No let me come there!', 'Na me you dey run from?', 'You go still come house!', 'Answer me!', 'You think say I be your mate?'],
+      dadTalk: ['Come my room.', 'Who do this one?', 'Where your mama?', 'Na wetin you dey do when I no dey?'],
+      sisterTalk: ['I go tell Mummy!', 'Mummy! Come see!', 'You don enter trouble!', 'I see you!'],
+      ngTalk: ['Ehen! I go tell your mama!', 'Na so dem train you?', 'Come greet me!', 'Your mama go hear this one!'],
+      visitorTalk: ['Ah! See as you don grow!', 'Na this small one be this?', 'Come greet me!', 'You don tall o!'],
+      visitorReply: ['Good pikin!', 'Take this buy biscuit!', 'Dem train you well!', 'God bless you, my pikin.'],
+      greet: ['Good afternoon, Aunty!', 'Welcome, Aunty!', 'Good afternoon ma!', 'Aunty, welcome!'],
+      lecture: ['You go do am again?!', 'Na so I train you?!', 'I send you?!', 'Look me for face when I dey talk!', 'You think say I be your mate?!'],
+      hit: { spoon: 'Wooden spoon from kitchen!', homework: 'You don do your homework?', ball: 'Who dey play ball for inside house?!', fowl: 'Mama Tunde fowl again!',
+        broom: 'Broom don catch you!', slipper: 'Slipper no dey miss!', mum: 'Mummy don catch you!', dad: 'Daddy: "Come my room."' },
+      over: [
+        { max: 500, text: 'Mummy: "Na this small work dey tire you?"' },
+        { max: 1500, text: 'You try. But plate still dey sink.' },
+        { max: 3000, text: 'Mummy talk "well done" without to look up. E plenty.' },
+        { max: 6000, text: 'Errand don finish, change complete. Mummy dey tell her friends about you.' },
+        { max: 10000, text: 'Mummy favourite pikin. Your brothers and sisters no happy.' },
+        { max: Infinity, text: 'Legend of the compound. Even Mama Ngozi no get anything to report.' },
+      ],
+    },
+  };
+  const homeMsgs = () => HOME_MSG[S.lang] || HOME_MSG.en;
+  Object.assign(STR.en, {
+    hm_play: 'Start the day', hm_closed: 'Office is closed for the weekend. Go home and greet your mummy!',
+    hm_closedLeague: 'Office is closed on Saturdays and Sundays. League shifts open again on Monday.',
+    hm_closedNote: 'Closed till Monday', hm_openNote: 'Mon to Fri', hm_everyDay: 'Every day',
+    hm_start: 'Saturday at home. Run your errands and greet your elders!', hm_startTouch: 'Drag to move. Run your errands and greet your elders!',
+    hm_mumComing: 'Mummy is coming!', hm_vexBanner: 'MUMMY DON VEX!', hm_countBanner: '"I will count to three!"', hm_count: 'Come here! I will count to three!',
+    hm_three: 'THREE!', hm_countFail: 'You did not come. Now she is coming to you!', hm_countOk: '+200 You came!', hm_countOkT: 'Good. Now go and wash the plates.',
+    hm_escaped: 'Escaped Mummy! +120', hm_grandmaSaves: 'Grandma: "Leave my grandchild alone!"', hm_tattle: 'Big sister: "I\'ll tell Mummy!"',
+    hm_sisterGrandma: 'Grandma is here. Your sister kept quiet.', hm_gist: 'Mama Ngozi stopped you for gist. "I will tell your mother!"', hm_gistF: 'Gist…',
+    hm_noGreet: 'You did not greet Aunty?! Is that how I trained you?', hm_greetF: '+150 Well brought up!',
+    hm_moneyCaught: 'Mummy saw you take the money! "Say NO THANK YOU!"', hm_noThankYou: 'Say no thank you!', hm_moneyOk: 'Mummy did not see. Aunty\'s money is in your pocket!',
+    hm_meat1: '+200 One meat. Correct.', hm_meat2: 'Ehn?! TWO meat?! Who sent you?', hm_meatSneak: '+200 Mummy did not see that second meat…',
+    hm_tvCaught: 'Off that TV! Go and read your books!', hm_tvOk: '+150 Small cartoon…',
+    hm_grandma: 'Grandma is visiting! Nobody can touch you.', hm_grandmaLabel: 'Grandma dey!', hm_malt: 'Cold Malt from the freezer! Speed!',
+    hm_whoDrank: 'Mummy: "Who drank my Malt?!"', hm_report: 'Report card: 1st position! Mummy is smiling.',
+    hm_daddy: 'Daddy is home early! Mummy is busy with him.', hm_daddyBusy: 'Ah, welcome, darling!', hm_underbed: 'Hiding under the bed…',
+    hm_sleeping: 'You are sleeping in church!', hm_dad: 'Daddy is home… and he heard everything.',
+    hm_spilled: 'You spilled the water! Go back to the tap!', hm_change: (n) => '-₦' + n + ' change', hm_changeOk: 'Correct change! Mummy is impressed.',
+    hm_changeBad: (n) => 'Mummy: "Where is my change?!" (₦' + n + ' missing)', hm_wrong: 'I said TITUS, not Kote!', hm_dishFail: 'Mummy woke up and the plates are still there!',
+    hm_errandNew: (x) => 'Mummy: "' + x + '"', hm_errandDone: (r) => 'Errand done! +₦' + r, hm_errandFail: 'Errand failed. Mummy is not happy.',
+    hm_overTitle: "Mummy's report", hm_stamp: 'Day over', hm_firstDay: 'First day home', hm_shareText: (tm, s) => `I survived ${tm} of Home Wahala (Mummy, the slipper and the errands) and scored ${s} points! Can you beat me? 🇳🇬`,
+    hm_houseUnlocked: (n, c) => 'New house unlocked: ' + n + ', ' + c + '!', hm_nudgeHome: (pts, n) => `${pts} more home points to unlock ${n}`,
+    hm_houseCount: (n, all) => `${n}/${all} houses`, hm_houseHere: "You're at home here.", hm_houseOpen: 'Open. Spend the day here.', hm_houseLock: (need, have) => `Unlocks at ${need} total home points (you have ${have}).`,
+    hm_houseVillage: (need, have) => `Opens every December, or at ${need} total home points (you have ${have}).`,
+    hm_houseGo: 'Go here', hm_houseHereBtn: 'Living here', hm_mood: ['Calm', 'Watching you', 'Vexing', 'VEXED!'], hm_moodLabel: 'Mummy',
+    hm_lvl2: 'Mummy is awake. Careful.', hm_lvl3: 'The broom is out. Watch the sides!', hm_lvl4: 'Your big sister is watching you…', hm_lvl5: 'Mama Ngozi from next door is around.', hm_lvl7: 'It is getting late. Daddy will soon be home…',
+    hm_eyesOpen: 'Mummy is watching', hm_eyesShut: 'Mummy looked away',
+    held_underbed: 'Hide under the bed',
+    ev_h_church: 'Sunday service', ev_h_church_d: 'Keep moving or you will fall asleep. Mummy can see you from the choir.',
+    ev_h_party: 'Party in the compound!', ev_h_party_d: 'Jollof everywhere. Take ONE meat while Mummy is watching.',
+    ev_h_xmas: 'Christmas rice!', ev_h_xmas_d: 'Visitors everywhere and chicken in the pot. Greet everybody!',
+    ev_h_lesson: 'Lesson teacher is here', ev_h_lesson_d: 'Homework flying everywhere. Points are worth more.',
+    ev_h_tv: 'Off that TV!', ev_h_tv_d: 'Grab the remote only when Mummy looks away.',
+    ev_h_visitors: 'Visitors are coming!', ev_h_visitors_d: 'Stand next to each aunty to greet her.',
+    hm_eventOver: 'Back to normal… for now.',
+    nav_house: 'Your house',
+  });
+  Object.assign(STR.pcm, {
+    hm_play: 'Start the day', hm_closed: 'Office don close for weekend. Go house go greet your mama!',
+    hm_closedLeague: 'Office dey close Saturday and Sunday. League shift go open again Monday.',
+    hm_start: 'Saturday for house. Run your errand, greet your elders!', hm_startTouch: 'Drag to move. Run your errand, greet your elders!',
+    hm_mumComing: 'Mummy dey come!', hm_count: 'Come here! I go count reach three!', hm_countFail: 'You no come. Now she dey come meet you!',
+    hm_tattle: 'Big sister: "I go tell Mummy!"', hm_noGreet: 'You no greet Aunty?! Na so I train you?', hm_moneyCaught: 'Mummy see you collect the money! "Talk NO THANK YOU!"',
+    hm_meat2: 'Ehn?! TWO meat?! Who send you?', hm_tvCaught: 'Off that TV! Go read your book!', hm_whoDrank: 'Mummy: "Who drink my Malt?!"',
+    hm_spilled: 'You don pour the water! Go back to tap!', hm_wrong: 'I talk TITUS, no be Kote!', hm_changeBad: (n) => 'Mummy: "Where my change?!" (₦' + n + ' dey miss)',
+    hm_sleeping: 'You dey sleep for church!', hm_dad: 'Daddy don come house… and e hear everything.',
+  });
+
+  /* ---------- Items and obstacles ---------- */
+  Object.assign(ITEMS, {
+    pocket: { weight: 0, pts: 100, color: '#f5b301', home: true, event: true },
+    gala: { weight: 0, pts: 75, color: '#ff9a3c', home: true, event: true },
+    chinchin: { weight: 0, pts: 50, color: '#fbbf24', home: true, event: true },
+    grandma: { weight: 0, pts: 0, color: '#3ee08f', home: true, event: true },
+    malt: { weight: 0, pts: 0, color: '#ffd34d', home: true, event: true },
+    report: { weight: 0, pts: 0, color: '#7cc4ff', home: true, event: true },
+    daddy: { weight: 0, pts: 0, color: '#a78bfa', home: true, event: true },
+    underbed: { weight: 0, pts: 0, color: '#ff8fb1', home: true, event: true, held: true },
+    keg: { weight: 0, pts: 0, color: '#5ad1ff', home: true, event: true },
+    bread: { weight: 0, pts: 0, color: '#f5b301', home: true, event: true },
+    maggi: { weight: 0, pts: 0, color: '#e5484d', home: true, event: true },
+    titus: { weight: 0, pts: 0, color: '#5ad1ff', home: true, event: true },
+    kote: { weight: 0, pts: 0, color: '#9ca3af', home: true, event: true },
+    plate: { weight: 0, pts: 0, color: '#e2e8f0', home: true, event: true },
+    meat: { weight: 0, pts: 0, color: '#b45309', home: true, event: true },
+    jollof: { weight: 0, pts: 60, color: '#ff6b2c', home: true, event: true },
+    vmoney: { weight: 0, pts: 0, color: '#19c37d', home: true, event: true },
+    remote: { weight: 0, pts: 0, color: '#94a3b8', home: true, event: true },
+  });
+  const HOME_ITEM_W = [['chinchin', 34], ['gala', 26], ['pocket', 28], ['malt', 5], ['grandma', 4], ['underbed', 2], ['report', 1.8], ['daddy', 1.4]];
+  const HOME_ITEM_UNLOCK = { underbed: 2, report: 3, daddy: 4 };
+  const HOME_OBS = {
+    spoon: { unlock: 1, weight: 4, r: 13, speed: [200, 270] },
+    homework: { unlock: 1, weight: 4, r: 15, speed: [170, 230] },
+    ball: { unlock: 2, weight: 3, r: 14, speed: [160, 210] },
+    fowl: { unlock: 3, weight: 2.2, r: 15, speed: [150, 200] },
+    broom: { unlock: 3, weight: 2, w: 76, h: 26, speed: [210, 270] },
+  };
+
+  function spawnHomeObstacle() {
+    const opts = Object.entries(HOME_OBS).filter(([, d]) => G.level >= d.unlock).map(([k, d]) => [k, d.weight * (k === 'homework' && evIs('h_lesson') ? 5 : 1)]);
+    const type = weighted(opts);
+    const d = HOME_OBS[type], m = levelMult(), sp = rand(d.speed[0], d.speed[1]) * m;
+    const o = { type, hobs: true, t: 0, rot: rand(-0.4, 0.4), vr: rand(-2.5, 2.5), minD: Infinity, warn: 0, phase: 'move', life: 0 };
+    if (type === 'broom' || type === 'fowl') {
+      const fromLeft = Math.random() < 0.5;
+      if (type === 'broom') { o.w = d.w; o.h = d.h; } else { o.r = d.r; o.hr = d.r * 0.8; }
+      o.y = clamp(G.player.y + rand(-80, 60), minY(), maxY());
+      o.x = fromLeft ? FX0 - 40 : FX1 + 40; o.vx = (fromLeft ? 1 : -1) * sp; o.vy = 0; o.dir = fromLeft ? 1 : -1;
+      o.warn = type === 'broom' ? 0.9 : 0.6; o.side = fromLeft ? 'L' : 'R'; o.rot = 0; o.vr = 0;
+    } else {
+      o.r = d.r; o.hr = d.r * 0.82;
+      o.x = FX0 + d.r + 6 + Math.random() * (FX1 - FX0 - 2 * (d.r + 6)); o.y = -d.r - 20; o.vx = 0; o.vy = sp;
+      if (type === 'ball') { o.vx = (Math.random() < 0.5 ? -1 : 1) * rand(90, 140) * m; o.vr = o.vx / 20; }
+      if (type === 'homework') o.vr *= 0.4;
+    }
+    G.obstacles.push(o);
+  }
+
+  function spawnHomeItem(force, fast) {
+    let type = force;
+    if (!type) {
+      const M = G.mission;
+      if (M && !M.carry && M.items && Math.random() < 0.45) {
+        type = M.id === 'shop' ? pickF(M.items.filter((x) => !M.got[x])) || pickF(M.items) : M.items[0];
+        if (M.id === 'swap' && Math.random() < 0.45) type = 'kote';
+      } else if (Math.random() < 0.02) type = 'sticker';
+      else type = weightedR(HOME_ITEM_W.filter(([k]) => !HOME_ITEM_UNLOCK[k] || G.level >= HOME_ITEM_UNLOCK[k]));
+    }
+    const r = 15;
+    G.items.push({ type, r, x: FX0 + r + 10 + Math.random() * (FX1 - FX0 - 2 * (r + 10)), y: -r - 20,
+      vy: fast ? rand(210, 260) : rand(120, 165) * (0.85 + 0.15 * levelMult()), t: rand(0, 3), wob: rand(0, TAU) });
+  }
+
+  /* ---------- Mummy's mood ---------- */
+  function addAnger(n) { if (G.world !== 'home') return; G.anger = clamp((G.anger || 0) + n, 0, 100); }
+  const mumPresent = () => G.obstacles.some((o) => (o.type === 'mum' || o.type === 'dad') && o.phase !== 'leave');
+  const dishesOn = () => !!(G.mission && G.mission.id === 'dishes' && !G.mission.carry);
+  const eyesRelevant = () => G.items.some((i) => i.type === 'vmoney' || i.type === 'meat' || i.type === 'remote') || evIs('h_party') || evIs('h_tv') || evIs('h_xmas');
+
+  /* ---------- Mummy, Daddy, big sister, Mama Ngozi, visitors ---------- */
+  function spawnMum(opts = {}) {
+    if (G.obstacles.some((o) => o.type === 'mum' && o.phase !== 'leave')) return null;
+    const p = G.player;
+    const side = opts.count ? 'T' : ['L', 'R', 'T'][(Math.random() * 3) | 0];
+    const o = { type: 'mum', npc: true, boss: true, side, phase: opts.count ? 'count' : 'warn', warn: opts.count ? 0 : opts.fast ? 0.8 : 1.4,
+      t: 0, r: 22, hr: 18, minD: Infinity, vx: 0, vy: 0, talkT: 0, talk: '', throwT: 1.3 };
+    if (opts.count) {
+      o.x = clamp(p.x + frand(-110, 110), FX0 + 50, FX1 - 50);
+      o.y = clamp(p.y - frand(180, 250), minY() + 10, maxY() - 140);
+      o.cnt = 3.8; o.talk = t('hm_count'); o.talkT = 99;
+    } else if (side === 'L') { o.x = FX0 - 40; o.y = clamp(p.y, minY(), maxY()); }
+    else if (side === 'R') { o.x = FX1 + 40; o.y = clamp(p.y, minY(), maxY()); }
+    else { o.x = clamp(p.x, FX0 + 40, FX1 - 40); o.y = -40; }
+    o.speed = Math.min(CONFIG.PLAYER_SPEED * 0.88, CONFIG.PLAYER_SPEED * ((opts.vexed ? 0.76 : 0.68) + 0.02 * G.level));
+    o.chase = 6 + Math.min(4, G.level * 0.25);
+    G.obstacles.push(o);
+    banner(opts.count ? t('hm_countBanner') : opts.vexed ? t('hm_vexBanner') : t('hm_mumComing'), true);
+    say(opts.count ? 'h_count' : 'h_mum_coming');
+    Sound.play('warn');
+    if (Music) Music.fill();
+    return o;
+  }
+  function spawnDad() {
+    if (G.obstacles.some((o) => o.boss && o.phase !== 'leave')) return;
+    G.dadDone = true;
+    const p = G.player;
+    const o = { type: 'dad', npc: true, boss: true, side: 'T', phase: 'warn', warn: 1.8, t: 0, r: 24, hr: 19, minD: Infinity, vx: 0, vy: 0, talkT: 0, talk: '' };
+    o.x = clamp(p.x, FX0 + 40, FX1 - 40); o.y = -50;
+    o.speed = CONFIG.PLAYER_SPEED * 0.5; o.chase = 5.5;
+    G.obstacles.push(o);
+    banner(t('hm_dad'), true); toast(t('hm_dad'), 'bad', 2400);
+    say('h_dad'); Sound.play('warn');
+  }
+  function spawnHomeBoss() {
+    if (G.daddyT > 0 || dishesOn()) { G.bossT = 3; return; }
+    if (G.obstacles.some((o) => o.boss && o.phase !== 'leave')) return;
+    if (G.level >= 7 && !G.dadDone && Math.random() < 0.3) { spawnDad(); T('boss', { type: 'dad', level: G.level }); return; }
+    if (spawnMum()) T('boss', { type: 'mum', level: G.level });
+  }
+  function spawnSister() {
+    if (G.obstacles.some((o) => o.type === 'sister')) return;
+    const fromLeft = Math.random() < 0.5;
+    G.obstacles.push({ type: 'sister', npc: true, t: 0, r: 15, hr: 12, minD: Infinity, warn: 0.6, side: fromLeft ? 'L' : 'R', phase: 'follow',
+      x: fromLeft ? FX0 - 30 : FX1 + 30, y: clamp(G.player.y + frand(-60, 40), minY(), maxY()), vx: 0, vy: 0, life: 7,
+      speed: CONFIG.PLAYER_SPEED * (0.6 + Math.min(0.12, G.level * 0.01)), talk: pickF(homeMsgs().sisterTalk), talkT: 2 });
+    say('h_tattle_warn');
+  }
+  function spawnNeighbour() {
+    if (G.obstacles.some((o) => o.type === 'neighbour')) return;
+    const fromLeft = Math.random() < 0.5;
+    G.obstacles.push({ type: 'neighbour', npc: true, t: 0, r: 18, hr: 15, minD: Infinity, warn: 0.7, side: fromLeft ? 'L' : 'R', phase: 'walk',
+      x: fromLeft ? FX0 - 30 : FX1 + 30, y: clamp(G.player.y + frand(-120, 30), minY(), maxY()), vx: (fromLeft ? 1 : -1) * frand(65, 85), vy: 0,
+      talk: pickF(homeMsgs().ngTalk), talkT: 2.4 });
+  }
+  function spawnVisitor() {
+    if (G.obstacles.filter((o) => o.type === 'visitor').length >= (evIs('h_visitors') || evIs('h_xmas') ? 2 : 1)) return;
+    const fromLeft = Math.random() < 0.5;
+    const o = { type: 'visitor', npc: true, t: 0, r: 18, hr: 15, minD: Infinity, warn: 0, phase: 'in', fromLeft,
+      x: fromLeft ? FX0 - 30 : FX1 + 30, tx: fromLeft ? FX0 + 52 : FX1 - 52, y: clamp(frand(minY() + 20, maxY() - 120), minY() + 20, maxY() - 40),
+      vx: 0, vy: 0, wait: 6.5, greet: 0, greeted: false, money: Math.random() < 0.6, talk: pickF(homeMsgs().visitorTalk),
+      look: pickF([{ c: 'pattern:aso', g: 'pattern:aso' }, { c: 'pattern:ankara', g: '#0ea5e9' }, { c: '#7c3aed', g: '#f5b301' }, { c: 'pattern:ankara2', g: '#d62f3a' }]) };
+    G.obstacles.push(o);
+  }
+
+  function chaseStep(o, dt, k = 2.2) {
+    const p = G.player;
+    const dx = p.x - o.x, dy = p.y - o.y, d = Math.hypot(dx, dy) || 1;
+    const kk = Math.min(1, dt * k);
+    o.vx += ((dx / d) * o.speed - o.vx) * kk;
+    o.vy += ((dy / d) * o.speed - o.vy) * kk;
+  }
+  function leaveStep(o, dt) {
+    const dir = o.x < (FX0 + FX1) / 2 ? -1 : 1;
+    o.vx += (dir * (o.speed || 150) * 1.4 - o.vx) * Math.min(1, dt * 3);
+    o.vy += (-(o.speed || 150) * 0.3 - o.vy) * Math.min(1, dt * 3);
+    o.x += o.vx * dt; o.y += o.vy * dt;
+    return o.x < FX0 - 70 || o.x > FX1 + 70 || o.y < -70;
+  }
+  function throwSlipper(o) {
+    const p = G.player;
+    const dx = p.x - o.x, dy = p.y - o.y, d = Math.hypot(dx, dy) || 1;
+    const sp = 270 + Math.min(110, G.level * 7);
+    G.obstacles.push({ type: 'slipper', hobs: true, t: 0, r: 11, hr: 9, x: o.x + (dx / d) * 16, y: o.y - 8, vx: (dx / d) * sp, vy: (dy / d) * sp,
+      homing: 0.55, life: 3.2, rot: 0, vr: 13, minD: Infinity, warn: 0, phase: 'move' });
+    Sound.play('near');
+  }
+  function updateMum(o, dt) {
+    const p = G.player;
+    if (o.phase === 'warn') { if (o.warn <= 0) o.phase = 'chase'; return false; }
+    if (G.daddyT > 0 && o.phase !== 'leave') { o.phase = 'leave'; o.hitDone = true; o.talk = t('hm_daddyBusy'); }
+    o.talkT -= dt;
+    if (o.talkT <= 0 && o.phase !== 'count') { o.talk = pickF(homeMsgs().mumTalk); o.talkT = 2.2; }
+    if (o.phase === 'count') {
+      o.cnt -= dt;
+      if (o.cnt <= 0) {
+        o.phase = 'chase'; o.chase = 6 + Math.min(3, G.level * 0.2); o.speed *= 1.12; o.talk = t('hm_three'); o.talkT = 1.4;
+        addAnger(25); toast(t('hm_countFail'), 'bad', 1800); Sound.play('warn'); say('h_mum_coming');
+      }
+      return false;
+    }
+    if (o.phase === 'chase') {
+      o.chase -= dt;
+      chaseStep(o, dt);
+      o.throwT -= dt;
+      if (o.throwT <= 0 && G.state === 'playing') { throwSlipper(o); o.throwT = Math.max(1.0, 1.9 - G.level * 0.04); }
+      if (o.chase <= 0) {
+        o.phase = 'leave';
+        if (!o.hitDone && G.state === 'playing') {
+          addScore(120); stats.mumEscapes++; G.badgeCheckT = 0;
+          floater(t('hm_escaped'), p.x, p.y - 56, '#ffe066', 15);
+          say('h_escaped'); Sound.play('big');
+        }
+      }
+      o.x += o.vx * dt; o.y += o.vy * dt;
+      return false;
+    }
+    return leaveStep(o, dt);
+  }
+  function updateDad(o, dt) {
+    if (o.phase === 'warn') { if (o.warn <= 0) o.phase = 'chase'; return false; }
+    o.talkT -= dt;
+    if (o.talkT <= 0) { o.talk = pickF(homeMsgs().dadTalk); o.talkT = 2.6; }
+    if (o.phase === 'chase') {
+      o.chase -= dt; chaseStep(o, dt, 1.4);
+      if (o.chase <= 0) { o.phase = 'leave'; if (!o.hitDone && G.state === 'playing') { addScore(250); floater('+250', G.player.x, G.player.y - 56, '#ffe066', 15); Sound.play('big'); } }
+      o.x += o.vx * dt; o.y += o.vy * dt;
+      return false;
+    }
+    return leaveStep(o, dt);
+  }
+  function updateSister(o, dt) {
+    o.talkT -= dt; if (o.talkT <= 0) { o.talk = pickF(homeMsgs().sisterTalk); o.talkT = 2.4; }
+    o.life -= dt;
+    if (o.phase === 'follow' && o.life > 0 && G.state === 'playing') { chaseStep(o, dt, 1.6); o.x += o.vx * dt; o.y += o.vy * dt; return false; }
+    o.phase = 'leave';
+    return leaveStep(o, dt);
+  }
+  function updateNeighbour(o, dt) {
+    o.talkT -= dt; if (o.talkT <= 0) { o.talk = pickF(homeMsgs().ngTalk); o.talkT = 2.6; }
+    o.x += o.vx * dt; o.y += Math.sin(o.t * 1.3) * 8 * dt;
+    return (o.vx > 0 && o.x > FX1 + 50) || (o.vx < 0 && o.x < FX0 - 50);
+  }
+  function greetDone(o) {
+    const p = G.player;
+    o.greeted = true; o.wait = Math.min(o.wait, o.money ? 4.2 : 1.6);
+    addScore(150); addAnger(-8); stats.greets++; G.badgeCheckT = 0; G.run.greets = (G.run.greets || 0) + 1;
+    floater(pickF(homeMsgs().greet), p.x, p.y - 50, '#7df0b5', 15);
+    floater(t('hm_greetF'), p.x, p.y - 74, '#ffe066', 13);
+    o.talk = pickF(homeMsgs().visitorReply);
+    Sound.play('coin');
+    if (o.money) G.items.push({ type: 'vmoney', r: 15, x: o.x + (o.fromLeft ? -24 : 24), y: o.y + 4, vy: 0, t: 0, wob: 0, owner: o, fixed: true });
+  }
+  function updateVisitor(o, dt) {
+    const p = G.player;
+    if (o.phase === 'in') {
+      const dx = o.tx - o.x;
+      o.x += Math.sign(dx) * Math.min(Math.abs(dx), 120 * dt);
+      if (Math.abs(dx) < 2) o.phase = 'wait';
+      return false;
+    }
+    if (o.phase === 'wait') {
+      o.wait -= dt;
+      if (!o.greeted && G.state === 'playing') {
+        const d = Math.hypot(p.x - o.x, p.y - o.y);
+        if (d < 66) { o.greet += dt; if (o.greet >= 0.7) greetDone(o); } else o.greet = Math.max(0, o.greet - dt * 1.5);
+      }
+      if (o.wait <= 0) {
+        o.phase = 'out';
+        if (!o.greeted && G.state === 'playing') { addAnger(15); toast(t('hm_noGreet'), 'bad', 2200); }
+        G.items = G.items.filter((it) => it.owner !== o);
+      }
+      return false;
+    }
+    o.x += (o.fromLeft ? -1 : 1) * 130 * dt;
+    return o.x < FX0 - 50 || o.x > FX1 + 50;
+  }
+  function updateHomeObstacle(o, dt) {
+    const p = G.player;
+    switch (o.type) {
+      case 'broom': case 'fowl':
+        o.x += o.vx * dt;
+        if (o.type === 'fowl') o.y += Math.sin(o.t * 9) * 26 * dt;
+        return (o.vx > 0 && o.x > FX1 + 60) || (o.vx < 0 && o.x < FX0 - 60);
+      case 'ball':
+        o.y += o.vy * dt; o.x += o.vx * dt;
+        if (o.x < FX0 + o.r) { o.x = FX0 + o.r; o.vx = Math.abs(o.vx); o.vr = -o.vr; }
+        if (o.x > FX1 - o.r) { o.x = FX1 - o.r; o.vx = -Math.abs(o.vx); o.vr = -o.vr; }
+        return o.y > H + 50;
+      case 'spoon': case 'homework':
+        o.y += o.vy * dt;
+        return o.y > H + 50;
+      case 'slipper': {
+        o.life -= dt;
+        if (o.homing > 0) {
+          o.homing -= dt;
+          const dx = p.x - o.x, dy = p.y - o.y, d = Math.hypot(dx, dy) || 1, sp = Math.hypot(o.vx, o.vy);
+          const k = Math.min(1, dt * 2.4);
+          o.vx += ((dx / d) * sp - o.vx) * k; o.vy += ((dy / d) * sp - o.vy) * k;
+        }
+        o.x += o.vx * dt; o.y += o.vy * dt;
+        const gone = o.life <= 0 || o.y > H + 40 || o.y < -60 || o.x < FX0 - 50 || o.x > FX1 + 50;
+        if (gone && !o.hitDone) stats.slippers++;
+        return gone;
+      }
+      case 'mum': return updateMum(o, dt);
+      case 'dad': return updateDad(o, dt);
+      case 'sister': return updateSister(o, dt);
+      case 'neighbour': return updateNeighbour(o, dt);
+      case 'visitor': return updateVisitor(o, dt);
+    }
+    return null;
+  }
+  const npcActive = (o) => (o.type === 'mum' ? o.phase === 'chase' || o.phase === 'count' : o.type === 'dad' ? o.phase === 'chase'
+    : o.type === 'sister' ? o.phase === 'follow' : o.type === 'neighbour' ? true : false);
+
+  function homeBonk(o) {
+    addScore(25);
+    burst(o.x, o.y, COLORS.greenBright, 10, 160);
+    floater('+25 ' + t('hm_grandmaLabel'), o.x, o.y - 20, '#7df0b5', 13);
+    Sound.play('near');
+  }
+  // returns true when the obstacle should be removed
+  function homeCollide(o) {
+    const p = G.player;
+    const shield = p.leave > 0;
+    switch (o.type) {
+      case 'mum':
+        if (o.phase === 'count') {
+          o.phase = 'leave'; o.hitDone = true; stats.counts++;
+          addScore(200); addAnger(-20);
+          floater(t('hm_countOk'), p.x, p.y - 50, '#7df0b5', 16); toast(t('hm_countOkT'), 'good', 1800);
+          Sound.play('badge');
+          return false;
+        }
+        if (shield) { toast(t('hm_grandmaSaves'), 'good', 1800); o.phase = 'leave'; o.hitDone = true; addScore(50); return false; }
+        if (p.invuln > 0) return false;
+        hurt(o); o.phase = 'leave'; o.hitDone = true; addAnger(-40);
+        return false;
+      case 'dad':
+        if (shield) { toast(t('hm_grandmaSaves'), 'good', 1800); o.phase = 'leave'; o.hitDone = true; return false; }
+        if (p.invuln > 0) return false;
+        hurt(o); o.phase = 'leave'; o.hitDone = true;
+        return false;
+      case 'sister':
+        o.hitDone = true; o.phase = 'leave'; o.life = 0;
+        if (shield) { toast(t('hm_sisterGrandma'), 'good', 1600); return false; }
+        addAnger(30); toast(t('hm_tattle'), 'bad', 2000); say('h_tattle');
+        floater('"MUMMY!"', o.x, o.y - 40, '#ffb3d1', 16);
+        if (!mumPresent() && G.daddyT <= 0) spawnMum({ fast: true });
+        return false;
+      case 'neighbour':
+        o.hitDone = true;
+        if (shield) return false;
+        G.gistT = 2.4; addAnger(12); toast(t('hm_gist'), 'bad', 2000);
+        floater(t('hm_gistF'), p.x, p.y - 44, '#c7d2fe', 15); Sound.play('near');
+        return false;
+      case 'visitor': return false;
+      default:
+        if (shield) { homeBonk(o); return true; }
+        if (p.invuln > 0) return false;
+        hurt(o); burst(o.x, o.y, '#ffffff', 8, 120);
+        return true;
+    }
+  }
+
+  /* ---------- Errands (home version of the mini-missions) ---------- */
+  const HOME_ERRANDS = [
+    { id: 'water', items: ['keg'], need: 1, time: 14, carry: 8, reward: 120, ico: 'bucket', text: 'Go and fetch water!' },
+    { id: 'shop', items: ['bread', 'maggi'], need: 2, time: 18, carry: 7, change: 200, reward: 100, ico: 'bread', text: 'Buy bread and Maggi. Bring my change!' },
+    { id: 'swap', items: ['titus'], need: 1, time: 15, reward: 120, ico: 'fish', text: 'Go and return it! I said Titus, not Kote!' },
+    { id: 'dishes', items: ['plate'], need: 5, time: 18, reward: 150, ico: 'utensils', text: 'Wash the plates before I wake up!' },
+  ];
+  const ERRAND_PCM = { water: 'Go fetch water!', shop: 'Buy bread and Maggi. Bring my change!', swap: 'Go return am! I talk Titus, no be Kote!', dishes: 'Wash plate before I wake up!' };
+  const CARRY_TEXT = { water: ['Carry the water home', 'Carry the water go house'], shop: ['Bring back my change', 'Bring my change come'] };
+  function startHomeErrand() {
+    const pool = HOME_ERRANDS.filter((e) => e.id !== G.lastErrand);
+    const def = pickF(pool);
+    G.lastErrand = def.id;
+    const hard = G.level >= 6 ? 1 : 0;
+    const say1 = S.lang === 'pcm' ? ERRAND_PCM[def.id] : def.text;
+    G.mission = { id: def.id, home: true, items: def.items, need: def.need + (def.id === 'dishes' ? hard : 0), have: 0, got: {}, t: def.time, dur: def.time,
+      text: say1, reward: def.reward + hard * 60, ico: def.ico, carry: false, change: undefined };
+    toast(t('hm_errandNew')(say1), 'info', 2600, def.ico);
+    Sound.play('power');
+    if (def.id === 'dishes') { for (const o of G.obstacles) if (o.type === 'mum' && o.phase !== 'count') { o.phase = 'leave'; o.hitDone = true; } G.bossT = Math.max(G.bossT, def.time + 2); }
+    T('mission', { id: 'home_' + def.id, phase: 'start' });
+  }
+  function homeErrandProgress(kind, item) {
+    const M = G.mission;
+    if (!M || !M.home) return;
+    const p = G.player;
+    if (kind === 'hit') {
+      if (!M.carry) return;
+      if (M.id === 'water') { toast(t('hm_spilled'), 'bad', 1800); endHomeErrand(false, true); }
+      else if (M.id === 'shop') { const lose = Math.min(50, M.change); M.change -= lose; if (lose) floater(t('hm_change')(lose), p.x, p.y - 60, '#ff8a8e', 14); }
+      return;
+    }
+    if (kind !== 'item' || M.carry) return;
+    if (item === 'kote' && M.id === 'swap') { addAnger(12); toast(t('hm_wrong'), 'bad', 1800); floater('Kote?!', p.x, p.y - 44, '#ff8a8e', 15); return; }
+    if (!M.items.includes(item)) return;
+    if (M.id === 'shop' && M.got[item]) return;
+    M.got[item] = true; M.have++;
+    if (M.have >= M.need) {
+      const def = HOME_ERRANDS.find((e) => e.id === M.id);
+      if (def.carry) {
+        M.carry = true; M.t = def.carry; M.dur = def.carry;
+        M.text = CARRY_TEXT[M.id][S.lang === 'pcm' ? 1 : 0];
+        if (def.change) M.change = def.change;
+        toast(M.text + '!', 'info', 1600, M.ico);
+      } else endHomeErrand(true);
+    }
+  }
+  function tickHomeErrand(dt) {
+    const M = G.mission;
+    if (M) {
+      M.t -= dt;
+      if (M.t <= 0) endHomeErrand(!!M.carry);
+    } else {
+      G.missionT -= dt;
+      if (G.missionT <= 0 && !G.black) startHomeErrand();
+    }
+  }
+  function endHomeErrand(ok, quiet) {
+    const M = G.mission;
+    if (!M) return;
+    G.mission = null;
+    G.missionT = rand(16, 26);
+    const p = G.player;
+    if (ok) {
+      let reward = M.reward;
+      addScore(150); stats.errands++; G.badgeCheckT = 0; G.run.errands = (G.run.errands || 0) + 1;
+      seasonXp(30, true);
+      if (M.id === 'shop') {
+        reward += M.change;
+        if (M.change >= 200) { stats.fullChange++; addAnger(-15); setTimeout(() => G.state === 'playing' && toast(t('hm_changeOk'), 'good', 1800), 900); }
+        else { addAnger(Math.round((200 - M.change) / 5)); setTimeout(() => G.state === 'playing' && toast(t('hm_changeBad')(200 - M.change), 'bad', 2200), 900); say('h_change'); }
+      } else addAnger(-10);
+      G.pocket = (G.pocket || 0) + reward;
+      floater('+150 · +₦' + reward, p.x, p.y - 56, '#ffe066', 15);
+      toast(t('hm_errandDone')(fmtNum(reward)), 'good', 1800, M.ico);
+      Sound.play('badge'); confetti(20);
+    } else {
+      addAnger(15);
+      if (M.id === 'dishes') { toast(t('hm_dishFail'), 'bad', 2000); G.bossT = 0.5; }
+      else if (!quiet && G.state === 'playing') toast(t('hm_errandFail'), 'info', 1600);
+    }
+    T('mission', { id: 'home_' + M.id, phase: ok ? 'done' : 'fail' });
+  }
+
+  /* ---------- Home events ---------- */
+  const HOME_EVENTS = {
+    h_church: { w: () => (lagosDow() === 0 ? 5 : 0.7), dur: 18 },
+    h_party: { w: () => (lagosDow() === 6 ? 2.6 : 1.2), dur: 18 },
+    h_xmas: { w: () => (isDecember() || (G.office && G.office.xmas) ? 4 : 0), dur: 20 },
+    h_lesson: { w: () => 1.1, dur: 18 },
+    h_tv: { w: () => 1.2, dur: 16 },
+    h_visitors: { w: () => 1.4, dur: 18 },
+  };
+  function startHomeEvent(force) {
+    const opts = Object.entries(HOME_EVENTS).filter(([k]) => k !== G.lastEvent).map(([k, e]) => [k, e.w()]).filter(([, w]) => w > 0);
+    const id = force || weightedR(opts);
+    const def = HOME_EVENTS[id];
+    G.event = { id, t: def.dur, dur: def.dur, k: 0.6, n: 2, home: true };
+    G.lastEvent = id;
+    G.meats = 0; G.idleT = 0;
+    T('event_start', { id, level: G.level, stacked: false });
+    banner(t('ev_' + id), id === 'h_church' || id === 'h_tv');
+    toast(t('ev_' + id + '_d'), 'info', 2800);
+    Sound.play('level');
+    if (id === 'h_xmas' || id === 'h_party') confetti(40);
+    if (id === 'h_visitors' || id === 'h_xmas') G.visT = Math.min(G.visT, 1);
+  }
+  function endHomeEvent() {
+    const ev = G.event;
+    G.event = null;
+    G.dim = 0;
+    stats.events++; G.badgeCheckT = 0;
+    if (ev.id === 'h_tv') G.items = G.items.filter((i) => i.type !== 'remote');
+    toast(t('hm_eventOver'), 'info', 1500);
+    G.eventT = rand(22, 34) * (G.level >= 6 ? 0.8 : 1);
+  }
+  function tickHomeEvent(ev, dt) {
+    const p = G.player;
+    ev.t -= dt;
+    switch (ev.id) {
+      case 'h_church':
+        G.dim = Math.min(0.3, G.dim + dt * 0.5);
+        if (Math.hypot(p.vx, p.vy) < 25) G.idleT += dt; else G.idleT = Math.min(G.idleT, 0);
+        if (G.idleT > 1.6) { G.idleT = -1.5; addAnger(10); addScore(-50); toast(t('hm_sleeping'), 'bad', 1600); floater('Zzz…', p.x, p.y - 44, '#c7d2fe', 18); }
+        break;
+      case 'h_party': case 'h_xmas':
+        ev.k -= dt;
+        if (ev.k <= 0) { spawnHomeItem(Math.random() < 0.45 ? 'meat' : 'jollof', true); ev.k = rand(0.7, 1.3); }
+        if (ev.id === 'h_party') { ev.n -= dt; if (ev.n <= 0) { spawnDancer('dancer'); ev.n = rand(2.4, 3.6); } }
+        break;
+      case 'h_tv':
+        ev.k -= dt;
+        if (ev.k <= 0 && G.items.filter((i) => i.type === 'remote').length < 2) {
+          G.items.push({ type: 'remote', r: 15, x: FX0 + 30 + Math.random() * (FX1 - FX0 - 60), y: -20, vy: 70, t: 0, wob: rand(0, TAU) });
+          ev.k = rand(2, 3.2);
+        }
+        break;
+    }
+  }
+  function updateHomeEvents(dt) {
+    if (G.event) { tickHomeEvent(G.event, dt); if (G.event && G.event.t <= 0) endHomeEvent(); }
+    else if (G.level >= 2) { G.eventT -= dt; if (G.eventT <= 0) startHomeEvent(); }
+    if (G.zones && G.zones.length) updateZones(dt);
+  }
+
+  /* ---------- Per-frame home logic ---------- */
+  function homeStep(dt) {
+    G.daddyT = Math.max(0, (G.daddyT || 0) - dt);
+    G.gistT = Math.max(0, (G.gistT || 0) - dt);
+    G.stars = Math.max(0, (G.stars || 0) - dt);
+    G.hideT = Math.max(0, (G.hideT || 0) - dt);
+    G.eyes.t -= dt;
+    if (G.eyes.t <= 0) { G.eyes.open = !G.eyes.open; G.eyes.t = G.eyes.open ? frand(2.2, 4.2) : frand(1.6, 3); }
+    if (G.anger >= 99.5 && !mumPresent() && G.daddyT <= 0 && !dishesOn()) { G.anger = 45; spawnMum({ vexed: true }); }
+    else if (G.daddyT <= 0) G.anger = Math.max(0, G.anger - dt * 1.2);
+    G.visT -= dt;
+    if (G.visT <= 0) { spawnVisitor(); G.visT = evIs('h_visitors') || evIs('h_xmas') ? rand(3.5, 5) : rand(15, 24); }
+    if (G.level >= 4) { G.sisT -= dt; if (G.sisT <= 0) { spawnSister(); G.sisT = rand(22, 34); } }
+    if (G.level >= 5) { G.ngT -= dt; if (G.ngT <= 0) { spawnNeighbour(); G.ngT = rand(20, 32); } }
+    if (G.level >= 2) {
+      G.countT -= dt;
+      if (G.countT <= 0) { if (!mumPresent() && G.daddyT <= 0 && !dishesOn() && !G.black) spawnMum({ count: true }); G.countT = rand(26, 40); }
+    }
+  }
+  function homeRoundInit() {
+    G.anger = 10; G.eyes = { open: true, t: 3 }; G.daddyT = 0; G.gistT = 0; G.stars = 0; G.hideT = 0; G.pocket = 0; G.meats = 0;
+    G.visT = 6; G.sisT = 18; G.ngT = 14; G.countT = 22; G.dadDone = false; G.lastErrand = '';
+    G.missionT = 9; G.eventT = rand(18, 26);
+  }
+  function homeLevelNote(level) {
+    const k = { 2: 'hm_lvl2', 3: 'hm_lvl3', 4: 'hm_lvl4', 5: 'hm_lvl5', 7: 'hm_lvl7' }[level];
+    if (k) setTimeout(() => G.state === 'playing' && toast(t(k), 'info'), 1600);
+  }
+  const homeSpeed = () => (G.gistT > 0 ? 0.5 : 1) * (G.mission && G.mission.carry && G.mission.id === 'water' ? 0.78 : 1);
+
+  /* ---------- Collecting at home ---------- */
+  function collectHome(it) {
+    const d = ITEMS[it.type], p = G.player;
+    homeErrandProgress('item', it.type);
+    const good = () => { G.collected++; G.streak++; G.maxStreak = Math.max(G.maxStreak, G.streak); };
+    switch (it.type) {
+      case 'vmoney':
+        if (G.eyes.open) {
+          addAnger(30); addScore(-100); toast(t('hm_moneyCaught'), 'bad', 2200);
+          floater(t('hm_noThankYou'), p.x, p.y - 44, '#ff8a8e', 16); Sound.play('hit'); G.shake = 6; G.streak = 0;
+        } else {
+          good(); addScore(300); G.pocket += 200; stats.vmoney++;
+          toast(t('hm_moneyOk'), 'good', 1800); floater('+300 · +₦200', it.x, it.y - 10, '#19c37d', 16);
+          burst(it.x, it.y, d.color, 16, 170, '₦'); Sound.play('coin');
+        }
+        return;
+      case 'meat':
+        G.meats = (G.meats || 0) + 1;
+        if (G.meats === 1 || !G.eyes.open) { good(); addScore(200); floater(G.meats === 1 ? t('hm_meat1') : t('hm_meatSneak'), it.x, it.y - 10, '#ffe066', 14); Sound.play('coin'); }
+        else { addAnger(25); toast(t('hm_meat2'), 'bad', 1800); floater('Ehn?!', p.x, p.y - 44, '#ff8a8e', 18); Sound.play('hit'); G.streak = 0; }
+        return;
+      case 'remote':
+        if (G.eyes.open) { addAnger(15); toast(t('hm_tvCaught'), 'bad', 1800); Sound.play('hit'); G.streak = 0; }
+        else { good(); addScore(150); floater(t('hm_tvOk'), it.x, it.y - 10, '#c7d2fe', 14); Sound.play('coin'); }
+        return;
+      case 'grandma':
+        good(); p.leave = 5; p.invuln = 0; toast(t('hm_grandma'), 'good', 1800); say('h_grandma'); Sound.play('power');
+        for (const o of G.obstacles) if ((o.type === 'mum' || o.type === 'dad') && o.phase === 'chase') { o.phase = 'leave'; o.hitDone = true; }
+        return;
+      case 'malt':
+        good(); p.fuel = 5; toast(t('hm_malt'), 'good', 1600); Sound.play('power');
+        setTimeout(() => { if (G.state === 'playing' && G.world === 'home') { toast(t('hm_whoDrank'), 'bad', 2000); addAnger(8); } }, 9000);
+        return;
+      case 'report':
+        good(); G.anger = 0; addScore(300); toast(t('hm_report'), 'good', 2200); confetti(24); Sound.play('big');
+        floater('+300', it.x, it.y - 10, '#7cc4ff', 16);
+        return;
+      case 'daddy':
+        good(); G.daddyT = 7; toast(t('hm_daddy'), 'good', 2200); Sound.play('power');
+        for (const o of G.obstacles) if (o.type === 'mum' && o.phase !== 'leave') { o.phase = 'leave'; o.hitDone = true; o.talk = t('hm_daddyBusy'); }
+        return;
+      case 'underbed':
+        good(); G.held = 'underbed'; T('powerup_pick', { id: 'underbed' }); updateUseBtn();
+        toast(t('heldGot')(heldName('underbed')), 'good', 2000); Sound.play('power');
+        return;
+      case 'keg': case 'bread': case 'maggi': case 'titus': case 'plate':
+        good(); addScore(25); floater('+25', it.x, it.y - 10, d.color, 14); burst(it.x, it.y, d.color, 10, 150); Sound.play('coin');
+        return;
+      case 'kote':
+        G.streak = 0; burst(it.x, it.y, d.color, 8, 120);
+        return;
+    }
+    // snacks and pocket money
+    good();
+    const mult = streakMult();
+    const pts = Math.round(d.pts * mult * (evIs('h_lesson') ? 1.5 : 1));
+    addScore(pts);
+    floater('+' + pts + (mult > 1 ? ' (x' + mult + ')' : ''), it.x, it.y - 10, d.color, 16);
+    if (it.type === 'pocket') G.pocket += 10;
+    burst(it.x, it.y, d.color, 14, 170, it.type === 'pocket' ? '₦' : null);
+    Sound.play('coin');
+    if (G.streak > 0 && G.streak % 5 === 0) {
+      const bonus = Math.min(250, 25 * (G.streak / 5));
+      addScore(bonus);
+      floater(t('streak') + ' ' + G.streak + '! +' + bonus, p.x, p.y - 62, '#ffe066', 17);
+      Sound.play('big');
+    }
+  }
+
+  /* ---------- Drawing ---------- */
+  const homeFloorCache = {};
+  function homeFloor(off) {
+    if (homeFloorCache[off.id]) return homeFloorCache[off.id];
+    const cv = document.createElement('canvas'); cv.width = 64; cv.height = 64;
+    const x = cv.getContext('2d');
+    const r = mulberry32(strHash(off.id));
+    x.fillStyle = off.floor; x.fillRect(0, 0, 64, 64);
+    if (off.id === 'abuja') {
+      // interlocking paving stones
+      x.strokeStyle = off.line; x.lineWidth = 2;
+      for (const [ax, ay] of [[0, 0], [32, 0], [16, 32], [48, 32], [-16, 32]]) { x.beginPath(); x.moveTo(ax + 4, ay + 2); x.lineTo(ax + 28, ay + 2); x.lineTo(ax + 30, ay + 16); x.lineTo(ax + 28, ay + 30); x.lineTo(ax + 4, ay + 30); x.lineTo(ax + 2, ay + 16); x.closePath(); x.stroke(); }
+    } else if (off.id === 'village' || off.id === 'ibadan') {
+      for (let i = 0; i < 90; i++) { x.fillStyle = r() > 0.5 ? 'rgba(255,220,180,.07)' : 'rgba(0,0,0,.12)'; x.beginPath(); x.arc(r() * 64, r() * 64, 0.6 + r() * 1.6, 0, TAU); x.fill(); }
+    } else {
+      // rough concrete with a crack or two
+      for (let i = 0; i < 220; i++) { x.fillStyle = r() > 0.5 ? 'rgba(255,255,255,.05)' : 'rgba(0,0,0,.1)'; x.fillRect(r() * 64, r() * 64, 1.4, 1.4); }
+      x.strokeStyle = 'rgba(0,0,0,.09)'; x.lineWidth = 1;
+      x.beginPath(); x.moveTo(20 + r() * 24, 0); for (let i = 1; i <= 4; i++) x.lineTo(20 + r() * 24, i * 16); x.stroke();
+    }
+    homeFloorCache[off.id] = ctx.createPattern(cv, 'repeat');
+    return homeFloorCache[off.id];
+  }
+  function drawDecorHome(c, kind, side, tm) {
+    switch (kind) {
+      case 'hdoor': {
+        c.fillStyle = '#3f2a1a'; rr(c, -18, -28, 36, 56, 3); c.fill();
+        c.fillStyle = '#5b3a22'; rr(c, -15, -25, 30, 50, 2); c.fill();
+        const sway = Math.sin(tm * 1.6 + side * 2) * 2.2;
+        c.fillStyle = side < 0 ? '#c026d3' : '#0ea5e9';
+        c.beginPath(); c.moveTo(-15, -25); c.lineTo(15, -25); c.lineTo(15 + sway, 12); c.quadraticCurveTo(0, 18, -15 + sway, 12); c.closePath(); c.fill();
+        c.fillStyle = 'rgba(255,255,255,.4)';
+        for (let i = -10; i <= 10; i += 7) { circle(c, i + sway * 0.4, -14, 1.7); c.fill(); circle(c, i + 3 + sway * 0.6, -3, 1.7); c.fill(); circle(c, i + sway * 0.8, 7, 1.7); c.fill(); }
+        c.fillStyle = '#e8eaf0'; rr(c, -17, -40, 34, 11, 2); c.fill();
+        c.fillStyle = COLORS.ink; c.textAlign = 'center'; c.textBaseline = 'middle';
+        const dl = curOffice().doors[side < 0 ? 0 : 1] || 'PARLOUR';
+        c.font = (dl.length > 12 ? '800 4.8px' : '800 6.5px') + ' system-ui, Arial, sans-serif';
+        c.fillText(dl, 0, -34.5, 31);
+        return true;
+      }
+      case 'drum':
+        c.fillStyle = 'rgba(0,0,0,.3)'; c.beginPath(); c.ellipse(0, 20, 15, 5, 0, 0, TAU); c.fill();
+        c.fillStyle = '#1d4ed8'; rr(c, -13, -16, 26, 36, 5); c.fill();
+        c.fillStyle = '#2563eb'; c.fillRect(-13, -6, 26, 3); c.fillRect(-13, 8, 26, 3);
+        c.fillStyle = '#1e3a8a'; c.beginPath(); c.ellipse(0, -16, 13, 4, 0, 0, TAU); c.fill();
+        c.fillStyle = '#facc15'; rr(c, 4, -24, 8, 7, 2); c.fill();
+        return true;
+      case 'clothesline': {
+        c.strokeStyle = '#6b7280'; c.lineWidth = 2;
+        c.beginPath(); c.moveTo(-26, -24); c.lineTo(-26, 24); c.moveTo(26, -24); c.lineTo(26, 24); c.stroke();
+        c.strokeStyle = '#d1d5db'; c.lineWidth = 1; c.beginPath(); c.moveTo(-26, -20); c.quadraticCurveTo(0, -15, 26, -20); c.stroke();
+        const cols = ['#ef4444', '#f8fafc', '#22c55e', '#f59e0b'];
+        for (let i = 0; i < 4; i++) {
+          const sw = Math.sin(tm * 2.2 + i + side) * 1.6;
+          c.fillStyle = cols[i]; rr(c, -22 + i * 11 + sw, -18, 9, i % 2 ? 14 : 18, 1.5); c.fill();
+        }
+        return true;
+      }
+      case 'bench':
+        c.fillStyle = '#7a4f2c'; rr(c, -24, -5, 48, 9, 2); c.fill();
+        c.fillStyle = '#5b3a22'; c.fillRect(-20, 4, 4, 12); c.fillRect(16, 4, 4, 12);
+        c.fillStyle = '#8a5a33'; c.fillRect(-24, -5, 48, 2);
+        return true;
+      case 'mortar':
+        c.fillStyle = 'rgba(0,0,0,.3)'; c.beginPath(); c.ellipse(0, 18, 13, 4, 0, 0, TAU); c.fill();
+        c.fillStyle = '#7a4f2c'; c.beginPath(); c.moveTo(-12, -8); c.lineTo(12, -8); c.lineTo(7, 18); c.lineTo(-7, 18); c.closePath(); c.fill();
+        c.fillStyle = '#3f2a1a'; c.beginPath(); c.ellipse(0, -8, 12, 4, 0, 0, TAU); c.fill();
+        c.save(); c.rotate(0.35 + Math.sin(tm * 3 + side) * 0.08); c.fillStyle = '#9a6b3f'; rr(c, -2.5, -34, 5, 34, 2.5); c.fill(); c.restore();
+        return true;
+      case 'gen': {
+        c.fillStyle = '#e5484d'; rr(c, -16, -10, 32, 24, 3); c.fill();
+        c.fillStyle = '#111827'; rr(c, -12, -6, 14, 12, 2); c.fill();
+        c.fillStyle = '#facc15'; c.font = '900 3.6px system-ui, Arial'; c.textAlign = 'center'; c.fillText('I BETTER PASS', 0, 10); c.fillText('MY NEIGHBOUR', 0, 13.5);
+        if (hiQ()) for (let i = 0; i < 3; i++) { const k = (tm * 0.8 + i / 3) % 1; c.fillStyle = `rgba(160,160,160,${0.35 * (1 - k)})`; circle(c, 12 + k * 6, -12 - k * 22, 3 + k * 5); c.fill(); }
+        return true;
+      }
+      case 'pot':
+        c.fillStyle = '#f97316'; for (let i = -1; i <= 1; i++) { c.globalAlpha = 0.6 + Math.sin(tm * 12 + i) * 0.3; c.beginPath(); c.moveTo(i * 7 - 4, 18); c.lineTo(i * 7, 6); c.lineTo(i * 7 + 4, 18); c.fill(); }
+        c.globalAlpha = 1;
+        c.fillStyle = '#6b7280'; circle(c, -12, 16, 4); c.fill(); circle(c, 12, 16, 4); c.fill(); circle(c, 0, 20, 4); c.fill();
+        c.fillStyle = '#1f2937'; c.beginPath(); c.ellipse(0, 0, 17, 12, 0, 0, TAU); c.fill();
+        c.fillStyle = '#374151'; c.beginPath(); c.ellipse(0, -9, 15, 4, 0, 0, TAU); c.fill();
+        if (hiQ()) { c.fillStyle = 'rgba(255,255,255,.18)'; circle(c, -4, -16 - (tm * 10) % 10, 3); c.fill(); }
+        return true;
+      case 'tv':
+        c.fillStyle = '#5b3a22'; c.fillRect(-12, 10, 24, 12);
+        c.fillStyle = '#1f2937'; rr(c, -18, -16, 36, 27, 3); c.fill();
+        c.fillStyle = `hsl(${(tm * 40) % 360},70%,60%)`; rr(c, -15, -13, 30, 21, 2); c.fill();
+        c.fillStyle = 'rgba(255,255,255,.25)'; c.fillRect(-15, -13, 30, 4);
+        return true;
+    }
+    return false;
+  }
+
+  // the player as a child
+  function kidClothes(base, charId) {
+    const girl = charId === 'ada';
+    return Object.assign(base, {
+      shirt: girl ? '#ec4899' : '#f97316', sleeve: girl ? '#ec4899' : '#f97316', pants: girl ? '#ec4899' : '#1e3a8a', long: girl, trim: girl ? '#fbcfe8' : null,
+      suit: false, tie: null, robe: false, badge: null, badgeCard: null, papers: false, calc: false, laptop: false, coffeecup: false, phone: false,
+      number: null, hoodie: null, xmas: false, stripes: false, towel: null, backpack: false,
+      cap: base.cap === 'peak' ? 'peak' : '', s: (base.s || 1) * 0.84,
+    });
+  }
+  const _spritePlayer = SPRITES.player;
+  SPRITES.player = function (c, tm, o = {}) {
+    const kid = o.kid === true || (o.kid === undefined && IN_RENDER && RENDER_HOME);
+    if (!kid) return _spritePlayer(c, tm, o);
+    const ch = o.char || S.char;
+    const base = playerParams(ch, o.outfit || S.outfit, { walk: o.walk !== undefined ? o.walk : tm * 10, mood: o.mood || 'happy', lookX: o.lookX, lookY: o.lookY, s: o.s || 1 }, o.look);
+    drawPerson(c, kidClothes(base, ch));
+  };
+  function mumParams(o, extra) {
+    const H0 = (G.office && G.office.home ? G.office : homeById(S.home)).mum;
+    return Object.assign({ shirt: H0.wrap, sleeve: H0.wrap, pants: H0.wrap, long: true, trim: '#f5b301', skin: '#6b3f1f', hair: 'low', cap: 'gele', capColor: H0.gele,
+      earrings: true, lashes: true, mood: 'angry', s: 1.18 }, extra);
+  }
+  Object.assign(SPRITES, {
+    mum(c, tm, o = {}) {
+      const s = o.s || 1.18;
+      drawPerson(c, mumParams(o, { walk: tm * 10, lookX: o.lookX, lookY: o.lookY, s, mood: o.mood || 'angry' }));
+      if (o.prop !== 'none') { // raised slipper
+        c.save(); c.scale(s, s); c.translate(15, -12 + Math.sin(tm * 10) * 2); c.rotate(-0.6 + Math.sin(tm * 9) * 0.3);
+        c.fillStyle = '#1d4ed8'; rr(c, -4, -9, 8, 18, 4); c.fill(); c.fillStyle = '#f8fafc'; c.fillRect(-4, -3, 8, 2.2);
+        c.restore();
+      }
+    },
+    dad(c, tm, o = {}) {
+      drawPerson(c, { shirt: '#f1ead6', sleeve: '#f1ead6', robe: true, trim: '#7c2d12', cap: 'fila', capColor: '#7c2d12', pants: '#f1ead6', skin: '#5c3519', hair: 'low',
+        glasses: true, walk: tm * 6, mood: 'angry', lookX: o.lookX, lookY: o.lookY, s: 1.3 });
+    },
+    sister(c, tm, o = {}) {
+      drawPerson(c, { shirt: '#a855f7', sleeve: '#a855f7', pants: '#a855f7', long: true, trim: '#f0abfc', skin: '#7a4521', hair: 'braids', lashes: true, earrings: true,
+        walk: tm * 13, mood: 'happy', lookX: o.lookX, lookY: o.lookY, s: 0.86 });
+    },
+    neighbour(c, tm, o = {}) {
+      drawPerson(c, { shirt: 'pattern:ankara2', sleeve: 'pattern:ankara2', pants: 'pattern:ankara2', long: true, trim: '#f5b301', cap: 'gele', capColor: '#7c3aed',
+        skin: '#7a4521', hair: 'low', earrings: true, lashes: true, phone: true, walk: tm * 6, mood: 'happy', lookX: o.lookX, lookY: o.lookY, s: 1.12 });
+    },
+    visitor(c, tm, o = {}) {
+      const lk = o.look || { c: 'pattern:aso', g: 'pattern:aso' };
+      drawPerson(c, { shirt: lk.c, sleeve: lk.c, pants: lk.c, long: true, trim: '#f5b301', cap: 'gele', capColor: lk.g, skin: '#8a4f24', hair: 'low',
+        earrings: true, lashes: true, walk: o.walk || 0, mood: 'happy', lookX: o.lookX, lookY: o.lookY, s: 1.08 });
+      c.fillStyle = '#7c2d12'; rr(c, -24, 4, 9, 9, 2); c.fill(); c.strokeStyle = '#7c2d12'; c.lineWidth = 1.4; c.beginPath(); c.arc(-19.5, 4, 3.5, Math.PI, 0); c.stroke();
+    },
+    spoon(c) {
+      c.fillStyle = '#a16207'; rr(c, -2.4, -4, 4.8, 20, 2.4); c.fill();
+      c.fillStyle = '#ca8a04'; c.beginPath(); c.ellipse(0, -10, 6.5, 8.5, 0, 0, TAU); c.fill();
+      c.fillStyle = 'rgba(0,0,0,.18)'; c.beginPath(); c.ellipse(0, -9, 3.6, 5, 0, 0, TAU); c.fill();
+    },
+    homework(c) {
+      c.fillStyle = '#1d4ed8'; rr(c, -12, -15, 24, 30, 2); c.fill();
+      c.fillStyle = '#f8fafc'; c.fillRect(-9, -11, 18, 9);
+      c.fillStyle = '#1e3a8a'; c.font = '900 5px system-ui, Arial'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText('HOMEWORK', 0, -6.5, 17);
+      c.fillStyle = '#e5484d'; c.font = '900 10px system-ui, Arial'; c.fillText('?', 0, 7);
+    },
+    ball(c) {
+      c.fillStyle = '#f8fafc'; circle(c, 0, 0, 13); c.fill();
+      c.fillStyle = '#111827';
+      c.beginPath(); for (let i = 0; i < 5; i++) { const a = -Math.PI / 2 + (i * TAU) / 5; c.lineTo(Math.cos(a) * 5, Math.sin(a) * 5); } c.closePath(); c.fill();
+      for (let i = 0; i < 5; i++) { const a = -Math.PI / 2 + (i * TAU) / 5; circle(c, Math.cos(a) * 11, Math.sin(a) * 11, 2.6); c.fill(); }
+    },
+    fowl(c, tm) {
+      c.fillStyle = 'rgba(0,0,0,.25)'; c.beginPath(); c.ellipse(0, 14, 12, 4, 0, 0, TAU); c.fill();
+      c.strokeStyle = '#f59e0b'; c.lineWidth = 2;
+      const k = Math.sin(tm * 18) * 3;
+      c.beginPath(); c.moveTo(-2, 6); c.lineTo(-3 + k, 14); c.moveTo(3, 6); c.lineTo(4 - k, 14); c.stroke();
+      c.fillStyle = '#8b5a2b'; c.beginPath(); c.ellipse(-2, 0, 12, 9, 0, 0, TAU); c.fill();
+      c.fillStyle = '#5b3a22'; c.beginPath(); c.moveTo(-12, -2); c.lineTo(-20, -10); c.lineTo(-16, 2); c.closePath(); c.fill();
+      c.fillStyle = '#a16207'; circle(c, 9, -7, 5.5); c.fill();
+      c.fillStyle = '#ef4444'; c.beginPath(); c.moveTo(7, -12); c.lineTo(9, -16); c.lineTo(11, -12); c.closePath(); c.fill();
+      c.fillStyle = '#f59e0b'; c.beginPath(); c.moveTo(14, -8); c.lineTo(19, -6.5); c.lineTo(14, -5); c.closePath(); c.fill();
+      c.fillStyle = '#111'; circle(c, 10.5, -8, 1); c.fill();
+    },
+    broom(c, tm) {
+      c.fillStyle = 'rgba(0,0,0,.25)'; c.beginPath(); c.ellipse(0, 10, 36, 5, 0, 0, TAU); c.fill();
+      c.strokeStyle = '#d6b36a'; c.lineWidth = 1.4; c.lineCap = 'round';
+      c.beginPath();
+      for (let i = 0; i < 16; i++) { const y = -9 + i * 1.2 + Math.sin(tm * 30 + i) * 0.6; c.moveTo(-36, y); c.lineTo(10 + (i % 3) * 4, y * 0.6); }
+      c.stroke();
+      c.fillStyle = '#b45309'; rr(c, 6, -5, 9, 10, 2); c.fill();
+      c.strokeStyle = '#7c2d12'; c.lineWidth = 1.2; c.beginPath(); c.moveTo(8, -5); c.lineTo(8, 5); c.moveTo(12, -5); c.lineTo(12, 5); c.stroke();
+    },
+    slipper(c) {
+      c.fillStyle = '#1d4ed8'; rr(c, -5.5, -12, 11, 24, 5.5); c.fill();
+      c.fillStyle = '#f8fafc'; c.fillRect(-5.5, -3, 11, 3);
+      c.strokeStyle = '#1e3a8a'; c.lineWidth = 1; c.beginPath(); c.moveTo(-3, -8); c.lineTo(3, -8); c.stroke();
+    },
+    pocket(c, tm) {
+      c.fillStyle = '#16a34a'; rr(c, -14, -8, 28, 16, 3); c.fill();
+      c.fillStyle = '#86efac'; rr(c, -11, -5, 22, 10, 2); c.fill();
+      c.fillStyle = '#14532d'; c.font = '900 9px system-ui, Arial'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText('₦', 0, 0.5);
+      c.fillStyle = '#f5b301'; circle(c, 10, 8, 5); c.fill(); c.fillStyle = '#b45309'; c.font = '900 6px system-ui'; c.fillText('₦', 10, 8.5);
+    },
+    gala(c) {
+      c.fillStyle = '#dc2626'; rr(c, -15, -6, 30, 12, 4); c.fill();
+      c.fillStyle = '#facc15'; c.font = '900 7px system-ui, Arial'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText('GALA', 0, 0.5);
+      c.fillStyle = '#fde68a'; c.fillRect(-15, -1, 3, 2); c.fillRect(12, -1, 3, 2);
+    },
+    chinchin(c) {
+      c.fillStyle = 'rgba(255,255,255,.75)'; rr(c, -11, -10, 22, 22, 4); c.fill();
+      c.fillStyle = '#d97706'; for (let i = 0; i < 9; i++) { rr(c, -8 + (i % 3) * 6, -6 + Math.floor(i / 3) * 6, 4.5, 4.5, 1); c.fill(); }
+      c.fillStyle = '#ef4444'; c.fillRect(-11, -12, 22, 3);
+    },
+    grandma(c) {
+      drawPerson(c, { shirt: '#f8fafc', sleeve: '#f8fafc', pants: '#94a3b8', long: true, trim: '#16a34a', cap: 'gele', capColor: '#16a34a', skin: '#5c3519', hair: 'low', glasses: true, mood: 'happy', walk: 0, s: 0.62 });
+    },
+    malt(c) {
+      c.fillStyle = '#3f2a1a'; rr(c, -6, -14, 12, 28, 4); c.fill();
+      c.fillStyle = '#f5b301'; c.fillRect(-6, -4, 12, 9);
+      c.fillStyle = '#7c2d12'; c.font = '900 5px system-ui'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText('MALT', 0, 0.5);
+      c.fillStyle = 'rgba(200,230,255,.8)'; c.fillRect(-4, -12, 2, 6);
+    },
+    report(c) {
+      c.fillStyle = '#f8fafc'; rr(c, -11, -14, 22, 28, 2); c.fill();
+      c.fillStyle = '#16a34a'; c.fillRect(-11, -14, 22, 5);
+      c.fillStyle = '#16a34a'; c.font = '900 11px system-ui'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText('A', -3, 3);
+      c.fillStyle = '#e5484d'; c.font = '900 6px system-ui'; c.fillText('1st', 5, 9);
+    },
+    daddy(c) {
+      c.fillStyle = '#1e293b'; rr(c, -16, -5, 32, 12, 4); c.fill();
+      c.fillStyle = '#334155'; rr(c, -9, -11, 18, 8, 3); c.fill();
+      c.fillStyle = '#7dd3fc'; c.fillRect(-7, -9.5, 6, 5); c.fillRect(1, -9.5, 6, 5);
+      c.fillStyle = '#111'; circle(c, -9, 8, 3.6); c.fill(); circle(c, 9, 8, 3.6); c.fill();
+      c.fillStyle = '#facc15'; c.fillRect(13, -2, 3, 3);
+    },
+    underbed(c) {
+      c.fillStyle = '#7a4f2c'; rr(c, -15, -6, 30, 10, 2); c.fill();
+      c.fillStyle = '#e2e8f0'; rr(c, -15, -11, 30, 6, 2); c.fill();
+      c.fillStyle = '#5b3a22'; c.fillRect(-14, 4, 3, 7); c.fillRect(11, 4, 3, 7);
+      c.fillStyle = '#fff'; circle(c, -2, 7, 1.8); c.fill(); circle(c, 3, 7, 1.8); c.fill();
+      c.fillStyle = '#111'; circle(c, -2, 7, 0.9); c.fill(); circle(c, 3, 7, 0.9); c.fill();
+    },
+    keg(c) {
+      c.fillStyle = '#facc15'; rr(c, -11, -10, 22, 24, 4); c.fill();
+      c.fillStyle = '#ca8a04'; c.fillRect(-11, -2, 22, 2);
+      c.fillStyle = '#1d4ed8'; rr(c, -4, -15, 8, 6, 2); c.fill();
+      c.strokeStyle = '#a16207'; c.lineWidth = 2; c.beginPath(); c.arc(0, -10, 8, Math.PI, 0); c.stroke();
+    },
+    bread(c) {
+      c.fillStyle = '#d97706'; rr(c, -15, -8, 30, 16, 7); c.fill();
+      c.fillStyle = '#f59e0b'; rr(c, -13, -9, 26, 6, 3); c.fill();
+      c.strokeStyle = 'rgba(255,255,255,.4)'; c.lineWidth = 1; c.beginPath(); for (const x of [-7, 0, 7]) { c.moveTo(x - 2, -8); c.lineTo(x + 2, -3); } c.stroke();
+    },
+    maggi(c) {
+      c.fillStyle = '#facc15'; rr(c, -8, -10, 16, 20, 2); c.fill();
+      c.fillStyle = '#dc2626'; c.fillRect(-8, -3, 16, 7);
+      c.fillStyle = '#fff'; c.font = '900 5px system-ui'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText('CUBE', 0, 0.8);
+    },
+    titus(c) {
+      c.fillStyle = '#94a3b8'; rr(c, -14, -8, 28, 16, 5); c.fill();
+      c.fillStyle = '#0ea5e9'; rr(c, -12, -6, 24, 12, 4); c.fill();
+      c.fillStyle = '#fff'; c.font = '900 6px system-ui'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText('TITUS', 0, 0.5);
+    },
+    kote(c) {
+      c.fillStyle = '#6b7280'; c.beginPath(); c.ellipse(-2, 0, 12, 6, 0, 0, TAU); c.fill();
+      c.beginPath(); c.moveTo(9, 0); c.lineTo(16, -6); c.lineTo(16, 6); c.closePath(); c.fill();
+      c.fillStyle = '#111'; circle(c, -9, -1, 1.3); c.fill();
+      c.fillStyle = '#fca5a5'; c.font = '900 5px system-ui'; c.textAlign = 'center'; c.fillText('KOTE', -1, 12);
+    },
+    plate(c) {
+      c.fillStyle = '#e2e8f0'; circle(c, 0, 0, 13); c.fill();
+      c.fillStyle = '#cbd5e1'; circle(c, 0, 0, 8.5); c.fill();
+      c.fillStyle = '#b45309'; circle(c, -3, -2, 2.2); c.fill(); circle(c, 3, 2, 1.6); c.fill(); c.fillStyle = '#dc2626'; circle(c, 2, -3, 1.4); c.fill();
+    },
+    meat(c) {
+      c.fillStyle = '#7c2d12'; c.beginPath(); c.ellipse(-2, 0, 11, 8, -0.3, 0, TAU); c.fill();
+      c.fillStyle = '#b45309'; c.beginPath(); c.ellipse(-3, -1, 7, 4.5, -0.3, 0, TAU); c.fill();
+      c.fillStyle = '#f8fafc'; rr(c, 6, -2, 9, 4, 2); c.fill(); circle(c, 15, -2, 2.4); c.fill(); circle(c, 15, 2, 2.4); c.fill();
+    },
+    jollof(c) {
+      c.fillStyle = '#f8fafc'; c.beginPath(); c.ellipse(0, 3, 15, 7, 0, 0, TAU); c.fill();
+      c.fillStyle = '#ea580c'; c.beginPath(); c.ellipse(0, 0, 12, 7, 0, Math.PI, 0); c.fill();
+      c.fillStyle = '#fdba74'; for (let i = 0; i < 6; i++) { c.fillRect(-8 + i * 3, -4 + (i % 2) * 2, 1.5, 1.5); }
+      c.fillStyle = '#16a34a'; circle(c, 6, -3, 1.8); c.fill();
+    },
+    vmoney(c, tm) {
+      c.save(); c.rotate(Math.sin(tm * 4) * 0.12);
+      c.fillStyle = '#16a34a'; rr(c, -14, -7, 28, 14, 2); c.fill();
+      c.fillStyle = '#bbf7d0'; rr(c, -11, -4, 22, 8, 2); c.fill();
+      c.fillStyle = '#14532d'; c.font = '900 7px system-ui'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText('₦500', 0, 0.5);
+      c.restore();
+    },
+    remote(c) {
+      c.fillStyle = '#1f2937'; rr(c, -6, -14, 12, 28, 4); c.fill();
+      c.fillStyle = '#ef4444'; circle(c, 0, -9, 2.2); c.fill();
+      c.fillStyle = '#94a3b8'; for (let i = 0; i < 6; i++) { c.fillRect(-3.5 + (i % 2) * 4.5, -3 + Math.floor(i / 2) * 4.5, 2.5, 2.5); }
+    },
+  });
+
+  function drawHomeNpc(c, o, p, tm) {
+    const lookX = (p.x - o.x) / 120, lookY = (p.y - o.y) / 120;
+    c.save(); c.translate(o.x, o.y);
+    if (o.type === 'visitor') SPRITES.visitor(c, tm, { lookX, lookY, look: o.look, walk: o.phase === 'wait' ? 0 : tm * 10 });
+    else SPRITES[o.type](c, o.t, { lookX, lookY, prop: o.phase === 'count' ? 'none' : undefined, mood: o.phase === 'count' ? 'angry' : undefined });
+    c.restore();
+    if (o.type === 'mum') {
+      drawTag(c, o.x, o.y - 62, S.lang === 'pcm' ? 'MAMA' : 'MUMMY', '#f97316', '#fff');
+      if (o.phase === 'count') {
+        const n = Math.min(3, 1 + Math.floor((3.8 - o.cnt) / 1.25));
+        c.save(); c.font = '900 34px Impact, "Arial Black", system-ui'; c.textAlign = 'center'; c.textBaseline = 'middle';
+        c.lineWidth = 6; c.strokeStyle = 'rgba(8,13,26,.85)'; c.strokeText(String(n) + '…', o.x, o.y - 96); c.fillStyle = n === 3 ? '#ff6b6b' : '#ffe066'; c.fillText(String(n) + '…', o.x, o.y - 96);
+        c.restore();
+        speech(c, o.talk, o.x, o.y - 74);
+        c.strokeStyle = 'rgba(255,224,102,.55)'; c.setLineDash([6, 5]); c.lineWidth = 2; c.beginPath(); c.moveTo(p.x, p.y - 10); c.lineTo(o.x, o.y + 10); c.stroke(); c.setLineDash([]);
+      } else if (o.phase === 'chase' || o.phase === 'leave') speech(c, o.talk || pickF(homeMsgs().mumTalk), o.x, o.y - 74);
+    } else if (o.type === 'dad') {
+      drawTag(c, o.x, o.y - 66, S.lang === 'pcm' ? 'PAPA' : 'DADDY', '#7c2d12', '#fff');
+      if (o.phase !== 'warn') speech(c, o.talk || pickF(homeMsgs().dadTalk), o.x, o.y - 78);
+    } else if (o.type === 'sister') {
+      drawTag(c, o.x, o.y - 46, S.lang === 'pcm' ? 'ANTI' : 'BIG SIS', '#a855f7', '#fff');
+      if (o.phase === 'follow') speech(c, o.talk, o.x, o.y - 58);
+    } else if (o.type === 'neighbour') {
+      drawTag(c, o.x, o.y - 58, 'MAMA NGOZI', '#7c3aed', '#fff');
+      speech(c, o.talk, o.x, o.y - 70);
+    } else if (o.type === 'visitor') {
+      drawTag(c, o.x, o.y - 56, 'AUNTY', '#0ea5e9', '#fff');
+      if (o.phase !== 'out') speech(c, o.talk, o.x, o.y - 68);
+      if (o.phase === 'wait' && !o.greeted) {
+        const k = clamp(o.greet / 0.7, 0, 1);
+        c.strokeStyle = 'rgba(255,255,255,.25)'; c.lineWidth = 3; circle(c, o.x, o.y, 34); c.stroke();
+        if (k > 0) { c.strokeStyle = '#19c37d'; c.beginPath(); c.arc(o.x, o.y, 34, -Math.PI / 2, -Math.PI / 2 + k * TAU); c.stroke(); }
+        const tw = clamp(o.wait / 6.5, 0, 1);
+        c.fillStyle = 'rgba(0,0,0,.4)'; rr(c, o.x - 18, o.y + 28, 36, 4, 2); c.fill();
+        c.fillStyle = tw < 0.3 ? '#ff6b6b' : '#ffe066'; rr(c, o.x - 18, o.y + 28, 36 * tw, 4, 2); c.fill();
+      }
+    }
+  }
+  function drawEyes(c, tm) {
+    if (!eyesRelevant()) return;
+    const x = FX1 - 46, y = HUD_SPACE + 118;
+    c.save();
+    c.fillStyle = 'rgba(8,13,26,.75)'; rr(c, x - 38, y - 26, 76, 52, 10); c.fill();
+    c.strokeStyle = G.eyes.open ? '#ff6b6b' : '#19c37d'; c.lineWidth = 2; c.stroke();
+    c.translate(x, y + 4);
+    // Mummy's face peeping (or her back turned)
+    c.fillStyle = '#6b3f1f'; circle(c, 0, -2, 12); c.fill();
+    const H0 = (G.office && G.office.home ? G.office : homeById(S.home)).mum;
+    c.fillStyle = fillOf(c, H0.gele); c.beginPath(); c.ellipse(0, -11, 15, 7, 0, Math.PI, 0); c.fill();
+    if (G.eyes.open) {
+      const lx = clamp((G.player.x - x) / 200, -1, 1) * 1.5;
+      c.fillStyle = '#fff'; c.beginPath(); c.ellipse(-4.5, -2, 3.4, 3.2, 0, 0, TAU); c.ellipse(4.5, -2, 3.4, 3.2, 0, 0, TAU); c.fill();
+      c.fillStyle = '#111'; circle(c, -4.5 + lx, -1.6, 1.7); c.fill(); circle(c, 4.5 + lx, -1.6, 1.7); c.fill();
+      c.strokeStyle = '#2a1608'; c.lineWidth = 1.5; c.beginPath(); c.moveTo(-8, -7); c.lineTo(-2, -5.5); c.moveTo(8, -7); c.lineTo(2, -5.5); c.stroke();
+    } else {
+      c.strokeStyle = '#2a1608'; c.lineWidth = 1.5; c.beginPath(); c.moveTo(-7, -2); c.lineTo(-2, -2); c.moveTo(2, -2); c.lineTo(7, -2); c.stroke();
+      c.fillStyle = '#e2e8f0'; c.font = '900 6px system-ui'; c.textAlign = 'center'; c.fillText('zzz', 12, -12);
+    }
+    c.restore();
+    c.fillStyle = G.eyes.open ? '#ffb3b3' : '#7df0b5'; c.font = '800 7.5px system-ui, Arial'; c.textAlign = 'center'; c.textBaseline = 'middle';
+    c.fillText(G.eyes.open ? t('hm_eyesOpen') : t('hm_eyesShut'), x, y + 21);
+  }
+  function drawHomeOverlay(c, tm) {
+    const p = G.player;
+    if (G.stars > 0) {
+      for (let i = 0; i < 3; i++) {
+        const a = tm * 6 + (i * TAU) / 3;
+        c.fillStyle = '#ffe066'; c.font = '900 12px system-ui'; c.textAlign = 'center'; c.textBaseline = 'middle';
+        c.fillText('★', p.x + Math.cos(a) * 16, p.y - 34 + Math.sin(a) * 5);
+      }
+    }
+    if (G.hideT > 0) {
+      c.save(); c.translate(p.x, p.y + 4);
+      c.fillStyle = '#7a4f2c'; rr(c, -30, -16, 60, 22, 4); c.fill();
+      c.fillStyle = '#e2e8f0'; rr(c, -30, -24, 60, 10, 4); c.fill();
+      c.fillStyle = '#5b3a22'; c.fillRect(-28, 6, 5, 10); c.fillRect(23, 6, 5, 10);
+      c.restore();
+      speech(c, t('hm_underbed'), p.x, p.y - 34, '#ff8fb1');
+    }
+    if (G.gistT > 0) speech(c, t('hm_gistF'), p.x, p.y - 36, '#c7d2fe');
+    const M = G.mission;
+    if (M && M.carry && M.id === 'water') { c.save(); c.translate(p.x + 13, p.y - 2); c.scale(0.7, 0.7); SPRITES.keg(c, tm); c.restore(); }
+  }
+
+  /* ---------- Menu, world switch, houses ---------- */
+  function setWorld(w, quiet) {
+    if (w === 'office' && officeClosed()) {
+      if (!quiet) { toast(t('hm_closed'), 'info', 3000, 'home'); Sound.play('warn'); }
+      w = 'home';
+    }
+    const changed = S.world !== w;
+    S.world = w;
+    store.set('ow_world', w);
+    document.body.classList.toggle('is-home', w === 'home');
+    if (Music && Music.setWorld) Music.setWorld(w);
+    if (changed) T('world', { w });
+    applyWorldText();
+    refreshMenu();
+  }
+  function applyWorldText() {
+    const home = S.world === 'home';
+    document.querySelectorAll('[data-home]').forEach((el) => {
+      if (el.dataset.en === undefined) el.dataset.en = el.innerHTML;
+      const k = el.dataset.i18n;
+      el.innerHTML = home ? (S.lang === 'pcm' && el.dataset.homePcm ? el.dataset.homePcm : el.dataset.home) : (S.lang === 'pcm' && k && UI_PCM[k] ? UI_PCM[k] : el.dataset.en);
+    });
+    document.body.classList.toggle('is-home', home);
+    for (const b of document.querySelectorAll('#world-switch [data-world]')) b.setAttribute('aria-pressed', String(b.dataset.world === S.world));
+    const closed = officeClosed();
+    const ws = $('world-switch');
+    if (ws) {
+      ws.querySelector('[data-world="office"]').classList.toggle('is-closed', closed);
+      $('ws-office-note').textContent = closed ? t('hm_closedNote') : t('hm_openNote');
+      $('ws-home-note').textContent = t('hm_everyDay');
+    }
+  }
+  function renderHomes() {
+    const box = $('office-list'); box.innerHTML = '';
+    for (const o of HOMES) {
+      const open = homeUnlocked(o), on = S.home === o.id;
+      const card = document.createElement('div');
+      card.className = 'office-opt' + (on ? ' is-on' : '') + (open ? '' : ' is-locked');
+      card.style.setProperty('--oc', o.accent); card.style.setProperty('--ow', o.wall); card.style.setProperty('--of', o.floor);
+      const cv = document.createElement('canvas'); cv.width = 72; cv.height = 84; cv.className = 'office-boss';
+      card.appendChild(cv);
+      const body = document.createElement('div'); body.className = 'office-body';
+      body.innerHTML = '<strong></strong><small class="oc-city"></small><p class="oc-blurb"></p><p class="oc-meta"></p>';
+      body.querySelector('strong').textContent = o.name;
+      body.querySelector('.oc-city').textContent = o.city;
+      body.querySelector('.oc-blurb').textContent = o.blurb;
+      body.querySelector('.oc-meta').textContent = open ? (on ? t('hm_houseHere') : t('hm_houseOpen')) : (o.xmas ? t('hm_houseVillage') : t('hm_houseLock'))(fmtNum(o.score), fmtNum(stats.homeTotal || 0));
+      card.appendChild(body);
+      const b = document.createElement('button');
+      b.type = 'button'; b.className = 'btn ' + (on ? 'btn-ghost' : 'btn-primary') + ' btn-small'; b.dataset.house = o.id;
+      b.disabled = !open || on;
+      b.innerHTML = ico(open ? (on ? 'check' : 'home') : 'lock') + '<span></span>';
+      b.lastChild.textContent = on ? t('hm_houseHereBtn') : open ? t('hm_houseGo') : t('locked');
+      card.appendChild(b);
+      box.appendChild(card);
+      const c = cv.getContext('2d'); const r = Math.min(window.devicePixelRatio || 1, 2);
+      cv.width = 72 * r; cv.height = 84 * r; c.setTransform(r, 0, 0, r, 0, 0);
+      c.fillStyle = o.floor; c.fillRect(0, 0, 72, 84);
+      c.translate(36, 54);
+      const keep = G.office; G.office = o; SPRITES.mum(c, 0.3, { s: 1.0, lookY: 0.3, mood: 'happy', prop: 'none' }); G.office = keep;
+    }
+  }
+  function setHouse(id) {
+    const o = homeById(id);
+    if (!homeUnlocked(o)) return;
+    S.home = o.id; store.set('ow_home', o.id);
+    T('setting', { k: 'house', v: o.id });
+    renderHomes(); refreshMenu();
+    toast(o.name + ' · ' + o.city, 'good', 1800, 'home');
+  }
+  function homeNewlyUnlocked(before) { return HOMES.filter((h) => homeUnlocked(h) && !before.includes(h.id)); }
+
+  /* ---------- Home badges ---------- */
+  BADGES.push(
+    { id: 'errandpikin', ico: 'bucket', name: 'Errand pikin', desc: (n) => `Finish ${fmtNum(n)} errands for Mummy`, stat: 'errands', tiers: [5, 25, 100, 300, 800], v6: true, home: true },
+    { id: 'wellbrought', ico: 'handshake', name: 'Well brought up', desc: (n) => `Greet ${fmtNum(n)} visitors`, stat: 'greets', tiers: [5, 30, 100, 300, 800], v6: true, home: true },
+    { id: 'slipperdodger', ico: 'shoe', name: 'Slipper no fit catch me', desc: (n) => `Escape Mummy ${fmtNum(n)} times`, stat: 'mumEscapes', tiers: [5, 25, 80, 250, 600], v6: true, home: true },
+    { id: 'correctchange', ico: 'coins', name: 'Correct change', desc: (n) => (n === 1 ? 'Bring back the full change' : `Bring back the full change ${fmtNum(n)} times`), stat: 'fullChange', tiers: [1, 10, 40, 120, 300], v6: true, home: true },
+    { id: 'weekender', ico: 'home', name: 'Weekend at home', desc: (n) => `Play ${fmtNum(n)} days of Home Wahala`, stat: 'homeGames', tiers: [3, 15, 50, 150, 400], v6: true, home: true },
+  );
+
   /* ==================== Update ==================== */
   function updatePlayer(dt) {
     const p = G.player;
@@ -4883,7 +6126,7 @@
     const coffeeT = [0, 20, 35][Math.min(2, (G.upg && G.upg.coffee) || 0)];
     const zone = G.zones && G.zones.length ? zoneAt(p.x, p.y) : null;
     const slip = zone && zone.kind === 'wet';
-    const spd = CONFIG.PLAYER_SPEED * (p.fuel > 0 ? 1.45 : 1) * (1 + 0.05 * ((G.upg && G.upg.chair) || 0)) * (G.phase === 'office' && G.time < coffeeT ? 1.2 : 1) * (zone && zone.kind === 'puddle' ? 0.55 : 1);
+    const spd = CONFIG.PLAYER_SPEED * (p.fuel > 0 ? 1.45 : 1) * (1 + 0.05 * ((G.upg && G.upg.chair) || 0)) * (G.phase === 'office' && G.time < coffeeT ? 1.2 : 1) * (zone && zone.kind === 'puddle' ? 0.55 : 1) * (G.world === 'home' ? homeSpeed() : 1);
     if (zone && Math.hypot(p.vx, p.vy) > 40 && Math.random() < (hiQ() ? 0.5 : 0.2)) G.particles.push({ x: p.x + frand(-10, 10), y: p.y + 18, vx: frand(-50, 50), vy: frand(-70, -20), life: 0.4, max: 0.4, color: '#9fd8ff', size: frand(2, 3.5) });
     if (S.look.trail && G.state === 'playing' && Math.hypot(p.vx, p.vy) > 60) {
       G.trailT = (G.trailT || 0) - (1 / 60);
@@ -4926,19 +6169,23 @@
 
   function hurt(o) {
     const p = G.player;
-    const dmg = o.type === 'boss' ? 2 : 1;
+    const dmg = o.type === 'boss' || o.type === 'mum' ? 2 : o.type === 'dad' ? Math.max(2, G.lives) : 1;
     G.lives = Math.max(0, G.lives - dmg);
     G.lastHit = o.type === 'boss' ? 'oga' : o.convoy ? 'convoy' : o.type;
+    if (G.world === 'home') G.stars = 1.4;
     missionProgress('hit');
     G.streak = 0;
     p.invuln = 1.6;
-    G.shake = o.type === 'boss' ? 18 : 11;
+    G.shake = o.type === 'boss' || o.type === 'mum' || o.type === 'dad' ? 18 : 11;
     G.flash = 0.25;
     if (G.black) G.black.hit = true;
     burst(p.x, p.y, COLORS.red, 18, 200);
     floater(dmg > 1 ? t('lives2') : t('life1'), p.x, p.y - 40, '#ff8a8e', 16);
-    toast(msgs().hit[o.type] || (o.type === 'query' ? t('query') : o.type === 'driver' ? t('driverComing') : 'Wahala!'), 'bad', 1800);
+    if (G.world === 'home') toast((o.type === 'mum' ? pickF(homeMsgs().lecture) : homeMsgs().hit[o.type]) || 'Wahala!', 'bad', 1800);
+    else toast(msgs().hit[o.type] || (o.type === 'query' ? t('query') : o.type === 'driver' ? t('driverComing') : 'Wahala!'), 'bad', 1800);
     if (o.type === 'boss') say('boss_caught');
+    else if (o.type === 'mum') say('h_caught');
+    else if (o.type === 'dad') say('h_dad_caught');
     Sound.play('hit');
     if (navigator.vibrate) { try { navigator.vibrate(o.type === 'boss' ? [60, 40, 90] : 60); } catch (e) { /* ignore */ } }
     if (G.lives <= 0 && !G.revived && G.upg === S.upg && S.upg.sick > 0) {
@@ -5070,13 +6317,15 @@
       }
       o.rot += (o.vr || 0) * dt;
 
-      if (!['printer', 'colleague', 'boss', 'driver', 'hr', 'aunty', 'agbero', 'query'].includes(o.type) && o.y > H + 50) remove = true;
+      if (!o.npc && !['printer', 'colleague', 'boss', 'driver', 'hr', 'aunty', 'agbero', 'query'].includes(o.type) && o.y > H + 50) remove = true;
 
       const active = !o.hitDone && (!o.boss || bossActive(o));
       if (!remove && active && G.state === 'playing') {
-        const hit = o.type === 'printer' || o.type === 'danfo' || o.type === 'queue' ? collidesRect(o, p) : collidesCircle(o, p);
+        const hit = o.type === 'printer' || o.type === 'danfo' || o.type === 'queue' || o.type === 'broom' ? collidesRect(o, p) : collidesCircle(o, p);
         if (hit) {
-          if (o.commute) {
+          if (o.npc || o.hobs) {
+            if (homeCollide(o)) remove = true;
+          } else if (o.commute) {
             if (p.invuln <= 0) hitCommute(o);
           } else if (o.bump) {
             if (p.leave > 0) { bonk(o); remove = true; } else if (p.invuln <= 0) bumpPlayer(o);
@@ -5132,7 +6381,7 @@
       }
       if (it.y > H + 40) { G.items.splice(i, 1); continue; }
       if (G.state !== 'playing') continue;
-      if (Math.hypot(it.x - p.x, it.y - p.y) < it.r + p.r + 6) {
+      if (!(it.fixed && it.t < 0.6) && Math.hypot(it.x - p.x, it.y - p.y) < it.r + p.r + 6) {
         G.items.splice(i, 1);
         collect(it);
       }
@@ -5140,6 +6389,7 @@
   }
 
   function collect(it) {
+    if (ITEMS[it.type] && ITEMS[it.type].home) return collectHome(it);
     if (it.type === 'sticker') { G.collected++; stats.stickerTotal = (stats.stickerTotal || 0) + 1; collectSticker(it); return; }
     const d = ITEMS[it.type];
     const p = G.player;
@@ -5254,14 +6504,18 @@
         say('level');
         if (G.level <= 12 || G.level % 5 === 0) T('level_up', { level: G.level, mode: G.mode });
         const later = (k) => setTimeout(() => G.state === 'playing' && toast(t(k), 'info'), 1600);
-        if (G.level === OBSTACLES.deadline.unlock) later('deadlines');
-        if (G.level === OBSTACLES.printer.unlock) later('printers');
-        if (G.level === OBSTACLES.colleague.unlock) later('colleague');
+        if (G.world === 'home') homeLevelNote(G.level);
+        else {
+          if (G.level === OBSTACLES.deadline.unlock) later('deadlines');
+          if (G.level === OBSTACLES.printer.unlock) later('printers');
+          if (G.level === OBSTACLES.colleague.unlock) later('colleague');
+        }
       }
       addScore(DIFFICULTY.survivalPerSecond * Math.min(G.level, 25) * dt * (evIs('audit') ? 2 : 1) * (evIs('independence') ? 2 : 1) * (evIs('hq') ? (G.idleT > 0.9 ? 0 : 1.5) : 1));
       G.scroll += floorSpeed() * dt;
 
       updatePlayer(dt);
+      if (G.world === 'home') homeStep(dt);
       tickMeeting(dt);
       if (G.meet) { G.spawnT = Math.max(G.spawnT, 0.6); G.bossT = Math.max(G.bossT, 3); G.blackT = Math.max(G.blackT, 3); G.eventT = Math.max(G.eventT || 0, 3); }
       tickHazards(dt);
@@ -5293,11 +6547,12 @@
       }
       G.msgT -= dt;
       if (G.msgT <= 0) {
-        let m = pickF(msgs().ambient);
-        if (m === G.lastMsg) m = pickF(msgs().ambient);
+        const AMB = G.world === 'home' ? homeMsgs().ambient : msgs().ambient;
+        let m = pickF(AMB);
+        if (m === G.lastMsg) m = pickF(AMB);
         G.lastMsg = m;
         if (!G.black && !G.event) {
-          if (S.voices && Voice && Math.random() < 0.6) {
+          if (G.world !== 'home' && S.voices && Voice && Math.random() < 0.6) {
             const id = 'a' + (1 + ((Math.random() * 8) | 0));
             const line = Voice.LINES[id];
             toast(line[S.lang] || line.en, 'info', 2200);
@@ -5494,8 +6749,8 @@
       for (let k = -1; k <= Math.ceil(H / SEGB) + 1; k++) {
         const y = k * SEGB + offB;
         const id = k - baseB;
-        for (let x = FX0 - 70; x > -40; x -= 90) drawDecor(c, hash(id * 3.1 + x) > 0.85 ? 'plant' : 'desk', x, y, 0, tm);
-        for (let x = FX1 + 70; x < W + 40; x += 90) drawDecor(c, hash(id * 5.7 + x) > 0.85 ? 'plant' : 'desk', x, y, 0, tm);
+        for (let x = FX0 - 70; x > -40; x -= 90) drawDecor(c, hash(id * 3.1 + x) > 0.85 ? 'plant' : OFF.home ? (hash(id * 1.7 + x) > 0.5 ? 'drum' : 'bench') : 'desk', x, y, 0, tm);
+        for (let x = FX1 + 70; x < W + 40; x += 90) drawDecor(c, hash(id * 5.7 + x) > 0.85 ? 'plant' : OFF.home ? (hash(id * 2.3 + x) > 0.5 ? 'mortar' : 'drum') : 'desk', x, y, 0, tm);
       }
       c.globalAlpha = 1;
       c.fillStyle = OFF.edge;
@@ -5505,7 +6760,7 @@
     const TILE = 64;
     const off = G.scroll % TILE;
     const cx = (FX0 + FX1) / 2;
-    const CARPET = OFF.id === 'agency' ? carpetPat : carpetFor(OFF);
+    const CARPET = OFF.home ? homeFloor(OFF) : OFF.id === 'agency' ? carpetPat : carpetFor(OFF);
     if (CARPET) {
       c.save();
       c.beginPath(); c.rect(FX0, 0, FX1 - FX0, H); c.clip();
@@ -5680,6 +6935,8 @@
     const c = ctx;
     const tm = G.t;
     const playingish = G.player && (G.state === 'playing' || G.state === 'paused' || G.state === 'dying' || G.state === 'over' || (G.state === 'board' && boardReturn === 'over'));
+    RENDER_HOME = playingish ? G.world === 'home' : S.world === 'home';
+    IN_RENDER = true;
     const hour = playingish ? (G.phase === 'commute' ? 7.8 : officeClock(G.time || 0).hour) : 8 + ((tm / 6) % 12);
     c.setTransform(scale * dpr, 0, 0, scale * dpr, 0, 0);
     c.save();
@@ -5697,6 +6954,12 @@
       let bossNear = false;
       for (const o of G.obstacles) {
         if (o.warn > 0 && (o.type !== 'boss' || o.phase === 'warn')) continue;
+        if (o.npc) {
+          if (o.phase === 'warn') continue;
+          drawHomeNpc(c, o, p, tm);
+          if (o.boss && o.phase !== 'leave') bossNear = true;
+          continue;
+        }
         if (o.type === 'driver' || o.type === 'hr' || o.type === 'aunty' || o.type === 'agbero') {
           drawNewBoss(c, o, p, tm);
           if (o.boss && o.phase !== 'warn') bossNear = true;
@@ -5722,10 +6985,12 @@
           continue;
         }
         c.rotate(o.rot || 0);
+        if (o.hobs && o.dir) c.scale(o.dir, 1);
         SPRITES[o.type](c, o.t);
         c.restore();
       }
       if (G.ghost) drawGhost(c, tm);
+      if (G.world === 'home') drawEyes(c, tm);
       if (G.meet) drawMeeting(c, tm);
       if (G.gust) drawGust(c, tm);
       // player
@@ -5743,7 +7008,8 @@
         const mood = G.state === 'dying' ? 'worried' : p.leave > 0 ? 'cool' : bossNear || G.black ? 'worried' : 'happy';
         SPRITES.player(c, tm, { walk: p.walk, mood, lookX: p.vx / CONFIG.PLAYER_SPEED, lookY: p.vy / CONFIG.PLAYER_SPEED - 0.4 });
         c.restore();
-        if (p.leave > 0) speech(c, t('onLeave'), p.x, p.y - 36, '#3ee08f');
+        if (p.leave > 0) speech(c, G.world === 'home' ? t('hm_grandmaLabel') : t('onLeave'), p.x, p.y - 36, '#3ee08f');
+        if (G.world === 'home') drawHomeOverlay(c, tm);
       }
     } else {
       // attract mode: the worker strolling up the corridor
@@ -5797,6 +7063,7 @@
       c.fillStyle = `rgba(229,72,77,${G.flash * 0.9})`;
       c.fillRect(0, 0, W, H);
     }
+    IN_RENDER = false;
   }
 
   /* ==================== Main loop + auto graphics ==================== */
@@ -5852,11 +7119,12 @@
       u.searchParams.set('beat', String(Math.floor(G.scoreF)));
       if (S.name) u.searchParams.set('by', S.name);
       if (G.mode === 'daily') { u.searchParams.set('mode', 'daily'); u.searchParams.set('d', G.dailyKey); }
+      if (G.world === 'home') u.searchParams.set('w', 'home');
       return u.toString();
     } catch (e) { return base; }
   }
   function shareText() {
-    let s = t('shareText')(fmtTime(G.time), fmtNum(G.scoreF), G.mode === 'daily');
+    let s = G.world === 'home' ? t('hm_shareText')(fmtTime(G.time), fmtNum(G.scoreF)) : t('shareText')(fmtTime(G.time), fmtNum(G.scoreF), G.mode === 'daily');
     const tg = activeTarget();
     if (tg && G.challengeBeaten) s += t('shareBeat')(tg.by, fmtNum(tg.score));
     return s;
@@ -5930,7 +7198,7 @@
         // title
         c.textAlign = 'center'; c.textBaseline = 'alphabetic';
         c.font = `900 110px ${DISPLAY}`; c.fillStyle = '#ffffff';
-        c.fillText('OFFICE', Wc / 2, 200);
+        c.fillText(G.world === 'home' ? 'HOME' : 'OFFICE', Wc / 2, 200);
         c.save(); c.translate(Wc / 2, 380); c.rotate(-0.04);
         c.font = `900 210px ${DISPLAY}`;
         c.fillStyle = '#17203a'; c.fillText('WAHALA', 14, 14);
@@ -5939,7 +7207,7 @@
         c.restore();
         // worker
         c.save(); c.translate(Wc / 2, 566);
-        SPRITES.player(c, 0.4, { walk: 0.6, mood: G.newBadges && G.newBadges.length ? 'cool' : 'happy', s: 4.6, lookY: 0.2 });
+        SPRITES.player(c, 0.4, { walk: 0.6, mood: G.newBadges && G.newBadges.length ? 'cool' : 'happy', s: 4.6, lookY: 0.2, kid: G.world === 'home' });
         c.restore();
         // appraisal card
         const x0 = 90, y0 = 708, cw = 900;
@@ -5950,9 +7218,9 @@
         c.fillStyle = '#fbfaf6'; rr(c, x0, y0, cw, chh, 44); c.fill();
         c.textAlign = 'left';
         c.fillStyle = '#55607a'; c.font = '700 30px system-ui, Arial, sans-serif';
-        c.fillText('Wahala & Sons Ltd.', x0 + 56, y0 + 80);
+        c.fillText(G.world === 'home' ? 'Home Wahala · ' + (G.office ? G.office.city : '') : 'Wahala & Sons Ltd.', x0 + 56, y0 + 80);
         c.fillStyle = '#17203a'; c.font = `900 60px ${DISPLAY}`;
-        c.fillText('PERFORMANCE APPRAISAL', x0 + 56, y0 + 152, cw - 112);
+        c.fillText(G.world === 'home' ? "MUMMY'S REPORT" : 'PERFORMANCE APPRAISAL', x0 + 56, y0 + 152, cw - 112);
         c.fillRect(x0 + 56, y0 + 178, cw - 112, 6);
         // stamp
         c.save(); c.translate(x0 + cw - 150, y0 + 6); c.rotate(0.1);
@@ -5978,7 +7246,7 @@
         // stats
         const ck = officeClock(G.time);
         const cells = [
-          ['Time survived', fmtTime(G.time)], ['Clocked out', ck.text + ck.ap],
+          ['Time survived', fmtTime(G.time)], [G.world === 'home' ? 'Bedtime' : 'Clocked out', ck.text + ck.ap],
           ['Level reached', String(G.level)], ['Longest streak', String(G.maxStreak)],
         ];
         cells.forEach((cell, i) => {
@@ -6025,7 +7293,7 @@
       const by = cleanName(q.get('by')) || t('colleagueAnon');
       const daily = q.get('mode') === 'daily';
       const d = (q.get('d') || '').replace(/[^0-9-]/g, '').slice(0, 10);
-      return { score: beat, by, daily, d };
+      return { score: beat, by, daily, d, home: q.get('w') === 'home' };
     } catch (e) { return null; }
   }
   function clearChallenge() {
@@ -6156,7 +7424,7 @@
   /* ==================== Menu, wardrobe, settings ==================== */
   function rankFor(score) { let r = RANKS[0][1]; for (const [min, name] of RANKS) if (score >= min) r = name; return r; }
 
-  function drawPortrait(cv, charId, outfitId, zoomed, look) {
+  function drawPortrait(cv, charId, outfitId, zoomed, look, kid) {
     const r = Math.min(window.devicePixelRatio || 1, 3);
     // remember the CSS size once, so redrawing while hidden doesn't grow the canvas
     if (!cv.dataset.w) { cv.dataset.w = cv.clientWidth || parseInt(cv.getAttribute('width'), 10) || 64; cv.dataset.h = cv.clientHeight || parseInt(cv.getAttribute('height'), 10) || 76; }
@@ -6171,9 +7439,9 @@
       // zoom out a little for tall hair and hats so they aren't cropped
       const pp = playerParams(charId, outfitId, {}, look);
       const tall = pp.cap === 'gele' || pp.cap === 'santa' ? 1.3 : pp.cap || pp.hair === 'afro' || pp.hair === 'puff' ? 1.16 : 1;
-      const s = h / (46 * tall);
-      c.translate(w / 2, h * 0.5 + 22 * s + (tall - 1) * h * 0.32);
-      SPRITES.player(c, 0, { char: charId, outfit: outfitId, walk: 0, mood: 'happy', s, lookY: 0.2, look });
+      const s = h / (46 * tall) / (kid ? 0.84 : 1);
+      c.translate(w / 2, h * 0.5 + 22 * s * (kid ? 0.84 : 1) + (tall - 1) * h * 0.32);
+      SPRITES.player(c, 0, { char: charId, outfit: outfitId, walk: 0, mood: 'happy', s, lookY: 0.2, look, kid: !!kid });
     } else {
       const s = h / 80;
       c.translate(w / 2, h * 0.62);
@@ -6183,16 +7451,20 @@
   }
 
   function refreshMenu() {
-    ui.menuBest.textContent = fmtNum(G.best);
+    if (S.world === 'office' && officeClosed()) { S.world = 'home'; applyWorldText(); }
+    const HOMEW = S.world === 'home';
+    document.body.classList.toggle('is-home', HOMEW);
+    ui.menuBest.textContent = fmtNum(HOMEW ? homeBestV() : G.best);
     ui.menuName.textContent = S.name || t('newStaff');
     const ri = Math.max(RANKS.findIndex((r) => r[1] === rankFor(G.best)), stats.weeks > 0 ? Math.min(RANKS.length - 1, stats.weeks + 1) : 0);
-    ui.menuRank.textContent = myTitle() || RANKS[ri][1];
+    ui.menuRank.textContent = HOMEW ? homeRank(homeBestV()) : myTitle() || RANKS[ri][1];
     ui.menuName.classList.toggle('is-gold', myFlair().gold);
     ui.menuBadges.textContent = unlocked.size + '/' + BADGES.length;
     const wl = weeklyList(), wd = wl.filter((c) => c.done).length;
     $('weekly-card-text').textContent = t('weeklyCard')(wd, weekDaysLeft());
-    { const off = officeById(S.office); $('office-name').textContent = off.name + ' · ' + off.city.split(',').pop().trim();
-      const nOpen = unlockedIds().length; $('office-more').textContent = t('officeCount')(nOpen, OFFICES.length);
+    { const off = HOMEW ? homeById(S.home) : officeById(S.office); $('office-name').textContent = off.name + ' · ' + off.city.split(',').pop().trim();
+      $('office-more').textContent = HOMEW ? t('hm_houseCount')(homeUnlockedIds().length, HOMES.length) : t('officeCount')(unlockedIds().length, OFFICES.length);
+      $('mode-row').hidden = HOMEW;
       $('office-card').style.setProperty('--oc', off.accent);
       const pv = attPreview(); $('att-card-text').textContent = pv.signed ? t('attCardDone')(ATT.streak, fmtNum(ATT_REWARDS[pv.day % 7])) : t('attCard')(pv.day, fmtNum(ATT_REWARDS[pv.day - 1]));
       $('att-card').classList.toggle('is-ready', !pv.signed); }
@@ -6203,10 +7475,10 @@
     const inv = LG.invite;
     $('invite-card').hidden = !inv;
     if (inv) $('invite-text').innerHTML = t('leagueInvite')(esc(inv.name));
-    ui.fridayNote.hidden = !isFridayNow();
+    ui.fridayNote.hidden = !isFridayNow() || HOMEW;
     const db = dailyBest();
     ui.dailySub.textContent = db > 0 ? t('dailyBest')(fmtNum(db)) : t('dailyNone');
-    drawPortrait(ui.idPhoto, S.char, S.outfit, true);
+    drawPortrait(ui.idPhoto, S.char, S.outfit, true, undefined, HOMEW);
     const c = G.challenge;
     ui.challengeCard.hidden = !c;
     if (c) ui.challengeText.innerHTML = t('challengeCard')(c.by, fmtNum(c.score), c.daily);
@@ -6325,6 +7597,7 @@
       const k = el.dataset.i18n;
       el.innerHTML = S.lang === 'pcm' && UI_PCM[k] ? UI_PCM[k] : el.dataset.en;
     });
+    applyWorldText();
     refreshMenu();
   }
 
@@ -6421,8 +7694,8 @@
       c.clearRect(0, 0, size, size);
       c.save();
       c.translate(size / 2, size / 2);
-      const fit = { boss: 0.42, colleague: 0.5, meeting: 0.34, printer: 0.48, driver: 0.46, hr: 0.44, aunty: 0.4, taskdesk: 0.46 }[kind] || 0.72;
-      if (['boss', 'colleague', 'driver', 'hr', 'aunty'].includes(kind)) c.translate(0, kind === 'aunty' ? 5 : 3);
+      const fit = { boss: 0.42, colleague: 0.5, meeting: 0.34, printer: 0.48, driver: 0.46, hr: 0.44, aunty: 0.4, taskdesk: 0.46, mum: 0.36, sister: 0.5, neighbour: 0.4, visitor: 0.4, dad: 0.36, broom: 0.36, grandma: 0.62 }[kind] || 0.72;
+      if (['boss', 'colleague', 'driver', 'hr', 'aunty', 'mum', 'sister', 'neighbour', 'visitor', 'dad'].includes(kind)) c.translate(0, ['aunty', 'mum', 'neighbour', 'visitor', 'dad'].includes(kind) ? 6 : 3);
       c.scale(fit, fit);
       if (kind === 'boss') SPRITES.boss(c, 0, { s: 1.28 });
       else SPRITES[kind](c, 0.3);
@@ -6432,7 +7705,7 @@
   }
 
   /* ==================== Wire up ==================== */
-  $('btn-play').addEventListener('click', () => startGame('normal'));
+  $('btn-play').addEventListener('click', () => startGame(S.world === 'home' ? 'home' : 'normal'));
   $('btn-daily').addEventListener('click', () => startGame('daily'));
   $('btn-next-song').addEventListener('click', () => { if (Music && Music.next) { Music.next(); syncNowPlaying(); T('setting', { k: 'next_song', v: Music.songName }); } });
   $('btn-again').addEventListener('click', () => { saveNameFrom(ui.playerName); replay(); });
@@ -6506,7 +7779,8 @@
   $('btn-shop').addEventListener('click', () => openSide('shop'));
   $('btn-leagues').addEventListener('click', () => openSide('leagues'));
   $('office-card').addEventListener('click', () => openSide('offices'));
-  $('office-list').addEventListener('click', (e) => { const b = e.target.closest('[data-office]'); if (b && !b.disabled) setOffice(b.dataset.office); });
+  $('office-list').addEventListener('click', (e) => { const b = e.target.closest('[data-office]'); if (b && !b.disabled) setOffice(b.dataset.office); const h = e.target.closest('[data-house]'); if (h && !h.disabled) setHouse(h.dataset.house); });
+  $('world-switch').addEventListener('click', (e) => { const b = e.target.closest('[data-world]'); if (b) { setWorld(b.dataset.world); Sound.play('near'); } });
   $('att-card').addEventListener('click', () => openSide('register'));
   $('btn-sign').addEventListener('click', signRegister);
   $('btn-desk').addEventListener('click', () => openSide('desk'));
@@ -6625,6 +7899,7 @@
   setTimeout(() => { if (G.state === 'menu' && stats.games > 0 && !attPreview().signed && !new URLSearchParams(location.search).has('debug')) openSide('register'); }, 900);
   loadAds();
   if (Voice) { Voice.init(); Voice.lang = S.lang; Voice.enabled = S.voices; }
+  if (Music && Music.setWorld) Music.setWorld(S.world);
   buildGraphics();
   syncMuteUi();
   resize();
@@ -6651,6 +7926,7 @@
       SPRITES, officeClock, setQuality, get quality() { return quality; }, Sound, Music,
       OFFICES, officeUnlocked, setOffice, renderOffices, curOffice, spawnHazard, startMission, endMission, missionProgress, startMeeting, MISSIONS,
       attPreview, signRegister, renderRegister, get ATT() { return ATT; }, seasonXp, renderSeason, get SEASON() { return SEASON; }, grantSticker, STICKERS, MYSTICK, renderAlbum,
+      HOMES, setWorld, setHouse, spawnMum, spawnDad, spawnSister, spawnNeighbour, spawnVisitor, startHomeErrand, endHomeErrand, startHomeEvent, homeUnlocked, officeClosed, homeBestV, applyWorldText,
       DESK_ITEMS, deskData, renderDesk, viewDesk, HUB, setState, renderStates, myPid, inviteFriend, nudges, renderNudges, setReminders, syncReminderConfig,
     };
   }
