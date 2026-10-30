@@ -1636,3 +1636,6 @@ body.is-home .row-score { background: #7c2d12; }
 .board-list li.in-prizes .s { color: var(--gold-deep); }
 .cup-links a { font-weight: 700; }
 .wi-wa { display: flex; width: 100%; justify-content: center; align-items: center; gap: 8px; }
+.cup-share { margin-top: 8px; }
+body.is-home .cup-share { background: #ea580c; color: #fff; box-shadow: 0 4px 0 #9a3412; }
+.wi-share { margin-top: 8px; }

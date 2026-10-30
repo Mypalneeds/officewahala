@@ -127,6 +127,11 @@
     .cupx .wait { color: #fde68a; font-weight: 700; font-size: .82rem; }
     .cupx .s { font-weight: 800; font-variant-numeric: tabular-nums; }
     #live-cups:empty::before, #past-cups:empty::before { content: "Loading…"; color: #55607a; }
+    .cupx .sp { display: inline-block; margin: 0 0 10px; padding: 3px 10px; border-radius: 99px; background: rgba(245,179,1,.18); color: #f5b301; font-weight: 800; font-size: .8rem; }
+    .cupx .sp a { color: #f5b301; }
+    .cupx .share { margin-top: 10px; display: inline-flex; gap: 6px; align-items: center; border: 0; border-radius: 99px; padding: 8px 14px; background: #f5b301; color: #17203a; font: inherit; font-weight: 800; cursor: pointer; }
+    .sponsors-list { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 10px; }
+    .sponsors-list a, .sponsors-list span { padding: 8px 14px; border-radius: 12px; background: #fff3c4; color: #5a3f00; font-weight: 800; text-decoration: none; }
   </style>
 </head>
 <body>
@@ -154,6 +159,9 @@
     <div id="live-cups"></div>
     <h2 id="past">Past winners</h2>
     <div id="past-cups"></div>
+    <h2 id="sponsors">Our sponsors</h2>
+    <div id="sponsors-list" class="sponsors-list"></div>
+    <p>Want your brand on a Weekly Cup? Sponsors fund the prizes and get their name on the cup card in the game, on every shared cup image and on this page. <a href="https://wa.me/2347066459689?text=I%20want%20to%20sponsor%20a%20Weekly%20Cup%20on%20Office%20Wahala" rel="noopener">Sponsor a Weekly Cup on WhatsApp</a>.</p>
     <h2 id="faq">Questions</h2>
     <section class="faq" aria-label="Weekly Cup questions">
       <details>
@@ -190,6 +198,7 @@
         <a href="/nigerian-office-slang/">Nigerian office slang</a>
         <a href="/about/">About</a>
         <a href="/privacy/">Privacy</a>
+        <a href="https://wa.me/2347066459689?text=I%20want%20to%20sponsor%20a%20Weekly%20Cup%20on%20Office%20Wahala" rel="noopener">Sponsor a Weekly Cup</a>
       </nav>
       <p>Built by <strong>Mmadubuko Micheal</strong>, CEO, <a href="https://www.analaize.com.ng" rel="noopener">Analaize Limited</a>, Lagos. Contact the developer: <a href="tel:+2347066459689">07066459689</a> · <a href="https://wa.me/2347066459689" rel="noopener">WhatsApp</a></p>
       <p>Last updated 2026-10-30.</p>
@@ -204,18 +213,31 @@
     function when(t) { return new Date(t).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' }); }
     function left(ms) { var m = Math.max(0, Math.round(ms / 60000)); if (m < 60) return m + 'm'; var h = Math.floor(m / 60); return h < 48 ? h + 'h ' + (m % 60) + 'm' : Math.floor(h / 24) + 'd ' + (h % 24) + 'h'; }
     var place = function (i) { return ['1st', '2nd', '3rd'][i - 1] || i + 'th'; };
+    function sp(c) { if (!c.sponsor) return ''; return '<p class="sp">Sponsored by ' + (c.sponsorUrl ? '<a href="' + esc(c.sponsorUrl) + '" rel="noopener sponsored" target="_blank">' + esc(c.sponsor) + '</a>' : esc(c.sponsor)) + '</p>'; }
+    function shareBtn(c, done) { return '<button class="share" type="button" data-share="' + esc(c.id) + '" data-name="' + esc(c.name) + '" data-prize="' + esc(c.prizes[0] || '') + '" data-done="' + (done ? 1 : 0) + '">Share this cup</button>'; }
+    document.addEventListener('click', function (e) {
+      var b = e.target.closest('[data-share]'); if (!b) return;
+      var url = b.dataset.done === '1' ? location.origin + '/winners/' : location.origin + '/?cup=' + encodeURIComponent(b.dataset.share);
+      var text = b.dataset.done === '1' ? '🏆 ' + b.dataset.name + ' winners are out on Office Wahala! See who won and join this week\'s cup:' : '🏆 ' + b.dataset.name + ' on Office Wahala: 1st prize ' + b.dataset.prize + '! Free to enter, the highest score wins. Play now:';
+      if (navigator.share) { navigator.share({ title: 'Office Wahala Weekly Cup', text: text, url: url }).catch(function () {}); return; }
+      var full = text + ' ' + url;
+      (navigator.clipboard ? navigator.clipboard.writeText(full) : Promise.reject()).then(function () { b.textContent = 'Link copied!'; }).catch(function () { b.textContent = full; });
+    });
     fetch('/api/cup/health', { cache: 'no-store' }).then(function (r) { return r.json(); }).then(function (h) { if (!h || !h.ok) throw 0; return fetch('/api/cup/winners', { cache: 'no-store' }); }).then(function (r) { if (!r.ok) throw 0; return r.json(); }).then(function (j) {
       var L = document.getElementById('live-cups'), P = document.getElementById('past-cups');
       L.innerHTML = j.live.length ? j.live.map(function (c) {
         return '<section class="cupx ' + esc(c.game) + '"><h3>' + esc(c.name) + '</h3><p class="m">' + (c.game === 'home' ? 'Home Wahala' : 'Office Wahala') + ' · ' +
-          (c.status === 'live' ? 'Live, ends in ' + left(c.end - Date.now()) : 'Starts in ' + left(c.start - Date.now())) + ' · ' + fmt(c.players) + ' players · 1st prize: ' + esc(c.prizes[0]) + '</p><ol>' +
-          (c.top.length ? c.top.map(function (r) { return '<li><b>#' + r.rank + '</b><span>' + esc(r.name) + (S[r.state] ? ' · ' + S[r.state] : '') + (c.prizes[r.rank - 1] ? ' · <small>' + esc(c.prizes[r.rank - 1]) + '</small>' : '') + '</span><span class="s">' + fmt(r.score) + '</span></li>'; }).join('') : '<li><span></span><span>No scores yet. Be the first!</span><span></span></li>') + '</ol></section>';
+          (c.status === 'live' ? 'Live, ends in ' + left(c.end - Date.now()) : 'Starts in ' + left(c.start - Date.now())) + ' · ' + fmt(c.players) + ' players · 1st prize: ' + esc(c.prizes[0]) + '</p>' + sp(c) + '<ol>' +
+          (c.top.length ? c.top.map(function (r) { return '<li><b>#' + r.rank + '</b><span>' + esc(r.name) + (S[r.state] ? ' · ' + S[r.state] : '') + (c.prizes[r.rank - 1] ? ' · <small>' + esc(c.prizes[r.rank - 1]) + '</small>' : '') + '</span><span class="s">' + fmt(r.score) + '</span></li>'; }).join('') : '<li><span></span><span>No scores yet. Be the first!</span><span></span></li>') + '</ol>' + shareBtn(c, false) + '</section>';
       }).join('') : '<p>No cup is running right now. Check back on Monday.</p>';
       P.innerHTML = j.done.length ? j.done.map(function (c) {
-        return '<section class="cupx ' + esc(c.game) + '"><h3>' + esc(c.name) + '</h3><p class="m">Ended ' + when(c.end) + ' · ' + fmt(c.players) + ' players</p><ol>' +
-          (c.winners.length ? c.winners.map(function (w) { return '<li><b>' + place(w.place) + '</b><span>' + esc(w.name) + (S[w.state] ? ' · ' + S[w.state] : '') + ' · ' + esc(w.prize) + ' <small>(' + fmt(w.score) + ')</small></span>' + (w.paid ? '<span class="paid">Paid ✓</span>' : '<span class="wait">Being paid</span>') + '</li>'; }).join('') : '<li><span></span><span>No entries.</span><span></span></li>') + '</ol></section>';
+        return '<section class="cupx ' + esc(c.game) + '"><h3>' + esc(c.name) + '</h3><p class="m">Ended ' + when(c.end) + ' · ' + fmt(c.players) + ' players</p>' + sp(c) + '<ol>' +
+          (c.winners.length ? c.winners.map(function (w) { return '<li><b>' + place(w.place) + '</b><span>' + esc(w.name) + (S[w.state] ? ' · ' + S[w.state] : '') + ' · ' + esc(w.prize) + ' <small>(' + fmt(w.score) + ')</small></span>' + (w.paid ? '<span class="paid">Paid ✓</span>' : '<span class="wait">Being paid</span>') + '</li>'; }).join('') : '<li><span></span><span>No entries.</span><span></span></li>') + '</ol>' + shareBtn(c, true) + '</section>';
       }).join('') : '<p>The first winners will appear here when this week\'s cup ends.</p>';
+      var seen = {}, sps = j.live.concat(j.done).filter(function (c) { if (!c.sponsor || seen[c.sponsor]) return false; seen[c.sponsor] = 1; return true; });
+      document.getElementById('sponsors-list').innerHTML = sps.length ? sps.map(function (c) { return c.sponsorUrl ? '<a href="' + esc(c.sponsorUrl) + '" rel="noopener sponsored" target="_blank">' + esc(c.sponsor) + '</a>' : '<span>' + esc(c.sponsor) + '</span>'; }).join('') : '<span>Your brand here</span>';
     }).catch(function () {
+      document.getElementById('sponsors-list').innerHTML = '<span>Your brand here</span>';
       document.getElementById('live-cups').innerHTML = '<p>Open the game to see this week\'s cup.</p>';
       document.getElementById('past-cups').innerHTML = '';
     });

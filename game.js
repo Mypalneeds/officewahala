@@ -6204,6 +6204,7 @@
       CUP.available = true; CUP.list = j.cups || []; CUP.skew = (j.now || Date.now()) - Date.now();
       refreshCupCard();
       if (G.state === 'cup') renderCup();
+      cupDeepLink();
     }).catch(() => {});
     cupApi('/claims?me=' + encodeURIComponent(S.playerId)).then((j) => { CUP.claims = j.claims || []; renderWinCard(); }).catch(() => {});
   }
@@ -6215,7 +6216,7 @@
     if (!c) return;
     card.classList.toggle('is-home', c.game === 'home');
     card.dataset.status = c.status;
-    $('cup-card-kicker').textContent = t('cup_kicker');
+    $('cup-card-kicker').textContent = t('cup_kicker') + (c.sponsor ? ' · ' + t('cup_sponsor')(c.sponsor) : '');
     $('cup-card-title').textContent = c.name;
     const now = cupNow();
     let sub = '';
@@ -6251,6 +6252,10 @@
         a.addEventListener('click', () => T('cup_claim', { cup: cl.cup, place: cl.place }));
         d.querySelector('.wi-help').textContent = t('cup_claim_help');
       }
+      const sb = document.createElement('button');
+      sb.type = 'button'; sb.className = 'btn btn-ghost btn-small wi-share'; sb.innerHTML = ico('share') + '<span></span>'; sb.lastChild.textContent = t('cup_share_win');
+      sb.addEventListener('click', () => shareWin(cl));
+      d.appendChild(sb);
       box.appendChild(d);
     }
   }
@@ -6354,12 +6359,226 @@
       if (r.triesLeft === 0) $('btn-again').hidden = true;
       const c = CUP.list.find((x) => x.id === L.code);
       if (c) c.me = { rank: r.rank, score: r.best, triesLeft: r.triesLeft };
+      if (c && c.sponsor) msg.textContent += ' · ' + t('cup_sponsor')(c.sponsor);
     } catch (e) { msg.textContent = e.message || t('leagueOffline'); box.classList.add('is-err'); }
     const a = box.querySelector('.ol-actions');
     const vb = document.createElement('button');
     vb.type = 'button'; vb.className = 'btn btn-ghost btn-small'; vb.innerHTML = ico('trophy') + '<span></span>'; vb.lastChild.textContent = t('cup_view');
     vb.addEventListener('click', () => openCup(L.code));
     a.appendChild(vb);
+  }
+
+  /* ---------- Sharing a cup (image + link), and sharing a win ---------- */
+  Object.assign(STR.en, {
+    cup_share: 'Share this cup', cup_share_win: 'Share my win', cup_sharing: 'Making the image…',
+    cup_share_text: (name, prize, game, url) => `🏆 ${name} on ${game === 'home' ? 'Home Wahala' : 'Office Wahala'}: 1st prize ${prize}! Free to enter, the highest score wins. Play now: ${url}`,
+    cup_share_ended: (name, url) => `🏆 ${name} winners are out on Office Wahala! See who won and join this week's cup: ${url}`,
+    cup_share_win_text: (place, prize, name, url) => `I just won ${prize} (${place} place) in the ${name} on Office Wahala! 🏆 Free to enter, your turn: ${url}`,
+    cup_share_done: 'Link copied with the image saved. Post it in your group chats!', cup_share_copied: 'Cup link copied. Paste it in your group chats!',
+  });
+  Object.assign(STR.pcm, {
+    cup_share: 'Share this cup', cup_share_win: 'Show your win',
+    cup_share_text: (name, prize, game, url) => `🏆 ${name} for ${game === 'home' ? 'Home Wahala' : 'Office Wahala'}: 1st prize na ${prize}! E free, highest score go win. Come play: ${url}`,
+    cup_share_win_text: (place, prize, name, url) => `I just win ${prize} (${place} place) for ${name} for Office Wahala! 🏆 E free, your turn: ${url}`,
+  });
+  const cupLink = (id) => { const base = shareBase() || CONFIG.SHARE_URL || location.origin; try { const u = new URL(base); u.search = ''; u.searchParams.set('cup', id); return u.toString(); } catch (e) { return base; } };
+  const winnersLink = () => (shareBase() || CONFIG.SHARE_URL || location.origin).replace(/\/$/, '') + '/winners/';
+  async function cupWinners(c) {
+    try {
+      const r = await fetch(CUP_API + '/winners', { cache: 'no-store' });
+      const j = await r.json();
+      const x = (j.done || []).find((d) => d.id === c.id);
+      return x ? x.winners : [];
+    } catch (e) { return []; }
+  }
+  // 1080 x 1920 story-sized image: the cup, its prizes and the leaders (or the winners)
+  function makeCupImage(c, opts = {}) {
+    return new Promise((resolve, reject) => {
+      try {
+        const Wc = 1080, Hc = 1920;
+        const home = c.game === 'home';
+        const cv = document.createElement('canvas'); cv.width = Wc; cv.height = Hc;
+        const x = cv.getContext('2d');
+        const DISPLAY = 'Impact, "Arial Black", "Arial Narrow Bold", system-ui, sans-serif';
+        const BODY = 'system-ui, Arial, sans-serif';
+        const ACC = home ? '#ea580c' : '#008751', DEEP = home ? '#7c2d12' : '#17203a';
+        // background
+        const bg = x.createLinearGradient(0, 0, 0, Hc);
+        bg.addColorStop(0, home ? '#2a160b' : '#0d1526'); bg.addColorStop(1, home ? '#120a05' : '#060b16');
+        x.fillStyle = bg; x.fillRect(0, 0, Wc, Hc);
+        x.strokeStyle = home ? 'rgba(255,170,90,.06)' : 'rgba(120,160,255,.06)'; x.lineWidth = 3;
+        for (let i = 0; i < Wc; i += 120) { x.beginPath(); x.moveTo(i, 0); x.lineTo(i, Hc); x.stroke(); }
+        for (let i = 0; i < Hc; i += 120) { x.beginPath(); x.moveTo(0, i); x.lineTo(Wc, i); x.stroke(); }
+        const glow = x.createRadialGradient(Wc / 2, 420, 30, Wc / 2, 420, 560);
+        glow.addColorStop(0, 'rgba(245,179,1,.35)'); glow.addColorStop(1, 'rgba(245,179,1,0)');
+        x.fillStyle = glow; x.fillRect(0, 0, Wc, 1000);
+        x.fillStyle = '#008751'; x.fillRect(0, 0, Wc / 3, 22); x.fillRect((Wc * 2) / 3, 0, Wc / 3, 22);
+        x.fillStyle = '#ffffff'; x.fillRect(Wc / 3, 0, Wc / 3, 22);
+        x.textAlign = 'center'; x.textBaseline = 'alphabetic';
+        // header
+        x.fillStyle = '#f5b301'; x.font = `900 44px ${BODY}`;
+        x.fillText((home ? 'HOME WAHALA' : 'OFFICE WAHALA') + ' PRESENTS', Wc / 2, 112);
+        // trophy
+        x.save(); x.translate(Wc / 2, 300);
+        x.fillStyle = '#f5b301';
+        x.beginPath(); x.moveTo(-120, -110); x.lineTo(120, -110); x.quadraticCurveTo(118, 20, 0, 60); x.quadraticCurveTo(-118, 20, -120, -110); x.fill();
+        x.lineWidth = 22; x.strokeStyle = '#f5b301';
+        x.beginPath(); x.arc(-122, -50, 52, Math.PI * 0.5, Math.PI * 1.5); x.stroke();
+        x.beginPath(); x.arc(122, -50, 52, -Math.PI * 0.5, Math.PI * 0.5); x.stroke();
+        x.fillRect(-22, 55, 44, 70); x.fillStyle = '#c98d00'; rr(x, -90, 120, 180, 40, 10); x.fill();
+        x.fillStyle = '#fff3c4'; x.font = `900 90px ${DISPLAY}`; x.fillText('₦', 0, 5);
+        x.restore();
+        // title
+        x.save(); x.translate(Wc / 2, 600); x.rotate(-0.03);
+        x.font = `900 180px ${DISPLAY}`;
+        const TW = Wc - 110;
+        x.fillStyle = '#000'; x.fillText('WEEKLY CUP', 10, 10, TW);
+        x.fillStyle = '#f5b301'; x.fillText('WEEKLY CUP', 5, 5, TW);
+        x.fillStyle = ACC; x.fillText('WEEKLY CUP', 0, 0, TW);
+        x.restore();
+        x.fillStyle = '#ffffff'; x.font = `800 50px ${BODY}`;
+        x.fillText(c.name, Wc / 2, 690, Wc - 120);
+        const now = cupNow();
+        const when = opts.win ? '' : c.status === 'ended' ? 'WINNERS ANNOUNCED' : c.status === 'upcoming' ? 'STARTS IN ' + fmtLeft(c.start - now).toUpperCase() : 'LIVE NOW · ENDS IN ' + fmtLeft(c.end - now).toUpperCase();
+        if (when) {
+          x.font = `900 40px ${BODY}`;
+          const tw = x.measureText(when).width + 70;
+          x.fillStyle = c.status === 'live' ? '#19c37d' : '#f5b301'; rr(x, Wc / 2 - tw / 2, 724, tw, 66, 33); x.fill();
+          x.fillStyle = '#0b1222'; x.fillText(when, Wc / 2, 771);
+        }
+        // the card
+        const x0 = 70, y0 = 830, cw = Wc - 140, ch = 830;
+        x.fillStyle = 'rgba(0,0,0,.35)'; rr(x, x0 + 10, y0 + 16, cw, ch, 44); x.fill();
+        x.fillStyle = '#fbfaf6'; rr(x, x0, y0, cw, ch, 44); x.fill();
+        x.textAlign = 'left';
+        const medal = ['#f5b301', '#b8c2cc', '#cd7f32'];
+        if (opts.win) {
+          const w = opts.win;
+          x.fillStyle = '#55607a'; x.font = `700 34px ${BODY}`; x.fillText(S.name ? S.name + ' · ' + (STATES[S.state] || 'Nigeria') : 'WINNER', x0 + 56, y0 + 86);
+          x.fillStyle = DEEP; x.font = `900 92px ${DISPLAY}`; x.fillText('I WON ' + t('cup_place')(w.place).toUpperCase() + ' PLACE!', x0 + 56, y0 + 190, cw - 112);
+          x.fillStyle = ACC; x.fillRect(x0 + 56, y0 + 216, cw - 112, 8);
+          x.fillStyle = DEEP; rr(x, x0 + 56, y0 + 262, cw - 112, 250, 30); x.fill();
+          x.fillStyle = '#fed7aa'; x.font = `700 36px ${BODY}`; x.fillText('My prize', x0 + 96, y0 + 324);
+          x.fillStyle = '#f5b301'; x.font = `900 104px ${DISPLAY}`; x.fillText(w.prize, x0 + 92, y0 + 450, cw - 190);
+          x.fillStyle = '#17203a'; x.font = `800 44px ${BODY}`;
+          const dy = c.sponsor ? -40 : 0;
+          x.fillText('Score: ' + fmtNum(w.score), x0 + 56, y0 + 580 + dy);
+          x.fillText(w.name, x0 + 56, y0 + 636 + dy, cw - 112);
+          if (w.paid) { x.fillStyle = '#19c37d'; rr(x, x0 + 56, y0 + 662 + dy, 300, 70, 35); x.fill(); x.fillStyle = '#fff'; x.font = `900 42px ${BODY}`; x.fillText('PAID ✓', x0 + 96, y0 + 712 + dy); }
+          else { x.fillStyle = '#55607a'; x.font = `600 34px ${BODY}`; x.fillText('Free to enter. The highest score wins.', x0 + 56, y0 + 706 + dy, cw - 112); }
+        } else {
+          x.fillStyle = DEEP; x.font = `900 58px ${DISPLAY}`; x.fillText('PRIZES', x0 + 56, y0 + 92);
+          x.fillStyle = ACC; x.fillRect(x0 + 56, y0 + 112, cw - 112, 6);
+          const MAXP = 3;
+          const prizes = c.prizes.slice(0, MAXP);
+          prizes.forEach((p, i) => {
+            const y = y0 + 146 + i * 74;
+            x.fillStyle = i === 0 ? '#fff3c4' : '#f0f1f4'; rr(x, x0 + 56, y, cw - 112, 62, 16); x.fill();
+            x.fillStyle = medal[i] || '#94a3b8'; x.beginPath(); x.arc(x0 + 100, y + 31, 22, 0, TAU); x.fill();
+            x.fillStyle = '#17203a'; x.font = `900 26px ${BODY}`; x.textAlign = 'center'; x.fillText(String(i + 1), x0 + 100, y + 41); x.textAlign = 'left';
+            x.font = `800 36px ${BODY}`; x.fillText(p, x0 + 140, y + 44, cw - 220);
+          });
+          if (c.prizes.length > MAXP) { x.fillStyle = '#55607a'; x.font = `700 30px ${BODY}`; x.fillText('+ ' + (c.prizes.length - MAXP) + ' more prizes: ' + c.prizes.slice(MAXP).join(', '), x0 + 56, y0 + 146 + MAXP * 74 + 28, cw - 112); }
+          const ly = y0 + 146 + prizes.length * 74 + (c.prizes.length > MAXP ? 56 : 22);
+          const list = opts.winners && opts.winners.length ? opts.winners.slice(0, 3).map((w) => ({ name: w.name, state: w.state, score: w.score, extra: w.paid ? 'Paid ✓' : w.prize }))
+            : (c.top || []).slice(0, 3).map((r) => ({ name: r.name, state: r.state, score: r.score, extra: '' }));
+          x.fillStyle = DEEP; x.font = `900 46px ${DISPLAY}`;
+          x.fillText(opts.winners && opts.winners.length ? 'WINNERS' : list.length ? 'TOP PLAYERS RIGHT NOW' : 'BE THE FIRST ON THE BOARD', x0 + 56, ly + 40);
+          list.forEach((r, i) => {
+            const y = ly + 64 + i * 66;
+            if (y + 56 > y0 + ch - (c.sponsor ? 100 : 20)) return;
+            x.fillStyle = medal[i]; x.font = `900 36px ${BODY}`; x.fillText('#' + (i + 1), x0 + 56, y + 40);
+            x.fillStyle = '#17203a'; x.font = `800 36px ${BODY}`;
+            x.fillText(r.name + (r.state && STATES[r.state] ? ' · ' + STATES[r.state] : ''), x0 + 136, y + 40, cw - 470);
+            x.textAlign = 'right'; x.fillStyle = r.extra === 'Paid ✓' ? '#008751' : ACC; x.font = `900 36px ${BODY}`;
+            x.fillText(r.extra === 'Paid ✓' ? fmtNum(r.score) + ' · Paid ✓' : r.extra || fmtNum(r.score), x0 + cw - 56, y + 40, 330); x.textAlign = 'left';
+          });
+        }
+        if (c.sponsor) {
+          // sponsor band across the bottom of the card
+          x.fillStyle = DEEP; rr(x, x0, y0 + ch - 92, cw, 92, 0); x.fill();
+          x.fillStyle = DEEP; rr(x, x0, y0 + ch - 92, cw, 92, 44); x.fill();
+          x.fillRect(x0, y0 + ch - 92, cw, 46);
+          x.textAlign = 'center'; x.fillStyle = '#f5b301'; x.font = `800 26px ${BODY}`;
+          x.fillText('SPONSORED BY', Wc / 2, y0 + ch - 56);
+          x.fillStyle = '#ffffff'; x.font = `900 34px ${BODY}`;
+          x.fillText(c.sponsor + (c.sponsorUrl ? ' · ' + c.sponsorUrl.replace(/^https:\/\/(www\.)?/, '').replace(/\/$/, '') : ''), Wc / 2, y0 + ch - 18, cw - 80);
+          x.textAlign = 'left';
+        }
+        // a character
+        x.save(); x.translate(Wc - 170, y0 - 30);
+        if (home) SPRITES.mum(x, 0.3, { s: 3.2, mood: 'happy', lookX: -1, lookY: 0.4, prop: 'none' });
+        else SPRITES.player(x, 0.3, { s: 3.6, mood: 'cool', lookX: -1, lookY: 0.3, walk: 0.6, kid: false });
+        x.restore();
+        // footer
+        x.textAlign = 'center';
+        x.fillStyle = '#ffffff'; x.font = `900 76px ${DISPLAY}`;
+        x.fillText(opts.win ? 'YOUR TURN THIS WEEK!' : 'FREE TO ENTER · PLAY NOW', Wc / 2, 1770, Wc - 80);
+        const host = (shareBase() || CONFIG.SHARE_URL || '').replace(/^https?:\/\//, '').replace(/\/$/, '');
+        x.fillStyle = '#f5b301'; x.font = `800 46px ${BODY}`;
+        if (host) x.fillText(host + (opts.win || c.status === 'ended' ? '/winners' : ''), Wc / 2, 1840, Wc - 80);
+        x.fillStyle = '#8f9bb8'; x.font = `600 28px ${BODY}`;
+        x.fillText(CONFIG.CREDIT, Wc / 2, 1892);
+        cv.toBlob((b) => (b ? resolve(b) : reject(new Error('no blob'))), 'image/png');
+      } catch (e) { reject(e); }
+    });
+  }
+  async function shareImageAndText(blob, fileName, text, url, kind) {
+    const full = url ? text.includes(url) ? text : text + ' ' + url : text;
+    if (navigator.share) {
+      try {
+        const file = blob ? new File([blob], fileName, { type: 'image/png' }) : null;
+        if (file && navigator.canShare && navigator.canShare({ files: [file] })) {
+          await navigator.share({ files: [file], text: full, title: CONFIG.TITLE });
+          T('share', { kind, via: 'native-image' });
+          return;
+        }
+        const data = { title: CONFIG.TITLE, text, url };
+        if (!navigator.canShare || navigator.canShare(data)) { await navigator.share(data); T('share', { kind, via: 'native' }); return; }
+      } catch (e) { if (e && e.name === 'AbortError') return; }
+    }
+    // no share sheet (most desktops): save the image and copy the text + link
+    if (blob) {
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob); a.download = fileName;
+      document.body.appendChild(a); a.click();
+      setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1500);
+    }
+    const ok = await copyText(full);
+    T('share', { kind, via: blob ? 'image+copy' : 'copy' });
+    toast(ok ? (blob ? t('cup_share_done') : t('cup_share_copied')) : full, 'good', 3200);
+  }
+  async function shareCup(id) {
+    const c = CUP.list.find((x) => x.id === id);
+    if (!c) return;
+    const btn = $('btn-cup-share');
+    if (btn) { btn.disabled = true; btn.lastElementChild.textContent = t('cup_sharing'); }
+    try {
+      const winners = c.status === 'ended' ? await cupWinners(c) : null;
+      const blob = await makeCupImage(c, { winners }).catch(() => null);
+      const url = c.status === 'ended' ? winnersLink() : cupLink(c.id);
+      const text = c.status === 'ended' ? t('cup_share_ended')(c.name, url) : t('cup_share_text')(c.name, c.prizes[0], c.game, url);
+      await shareImageAndText(blob, 'weekly-cup-' + c.id + '.png', text, url, 'cup');
+    } finally { if (btn) { btn.disabled = false; btn.lastElementChild.textContent = t('cup_share'); } }
+  }
+  async function shareWin(cl) {
+    const c = CUP.list.find((x) => x.id === cl.cup) || { id: cl.cup, name: cl.name, game: cl.game, prizes: [cl.prize], status: 'ended' };
+    const blob = await makeCupImage(c, { win: cl }).catch(() => null);
+    const url = winnersLink();
+    await shareImageAndText(blob, 'weekly-cup-win.png', t('cup_share_win_text')(t('cup_place')(cl.place), cl.prize, cl.name, url), url, 'cup_win');
+  }
+  // ?cup=<id> links open that cup
+  const CUP_DEEP = (new URLSearchParams(location.search).get('cup') || '').replace(/[^A-Za-z0-9]/g, '').slice(0, 12);
+  let cupDeepDone = false;
+  function cupDeepLink() {
+    if (!CUP_DEEP || cupDeepDone) return;
+    const c = CUP.list.find((x) => x.id === CUP_DEEP);
+    cupDeepDone = true;
+    if (!c || G.state !== 'menu') return;
+    if (c.game === 'home' && S.world !== 'home') setWorld('home', true);
+    if (c.game !== 'home' && S.world !== 'office' && !officeClosed()) setWorld('office', true);
+    T('challenge_open', { kind: 'cup' });
+    openCup(c.id);
   }
 
   /* ==================== Update ==================== */
@@ -8062,6 +8281,7 @@
   $('cup-card').addEventListener('click', () => openCup());
   $('cup-tabs').addEventListener('click', (e) => { const b = e.target.closest('[data-cup]'); if (b) { CUP.view = b.dataset.cup; renderCup(); } });
   $('btn-cup-play').addEventListener('click', () => playCup(CUP.view));
+  $('btn-cup-share').addEventListener('click', () => shareCup(CUP.view));
   $('btn-cup-name').addEventListener('click', () => { saveNameFrom($('cup-name')); if (S.name) { refreshMenu(); renderCup(); } });
   document.addEventListener('visibilitychange', () => { if (!document.hidden && CUP.available && G.state !== 'playing') probeCups(); });
   $('world-switch').addEventListener('click', (e) => { const b = e.target.closest('[data-world]'); if (b) { setWorld(b.dataset.world); Sound.play('near'); } });
@@ -8211,7 +8431,7 @@
       SPRITES, officeClock, setQuality, get quality() { return quality; }, Sound, Music,
       OFFICES, officeUnlocked, setOffice, renderOffices, curOffice, spawnHazard, startMission, endMission, missionProgress, startMeeting, MISSIONS,
       attPreview, signRegister, renderRegister, get ATT() { return ATT; }, seasonXp, renderSeason, get SEASON() { return SEASON; }, grantSticker, STICKERS, MYSTICK, renderAlbum,
-      CUP, probeCups, playCup, openCup, renderCup, refreshCupCard,
+      CUP, probeCups, playCup, openCup, renderCup, refreshCupCard, makeCupImage, shareCup, shareWin,
       HOMES, setWorld, setHouse, renderRulesFields, readRules, ruleChips, canPlay, spawnMum, spawnDad, spawnSister, spawnNeighbour, spawnVisitor, startHomeErrand, endHomeErrand, startHomeEvent, homeUnlocked, officeClosed, homeBestV, applyWorldText,
       DESK_ITEMS, deskData, renderDesk, viewDesk, HUB, setState, renderStates, myPid, inviteFriend, nudges, renderNudges, setReminders, syncReminderConfig,
     };
