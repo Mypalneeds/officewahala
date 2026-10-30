@@ -87,6 +87,31 @@
     .ad-preview canvas { width: 100%; height: auto; border-radius: 10px; background: #3b4049; }
     .ad-stats { font-size: 0.82rem; color: var(--muted); margin-top: 6px; }
     .ad-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 8px; }
+    /* cups */
+    .cup-form { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px 12px; }
+    .cup-form label { display: flex; flex-direction: column; gap: 3px; font-size: 0.78rem; color: var(--muted); font-weight: 700; }
+    .cup-form input, .cup-form select, .cup-form textarea { padding: 7px 9px; border-radius: 8px; border: 1px solid var(--line); background: var(--bg); color: var(--text); }
+    .cup-form .wide { grid-column: 1 / -1; }
+    .cup-form .row { flex-direction: row; align-items: center; gap: 6px; color: var(--text); }
+    .cups { display: grid; gap: 14px; }
+    .cupbox { background: var(--panel); border-radius: 14px; padding: 14px 16px; border-left: 5px solid var(--green-d); }
+    .cupbox.home { border-left-color: #ea580c; }
+    .cupbox h3 { margin: 0; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; font-size: 1.05rem; }
+    .pill { display: inline-block; padding: 2px 9px; border-radius: 99px; font-size: 0.75rem; font-weight: 800; background: var(--panel-2); color: var(--muted); }
+    .pill.live { background: rgba(25, 195, 125, 0.18); color: var(--green); }
+    .pill.upcoming { background: rgba(245, 179, 1, 0.18); color: var(--gold); }
+    .pill.cancelled { background: rgba(239, 91, 97, 0.18); color: var(--red); }
+    .cupbox .sub { color: var(--muted); font-size: 0.85rem; margin: 4px 0 10px; }
+    .cupbox table td .flag { color: var(--red); font-size: 0.75rem; display: block; }
+    .cupbox tr.rej td { opacity: 0.45; text-decoration: line-through; }
+    .cupbox tr.prize td:first-child { color: var(--gold); font-weight: 800; }
+    .code { font-family: ui-monospace, Menlo, Consolas, monospace; font-weight: 800; letter-spacing: 0.06em; color: var(--gold); }
+    .acts { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+    .acts select, .acts input { padding: 4px 6px; border-radius: 6px; border: 1px solid var(--line); background: var(--bg); color: var(--text); font-size: 0.8rem; max-width: 130px; }
+    .btn.small { padding: 3px 9px; font-size: 0.78rem; }
+    .btn.danger { background: rgba(239, 91, 97, 0.2); color: var(--red); }
+    .btn.armed { background: var(--red); color: #fff; }
+    .table-wrap { overflow-x: auto; }
     @media (max-width: 900px) {
       .card, .card.w8, .card.w4 { grid-column: span 12; }
       .ad-edit { grid-template-columns: 1fr; }
@@ -115,6 +140,7 @@
         <div class="tabs" role="tablist">
           <button role="tab" aria-selected="true" data-tab="overview">Overview</button>
           <button role="tab" aria-selected="false" data-tab="ads">Ads</button>
+          <button role="tab" aria-selected="false" data-tab="cups">Weekly Cups</button>
         </div>
         <span class="spacer"></span>
         <div class="range" aria-label="Date range">
@@ -197,6 +223,33 @@
               <button id="ad-save" class="btn primary" type="button">Save ads</button>
             </div>
             <p id="ad-msg" role="status"></p>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= WEEKLY CUPS ================= -->
+      <section id="tab-cups" class="hidden">
+        <div class="grid">
+          <div class="card w12">
+            <h2>Create a Weekly Cup <small>Shows in the game right away · times are your browser's local time</small></h2>
+            <form id="cup-form" class="cup-form">
+              <label class="wide">Name<input name="name" type="text" maxlength="60" placeholder="e.g. Weekly Cup, week 45" required></label>
+              <label>Game<select name="game"><option value="both">Both (makes two cups)</option><option value="office">Office Wahala (Mon–Fri)</option><option value="home">Home Wahala (every day)</option></select></label>
+              <label>Starts<input name="start" type="datetime-local" required></label>
+              <label>Ends<input name="end" type="datetime-local" required></label>
+              <label>Tries per player<select name="tries"><option value="0">Unlimited</option><option value="3">3</option><option value="5">5</option><option value="10">10</option><option value="20">20</option></select></label>
+              <label>Run length<select name="shiftSecs"><option value="0">No limit</option><option value="60">1 minute</option><option value="90">1.5 minutes</option><option value="120">2 minutes</option><option value="180">3 minutes</option><option value="300">5 minutes</option></select></label>
+              <label class="wide">Prizes, one per line (line 1 = 1st place)<textarea name="prizes" rows="4" placeholder="₦20,000 bank transfer&#10;₦10,000 bank transfer&#10;₦5,000 airtime&#10;₦5,000 Shoprite voucher"></textarea></label>
+              <label>Sponsor (optional)<input name="sponsor" type="text" maxlength="40"></label>
+              <label>Sponsor link (https, optional)<input name="sponsorUrl" type="url" maxlength="200"></label>
+              <label class="wide">Note shown to players (optional)<input name="note" type="text" maxlength="200" placeholder="e.g. Winners are announced on Monday and paid within 48 hours."></label>
+              <label class="row wide"><input name="repeat" type="checkbox" checked> Repeat every week (the next cup starts automatically when this one ends)</label>
+              <div class="wide acts"><button class="btn" type="button" id="cup-thisweek">This week (Mon–Sun, Lagos)</button><button class="btn primary" type="submit">Create cup</button><span id="cup-msg" role="status"></span></div>
+            </form>
+          </div>
+          <div class="card w12">
+            <h2>Cups <small>Check the top scores, then pay winners and mark them paid. The public page is <a href="/winners/" target="_blank" rel="noopener">/winners/</a></small></h2>
+            <div id="cup-list" class="cups"><p class="empty">Loading…</p></div>
           </div>
         </div>
       </section>
@@ -431,6 +484,75 @@
     } catch (e) { msg.className = 'err'; msg.textContent = e.message; }
   }
 
+  /* ---------- weekly cups ---------- */
+  const CUPS_STATE = ['ab','ad','ak','an','ba','by','be','bo','cr','de','eb','ed','ek','en','fc','go','im','ji','kd','kn','kt','ke','ko','kw','la','na','ni','og','on','os','oy','pl','ri','so','ta','yo','za'];
+  const STATE_NAMES = { ab: 'Abia', ad: 'Adamawa', ak: 'Akwa Ibom', an: 'Anambra', ba: 'Bauchi', by: 'Bayelsa', be: 'Benue', bo: 'Borno', cr: 'Cross River', de: 'Delta', eb: 'Ebonyi', ed: 'Edo', ek: 'Ekiti', en: 'Enugu', fc: 'FCT', go: 'Gombe', im: 'Imo', ji: 'Jigawa', kd: 'Kaduna', kn: 'Kano', kt: 'Katsina', ke: 'Kebbi', ko: 'Kogi', kw: 'Kwara', la: 'Lagos', na: 'Nasarawa', ni: 'Niger', og: 'Ogun', on: 'Ondo', os: 'Osun', oy: 'Oyo', pl: 'Plateau', ri: 'Rivers', so: 'Sokoto', ta: 'Taraba', yo: 'Yobe', za: 'Zamfara' };
+  const toLocal = (ts) => { const d = new Date(ts - new Date(ts).getTimezoneOffset() * 60000); return d.toISOString().slice(0, 16); };
+  const when = (ts) => new Date(ts).toLocaleString(undefined, { weekday: 'short', day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' });
+  function thisWeek() {
+    // Monday 00:00 to Sunday 23:59 in Lagos (UTC+1)
+    const now = Date.now(), lag = new Date(now + 3600e3);
+    const dow = (lag.getUTCDay() + 6) % 7;
+    const mon = Date.UTC(lag.getUTCFullYear(), lag.getUTCMonth(), lag.getUTCDate() - dow) - 3600e3;
+    return [Math.max(now, mon), mon + 7 * 86400e3 - 60e3];
+  }
+  function fillThisWeek() {
+    const [s, e] = thisWeek(); const f = $('cup-form');
+    f.start.value = toLocal(s); f.end.value = toLocal(e);
+    if (!f.name.value) f.name.value = 'Weekly Cup';
+  }
+  async function createCup(e) {
+    e.preventDefault();
+    const f = e.target, msg = $('cup-msg');
+    const cup = { name: f.name.value, game: f.game.value, start: new Date(f.start.value).getTime(), end: new Date(f.end.value).getTime(),
+      tries: +f.tries.value, shiftSecs: +f.shiftSecs.value, prizes: f.prizes.value.split('\n').map((x) => x.trim()).filter(Boolean),
+      sponsor: f.sponsor.value, sponsorUrl: f.sponsorUrl.value, note: f.note.value, repeat: f.repeat.checked };
+    msg.className = ''; msg.textContent = 'Creating…';
+    try { const r = await api('/api/cup/admin', { method: 'POST', body: JSON.stringify({ action: 'create', cup }) }); msg.className = 'ok'; msg.textContent = `Created ${r.cups.length === 2 ? 'two cups' : 'the cup'}. Players see it now.`; loadCups(); }
+    catch (err) { msg.className = 'err'; msg.textContent = err.message; }
+  }
+  async function cupAction(body, btn) {
+    if (btn && btn.dataset.confirm && !btn.classList.contains('armed')) { btn.classList.add('armed'); btn.dataset.label = btn.textContent; btn.textContent = btn.dataset.confirm; setTimeout(() => { btn.classList.remove('armed'); btn.textContent = btn.dataset.label; }, 3000); return; }
+    try { await api('/api/cup/admin', { method: 'POST', body: JSON.stringify(body) }); loadCups(); }
+    catch (err) { alert(err.message); }
+  }
+  async function loadCups() {
+    const box = $('cup-list');
+    try {
+      const j = await api('/api/cup/admin');
+      if (!j.cups.length) { box.innerHTML = '<p class="empty">No cups yet. Create one above.</p>'; return; }
+      box.innerHTML = j.cups.map((c) => {
+        const rows = c.board.map((r, i) => `<tr class="${r.rejected ? 'rej' : ''} ${r.prize ? 'prize' : ''}">
+          <td>${r.place ? '#' + r.place : '–'}</td><td>${esc(r.name)}<small style="color:var(--muted)"> ${esc(STATE_NAMES[r.state] || '')}</small>${(r.flags || []).map((f) => '<span class="flag">⚠ ' + esc(f) + '</span>').join('')}</td>
+          <td class="n">${fmt(r.score)}</td><td class="n">${dur(r.duration)}</td><td class="n">${r.level}</td><td class="n">${r.plays}</td>
+          <td>${esc(r.prize || '')}${r.code ? '<br><span class="code">' + esc(r.code) + '</span>' : ''}</td>
+          <td>${r.paid ? '<span class="ok">Paid</span><br><small style="color:var(--muted)">' + esc(r.paid.method) + (r.paid.note ? ' · ' + esc(r.paid.note) : '') + '</small>' : r.prize && c.status === 'ended' ? '<span class="err">Not paid</span>' : ''}</td>
+          <td><div class="acts">
+            ${r.rejected ? `<button class="btn small" data-act="restore" data-id="${c.id}" data-pid="${r.pid}">Restore</button>` : `<button class="btn small danger" data-act="reject" data-id="${c.id}" data-pid="${r.pid}" data-confirm="Sure? Reject">Disqualify</button>`}
+            ${r.prize && !r.rejected ? (r.paid ? `<button class="btn small" data-act="unpaid" data-id="${c.id}" data-pid="${r.pid}">Undo paid</button>`
+              : `<select data-method><option>Bank transfer</option><option>Airtime</option><option>Data</option><option>Gift card</option><option>Voucher / promo code</option><option>Supermarket voucher</option><option>Other</option></select><input data-note placeholder="Ref / note"><button class="btn small primary" data-act="paid" data-id="${c.id}" data-pid="${r.pid}">Mark paid</button>`) : ''}
+          </div></td></tr>`).join('');
+        return `<div class="cupbox ${c.game}">
+          <h3>${esc(c.name)} <span class="pill ${c.status}">${c.status}</span> <span class="pill">${c.game === 'home' ? 'Home Wahala' : 'Office Wahala'}</span>${c.repeat ? ' <span class="pill">repeats weekly</span>' : ''}</h3>
+          <p class="sub">${when(c.start)} → ${when(c.end)} · ${fmt(c.players)} players · prizes: ${c.prizes.map(esc).join(' / ')}${c.sponsor ? ' · sponsor: ' + esc(c.sponsor) : ''}</p>
+          <div class="table-wrap"><table><thead><tr><th>Place</th><th>Player</th><th class="n">Score</th><th class="n">Time</th><th class="n">Level</th><th class="n">Runs</th><th>Prize · claim code</th><th>Payment</th><th></th></tr></thead>
+          <tbody>${rows || '<tr><td colspan="9" class="empty">No scores yet.</td></tr>'}</tbody></table></div>
+          <div class="acts" style="margin-top:8px">
+            <button class="btn small" data-act="cancel" data-id="${c.id}" ${c.status === 'cancelled' ? '' : 'data-confirm="Sure? Cancel cup"'}>${c.status === 'cancelled' ? 'Reopen' : 'Cancel cup'}</button>
+            <button class="btn small danger" data-act="delete" data-id="${c.id}" data-confirm="Delete for ever?">Delete</button>
+          </div></div>`;
+      }).join('');
+    } catch (err) { box.innerHTML = '<p class="err">' + esc(err.message) + '</p>'; }
+  }
+  $('cup-form').addEventListener('submit', createCup);
+  $('cup-thisweek').addEventListener('click', fillThisWeek);
+  $('cup-list').addEventListener('click', (e) => {
+    const b = e.target.closest('[data-act]'); if (!b) return;
+    const body = { action: b.dataset.act, id: b.dataset.id, pid: b.dataset.pid };
+    if (b.dataset.act === 'paid') { const row = b.closest('.acts'); body.method = row.querySelector('[data-method]').value; body.note = row.querySelector('[data-note]').value; }
+    cupAction(body, b);
+  });
+
   /* ---------- export ---------- */
   function exportCsv() {
     if (!DATA) return;
@@ -485,6 +607,8 @@
     document.querySelectorAll('.tabs button').forEach((x) => x.setAttribute('aria-selected', String(x === b)));
     $('tab-overview').classList.toggle('hidden', b.dataset.tab !== 'overview');
     $('tab-ads').classList.toggle('hidden', b.dataset.tab !== 'ads');
+    $('tab-cups').classList.toggle('hidden', b.dataset.tab !== 'cups');
+    if (b.dataset.tab === 'cups') loadCups();
   }));
   $('refresh').addEventListener('click', load);
   $('export').addEventListener('click', exportCsv);

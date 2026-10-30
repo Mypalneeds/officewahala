@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Office Wahala: Free Nigerian Game (Dodge Oga &amp; Mummy's Slipper)</title>
-  <meta name="description" content="Play Office Wahala free in your browser: dodge Oga, survive NEPA blackouts and collect your salary. At weekends play Home Wahala: run errands for Mummy and dodge her slipper. No sign-up, works offline.">
+  <meta name="description" content="Play Office Wahala free: dodge Oga on weekdays, dodge Mummy's slipper in Home Wahala at weekends, and win real prizes in the free Weekly Cup. No sign-up, works offline.">
   <meta name="robots" content="index,follow,max-image-preview:large">
   <link rel="canonical" href="https://officewahala.netlify.app/">
   <meta name="theme-color" content="#0d1526">
@@ -53,7 +53,7 @@
    "@id": "https://officewahala.netlify.app/#game",
    "name": "Office Wahala",
    "url": "https://officewahala.netlify.app/",
-   "description": "A free Nigerian arcade game for phone and computer with two halves. Office Wahala: dodge your boss (Oga), meetings, deadlines and NEPA blackouts, collect your salary and survive the workday (Monday to Friday; the office is closed at weekends). Home Wahala: a day at home with an African mum: run errands, dodge her slipper and the broom, greet visiting aunties and refuse their money while she is watching (open every day). Includes career mode, a daily shift, private leagues for both games, Pidgin mode, offline play and one-tap install on Android and iPhone.",
+   "description": "A free Nigerian arcade game for phone and computer with two halves. Office Wahala: dodge your boss (Oga), meetings, deadlines and NEPA blackouts, collect your salary and survive the workday (Monday to Friday; the office is closed at weekends). Home Wahala: a day at home with an African mum: run errands, dodge her slipper and the broom, greet visiting aunties and refuse their money while she is watching (open every day). Every week the best players win real prizes (bank transfer, airtime, gift cards, vouchers) in the free Weekly Cup. Includes career mode, a daily shift, private leagues for both games, Pidgin mode, offline play and one-tap install on Android and iPhone.",
    "genre": [
     "Arcade",
     "Casual",
@@ -105,7 +105,7 @@
     "@type": "Country",
     "name": "Nigeria"
    },
-   "keywords": "Nigerian game, office game, Oga, wahala, NEPA, Lagos, Pidgin, free browser game, Home Wahala, African mum game, Nigerian mum slipper, childhood nostalgia game, Nigerian childhood, greet your elders",
+   "keywords": "Nigerian game, office game, Oga, wahala, NEPA, Lagos, Pidgin, free browser game, Home Wahala, African mum game, Nigerian mum slipper, childhood nostalgia game, Nigerian childhood, greet your elders, weekly cup, win money game Nigeria, free tournament, win airtime",
    "dateModified": "2026-10-30",
    "hasPart": [
     {
@@ -170,6 +170,29 @@
    "publisher": {
     "@id": "https://officewahala.netlify.app/#analaize"
    }
+  },
+  {
+   "@type": "Event",
+   "@id": "https://officewahala.netlify.app/#weekly-cup",
+   "name": "Office Wahala Weekly Cup",
+   "description": "A free weekly online tournament in Office Wahala and Home Wahala. The highest single score wins real prizes such as bank transfers, airtime, gift cards and vouchers. No sign-up.",
+   "eventAttendanceMode": "https://schema.org/OnlineEventAttendanceMode",
+   "eventStatus": "https://schema.org/EventScheduled",
+   "isAccessibleForFree": true,
+   "location": {
+    "@type": "VirtualLocation",
+    "url": "https://officewahala.netlify.app/"
+   },
+   "organizer": {
+    "@id": "https://officewahala.netlify.app/#analaize"
+   },
+   "url": "https://officewahala.netlify.app/winners/",
+   "eventSchedule": {
+    "@type": "Schedule",
+    "repeatFrequency": "P1W",
+    "byDay": "https://schema.org/Monday",
+    "scheduleTimezone": "Africa/Lagos"
+   }
   }
  ]
 }
@@ -187,7 +210,8 @@
         <h1>Office Wahala</h1>
         <p>A free Nigerian office arcade game: dodge Oga, collect your salary and survive the workday. Please turn on JavaScript to play.</p>
         <p>Plus Home Wahala: a day at home with an African mum, her slipper and a list of errands.</p>
-        <p><a href="how-to-play/">How to play</a> · <a href="home-wahala/">Home Wahala</a> · <a href="faq/">FAQ</a> · <a href="nigerian-office-slang/">Nigerian office slang</a> · <a href="about/">About</a></p>
+        <p>Every week the best players win real prizes in the free Weekly Cup.</p>
+        <p><a href="how-to-play/">How to play</a> · <a href="home-wahala/">Home Wahala</a> · <a href="winners/">Weekly Cup winners</a> · <a href="faq/">FAQ</a> · <a href="nigerian-office-slang/">Nigerian office slang</a> · <a href="about/">About</a></p>
       </div>
     </noscript>
 
@@ -296,6 +320,7 @@
             </div>
           </div>
 
+          <div id="win-card" class="win-card" hidden></div>
           <button id="btn-play" class="btn btn-primary btn-play" type="button"><svg class="ico" aria-hidden="true"><use href="#i-play"/></svg><span data-i18n="play" data-home="Start the day" data-home-pcm="Start the day">Clock in &amp; play</span></button>
           <div class="mode-row" id="mode-row">
             <button id="btn-career" class="btn btn-mode btn-career" type="button">
@@ -308,6 +333,7 @@
           </button>
           </div>
 
+          <button id="cup-card" class="cup-card" type="button" hidden><svg class="ico" aria-hidden="true"><use href="#i-trophy"/></svg><span class="cc-body"><small id="cup-card-kicker">Weekly Cup</small><strong id="cup-card-title"></strong><span id="cup-card-sub"></span></span><span class="cc-go" id="cup-card-go">Play</span></button>
           <div class="id-body">
             <canvas id="id-photo" class="id-photo" width="88" height="104" aria-label="Your worker"></canvas>
             <dl class="id-meta">
@@ -819,6 +845,29 @@
           <h3 class="shop-sec"><svg class="ico" aria-hidden="true"><use href="#i-stapler"/></svg><span data-i18n="album_title">Sticker album</span> <span id="album-count" class="count"></span></h3>
           <p class="setting-help" data-i18n="album_help">Rare sticker envelopes fall during shifts, and the attendance register and seasons give more. Finish a set of six for ₦3,000. Doubles turn into ₦50.</p>
           <div id="album" class="album"></div>
+        </article>
+      </div>
+    </section>
+
+    <!-- ================= v8.2: WEEKLY CUP ================= -->
+    <section id="screen-cup" class="screen" aria-labelledby="cup-title">
+      <div class="screen-scroll">
+        <article class="panel panel-narrow">
+          <div class="panel-head">
+            <h2 id="cup-title">Weekly Cup</h2>
+            <button class="btn btn-primary btn-small js-back" type="button" data-i18n="done">Done</button>
+          </div>
+          <div id="cup-tabs" class="pill-tabs cup-tabs"></div>
+          <div id="cup-hero" class="cup-hero"></div>
+          <ol id="cup-prizes" class="cup-prizes"></ol>
+          <p id="cup-me" class="cup-me"></p>
+          <div id="cup-name-row" class="cup-name-row" hidden><input id="cup-name" type="text" maxlength="20" autocomplete="nickname" placeholder="Your name (shows on the board)"><button id="btn-cup-name" class="btn btn-ghost btn-small" type="button">Save</button></div>
+          <button id="btn-cup-play" class="btn btn-primary btn-wide" type="button"><svg class="ico" aria-hidden="true"><use href="#i-play"/></svg><span>Play for the cup</span></button>
+          <p id="cup-why" class="lc-why" hidden></p>
+          <h3 class="shop-sec"><svg class="ico" aria-hidden="true"><use href="#i-rank"/></svg><span>Live leaderboard</span></h3>
+          <ol id="cup-board" class="board-list"></ol>
+          <p id="cup-status" class="lb-status"></p>
+          <p class="setting-help cup-links"><a href="/winners/" target="_blank" rel="noopener">Past winners</a> · <a href="/cup-rules/" target="_blank" rel="noopener">Cup rules</a></p>
         </article>
       </div>
     </section>

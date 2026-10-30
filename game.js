@@ -1502,7 +1502,7 @@
       menu: $('screen-menu'), pause: $('screen-pause'), over: $('screen-over'), board: $('screen-board'),
       wardrobe: $('screen-wardrobe'), settings: $('screen-settings'), review: $('screen-review'),
       shop: $('screen-shop'), leagues: $('screen-leagues'), promo: $('screen-promo'),
-      offices: $('screen-offices'), register: $('screen-register'), desk: $('screen-desk'), season: $('screen-season'), states: $('screen-states'),
+      offices: $('screen-offices'), register: $('screen-register'), desk: $('screen-desk'), season: $('screen-season'), states: $('screen-states'), cup: $('screen-cup'),
     },
     excel: $('screen-excel'),
     menuBest: $('menu-best'), menuName: $('menu-name'), menuRank: $('menu-rank'), menuBadges: $('menu-badges'),
@@ -2002,6 +2002,7 @@
     if (name === 'desk') renderDesk();
     if (name === 'season') renderSeason();
     if (name === 'states') renderStates();
+    if (name === 'cup') renderCup();
     showScreen(name);
   }
 
@@ -3663,8 +3664,9 @@
     box.innerHTML = '<strong></strong><span class="ol-msg"></span><div class="ol-actions"></div>';
     box.firstChild.textContent = L.name;
     const msg = box.querySelector('.ol-msg');
-    msg.textContent = t('lgSubmitting');
+    msg.textContent = L.cup ? t('cup_submitting') : t('lgSubmitting');
     $('btn-again').hidden = false;
+    if (L.cup) return submitCupRun(run, box, msg);
     try {
       const ghost = ghostEncode();
       const r = await post('/' + L.code + '/score', Object.assign({ playerId: S.playerId, name: S.name, score: run.score, duration: run.duration, level: run.level, runId: L.runId }, myFlair(), ghost ? { ghost } : {}));
@@ -3686,7 +3688,8 @@
     a.appendChild(vb);
   }
   function replay() {
-    if (G.mode === 'league' && G.league) playLeague(G.league.code);
+    if (G.mode === 'league' && G.league && G.league.cup) playCup(G.league.code);
+    else if (G.mode === 'league' && G.league) playLeague(G.league.code);
     else startGame(G.mode);
   }
 
@@ -6150,6 +6153,215 @@
     { id: 'weekender', ico: 'home', name: 'Weekend at home', desc: (n) => `Play ${fmtNum(n)} days of Home Wahala`, stat: 'homeGames', tiers: [3, 15, 50, 150, 400], v6: true, home: true },
   );
 
+  /* ====================================================================
+     WEEKLY CUPS: official public tournaments with real prizes, set up from the
+     dashboard. Free to enter. The highest single score wins. Winners see a
+     private claim code and claim on WhatsApp; the organiser pays them.
+     ==================================================================== */
+  const CUP_API = CONFIG.LEAGUE_API.replace(/league$/, 'cup');
+  const CUP_WA = '2347066459689';
+  const CUP = { available: false, list: [], claims: [], view: '', skew: 0 };
+  Object.assign(STR.en, {
+    cup_kicker: 'Weekly Cup · real prizes', cup_play: 'Play for the cup', cup_soon: 'Soon', cup_results: 'Results', cup_go: 'Play',
+    cup_sub_live: (p, left, me) => `1st: ${p} · ends in ${left}` + (me ? ` · You: #${me}` : ''), cup_sub_soon: (left) => `Starts in ${left}`, cup_sub_ended: 'Ended · see the winners',
+    cup_sub_closed: 'Office is closed today. The Office Cup opens again on Monday.',
+    cup_live: 'Live', cup_upcoming: 'Starts soon', cup_ended: 'Ended', cup_ends: (l) => `Ends in ${l}`, cup_starts: (l) => `Starts in ${l}`, cup_ended_on: (d) => `Ended ${d}`,
+    cup_players: (n) => `${n} ${n === 1 ? 'player' : 'players'}`, cup_place: (n) => ['1st', '2nd', '3rd'][n - 1] || n + 'th',
+    cup_me: (r, n, s) => `You are #${r} of ${n} with ${s}.`, cup_me_none: 'You have no score yet. Your best single run counts.',
+    cup_tries: (n) => ` ${n} ${n === 1 ? 'try' : 'tries'} left.`, cup_no_tries: 'You have used all your tries for this cup.',
+    cup_not_live: 'This cup has not started yet.', cup_over: 'This cup has ended. Check the winners page.',
+    cup_name_need: 'Type your name first. It shows on the public leaderboard.', cup_name_ph: 'Your name (shows on the board)', cup_save_name: 'Save',
+    cup_submitting: 'Sending your score to the cup…', cup_submitted: (r, n, best) => `#${r} of ${n} in the cup · your best: ${best}`,
+    cup_in_prizes: (p) => ` · In the prizes: ${p}!`, cup_view: 'View cup board', cup_empty: 'No scores yet. Be the first on the board!',
+    cup_won: (place, cup) => `You won ${place} place in ${cup}!`, cup_code: 'Your claim code', cup_claim: 'Claim on WhatsApp', cup_paid: 'Paid ✓',
+    cup_claim_help: 'Send this code on WhatsApp to collect your prize. Keep it private: only your phone has it.',
+    cup_wa_text: (cup, week, place, prize, code, name) => `Hello! I won ${place} place in ${cup}${week ? ' (' + week + ')' : ''} on Office Wahala. Prize: ${prize}. My claim code: ${code}. My name on the board: ${name}.`,
+    cup_sponsor: (s) => `Sponsored by ${s}`, cup_lagos: 'Lagos time', cup_shift: (s) => `${s / 60 >= 1 ? s / 60 + '-minute' : s + '-second'} runs`,
+  });
+  Object.assign(STR.pcm, {
+    cup_kicker: 'Weekly Cup · real money', cup_play: 'Play for the cup', cup_me_none: 'You never get score. Your best one run go count.',
+    cup_won: (place, cup) => `You win ${place} place for ${cup}!`, cup_claim: 'Collect am for WhatsApp', cup_empty: 'Nobody don score. Be the first!',
+    cup_sub_closed: 'Office close today. Office Cup go open again Monday.',
+  });
+  function cupApi(path, opts) {
+    return fetch(CUP_API + path, Object.assign({ headers: { 'content-type': 'application/json' }, cache: 'no-store' }, opts || {})).then(async (r) => {
+      const j = await r.json().catch(() => ({}));
+      if (!r.ok) { const e = new Error(j.error || t('leagueOffline')); e.status = r.status; throw e; }
+      return j;
+    });
+  }
+  const cupPost = (path, body) => cupApi(path, { method: 'POST', body: JSON.stringify(body) });
+  const cupNow = () => Date.now() + (CUP.skew || 0);
+  const cupWorld = () => (S.world === 'home' ? 'home' : 'office');
+  function cupFor(world) {
+    const order = { live: 0, upcoming: 1, ended: 2 };
+    return CUP.list.filter((c) => c.game === world).sort((a, b) => order[a.status] - order[b.status] || a.end - b.end)[0] || null;
+  }
+  function probeCups() {
+    if (!/^https?:$/.test(location.protocol)) return;
+    if (!CUP.available) { cupApi('/health').then((h) => { if (h && h.ok) { CUP.available = true; probeCups(); } }).catch(() => {}); return; }
+    cupApi('?me=' + encodeURIComponent(S.playerId)).then((j) => {
+      CUP.available = true; CUP.list = j.cups || []; CUP.skew = (j.now || Date.now()) - Date.now();
+      refreshCupCard();
+      if (G.state === 'cup') renderCup();
+    }).catch(() => {});
+    cupApi('/claims?me=' + encodeURIComponent(S.playerId)).then((j) => { CUP.claims = j.claims || []; renderWinCard(); }).catch(() => {});
+  }
+  function refreshCupCard() {
+    const card = $('cup-card');
+    if (!card) return;
+    const c = CUP.available ? cupFor(cupWorld()) : null;
+    card.hidden = !c;
+    if (!c) return;
+    card.classList.toggle('is-home', c.game === 'home');
+    card.dataset.status = c.status;
+    $('cup-card-kicker').textContent = t('cup_kicker');
+    $('cup-card-title').textContent = c.name;
+    const now = cupNow();
+    let sub = '';
+    if (c.status === 'live') sub = c.game !== 'home' && officeClosed() ? t('cup_sub_closed') : t('cup_sub_live')(c.prizes[0], fmtLeft(c.end - now), c.me && c.me.rank);
+    else if (c.status === 'upcoming') sub = t('cup_sub_soon')(fmtLeft(c.start - now));
+    else sub = t('cup_sub_ended');
+    $('cup-card-sub').textContent = sub;
+    $('cup-card-go').textContent = c.status === 'live' ? t('cup_go') : c.status === 'upcoming' ? t('cup_soon') : t('cup_results');
+  }
+  function renderWinCard() {
+    const box = $('win-card');
+    if (!box) return;
+    const recentPaid = (cl) => cl.paid && cupNow() - (cl.paidAt || 0) < 7 * 86400000;
+    const list = CUP.claims.filter((cl) => !cl.paid || recentPaid(cl));
+    box.hidden = !list.length;
+    box.innerHTML = '';
+    for (const cl of list) {
+      const place = t('cup_place')(cl.place);
+      const d = document.createElement('div');
+      d.className = 'win-item' + (cl.paid ? ' is-paid' : '') + (cl.game === 'home' ? ' is-home' : '');
+      d.innerHTML = `<div class="wi-head">${ico('trophy')}<strong></strong></div><p class="wi-prize"></p>` +
+        (cl.paid ? `<p class="wi-paid">${ico('check-circle')} <span></span></p>`
+          : `<p class="wi-code"><small></small><b></b></p><a class="btn btn-gold btn-wide wi-wa" target="_blank" rel="noopener">${ico('whatsapp')}<span></span></a><p class="wi-help"></p>`);
+      d.querySelector('strong').textContent = t('cup_won')(place, cl.name);
+      d.querySelector('.wi-prize').textContent = cl.prize + ' · ' + fmtNum(cl.score);
+      if (cl.paid) d.querySelector('.wi-paid span').textContent = t('cup_paid');
+      else {
+        d.querySelector('.wi-code small').textContent = t('cup_code');
+        d.querySelector('.wi-code b').textContent = cl.code;
+        const a = d.querySelector('.wi-wa');
+        a.href = 'https://wa.me/' + CUP_WA + '?text=' + encodeURIComponent(t('cup_wa_text')(cl.name, cl.week, place, cl.prize, cl.code, S.name || ''));
+        a.lastChild.textContent = t('cup_claim');
+        a.addEventListener('click', () => T('cup_claim', { cup: cl.cup, place: cl.place }));
+        d.querySelector('.wi-help').textContent = t('cup_claim_help');
+      }
+      box.appendChild(d);
+    }
+  }
+  function openCup(id) {
+    const c = id ? CUP.list.find((x) => x.id === id) : cupFor(cupWorld());
+    CUP.view = c ? c.id : '';
+    openSide('cup');
+  }
+  function cupBlock(c) {
+    if (!c) return t('leagueOffline');
+    if (c.status === 'upcoming') return t('cup_not_live');
+    if (c.status === 'ended') return t('cup_over');
+    if (c.game !== 'home' && officeClosed()) return t('cup_sub_closed');
+    if (c.me && c.me.triesLeft === 0) return t('cup_no_tries');
+    return '';
+  }
+  async function renderCup() {
+    const list = CUP.list;
+    let c = list.find((x) => x.id === CUP.view) || cupFor(cupWorld()) || list[0];
+    const tabs = $('cup-tabs'); tabs.innerHTML = '';
+    tabs.hidden = list.length < 2;
+    for (const x of list) {
+      const b = document.createElement('button');
+      b.type = 'button'; b.dataset.cup = x.id; b.setAttribute('aria-pressed', String(c && x.id === c.id));
+      b.textContent = x.name;
+      tabs.appendChild(b);
+    }
+    const hero = $('cup-hero'), board = $('cup-board'), st = $('cup-status');
+    board.innerHTML = ''; st.textContent = '';
+    if (!c) { hero.innerHTML = ''; $('cup-prizes').innerHTML = ''; $('cup-me').textContent = ''; $('btn-cup-play').disabled = true; st.textContent = t('leagueOffline'); return; }
+    CUP.view = c.id;
+    const now = cupNow();
+    hero.className = 'cup-hero' + (c.game === 'home' ? ' is-home' : '');
+    hero.innerHTML = `<span class="ch-game">${ico(c.game === 'home' ? 'home' : 'office')}<span></span></span><strong class="ch-name"></strong>` +
+      `<span class="ch-when"><i class="ch-dot is-${c.status}"></i><span></span></span><span class="ch-meta"></span>` + (c.sponsor ? '<span class="ch-sponsor"></span>' : '') + (c.note ? '<p class="ch-note"></p>' : '');
+    hero.querySelector('.ch-game span').textContent = c.game === 'home' ? 'Home Wahala' : 'Office Wahala';
+    hero.querySelector('.ch-name').textContent = c.name;
+    hero.querySelector('.ch-when span').textContent = (c.status === 'live' ? t('cup_live') + ' · ' + t('cup_ends')(fmtLeft(c.end - now)) : c.status === 'upcoming' ? t('cup_starts')(fmtLeft(c.start - now)) : t('cup_ended_on')(fmtWhen(c.end)));
+    hero.querySelector('.ch-meta').textContent = t('cup_players')(c.players || 0) + (c.shiftSecs ? ' · ' + t('cup_shift')(c.shiftSecs) : '') + (c.tries ? ' · ' + t('lgTries')(c.tries) : '');
+    if (c.sponsor) {
+      const sp = hero.querySelector('.ch-sponsor');
+      if (c.sponsorUrl) { const a = document.createElement('a'); a.href = c.sponsorUrl; a.target = '_blank'; a.rel = 'noopener sponsored'; a.textContent = t('cup_sponsor')(c.sponsor); sp.appendChild(a); }
+      else sp.textContent = t('cup_sponsor')(c.sponsor);
+    }
+    if (c.note) hero.querySelector('.ch-note').textContent = c.note;
+    const pz = $('cup-prizes'); pz.innerHTML = '';
+    c.prizes.forEach((p, i) => { const li = document.createElement('li'); li.innerHTML = `<b>${esc(t('cup_place')(i + 1))}</b><span></span>`; li.lastChild.textContent = p; pz.appendChild(li); });
+    const why = cupBlock(c);
+    const btn = $('btn-cup-play');
+    btn.disabled = !!why; btn.lastElementChild.textContent = t('cup_play');
+    $('cup-why').hidden = !why; $('cup-why').textContent = why;
+    const nameRow = $('cup-name-row');
+    if (nameRow) nameRow.hidden = !!S.name;
+    st.textContent = t('leagueLoading');
+    try {
+      const b = await cupApi('/' + c.id + '?me=' + encodeURIComponent(S.playerId));
+      Object.assign(c, { players: b.players, me: b.me, top: b.top.slice(0, 10) });
+      st.textContent = b.top.length ? '' : t('cup_empty');
+      b.top.forEach((r, i) => {
+        const li = document.createElement('li');
+        if (b.me && b.me.rank === r.rank) li.className = 'is-me';
+        if (i < c.prizes.length) li.classList.add('in-prizes');
+        const n = document.createElement('span'); n.className = 'n'; n.textContent = r.name + (r.state && STATES[r.state] ? ' · ' + STATES[r.state] : '');
+        const s = document.createElement('span'); s.className = 's'; s.textContent = fmtNum(r.score);
+        const tt = document.createElement('span'); tt.className = 't'; tt.textContent = (i < c.prizes.length ? c.prizes[i] + ' · ' : '') + t('lgSurvived')(fmtTime(r.duration || 0), r.level || 1, r.plays);
+        li.append(n, s, tt); board.appendChild(li);
+      });
+      $('cup-me').textContent = b.me && b.me.rank ? t('cup_me')(b.me.rank, b.players, fmtNum(b.me.score)) + (b.me.triesLeft !== null && b.me.triesLeft !== undefined ? t('cup_tries')(b.me.triesLeft) : '')
+        : t('cup_me_none') + (b.me && b.me.triesLeft !== null && b.me.triesLeft !== undefined ? t('cup_tries')(b.me.triesLeft) : '');
+      const why2 = cupBlock(c);
+      btn.disabled = !!why2; $('cup-why').hidden = !why2; $('cup-why').textContent = why2;
+      refreshCupCard();
+    } catch (e) { st.textContent = e.message; }
+  }
+  async function playCup(id) {
+    const c = CUP.list.find((x) => x.id === id);
+    const why = cupBlock(c);
+    if (why) { if (G.state === 'cup') $('cup-status').textContent = why; else toast(why, 'info', 2600); return; }
+    if (!S.name) {
+      if (G.state !== 'cup') { CUP.view = id; openSide('cup'); }
+      const inp = $('cup-name'); saveNameFrom(inp);
+      if (!S.name) { $('cup-name-row').hidden = false; $('cup-status').textContent = t('cup_name_need'); inp.focus(); return; }
+    }
+    const say2 = (m) => { if (G.state === 'cup') $('cup-status').textContent = m; else toast(m, 'info', 2600); };
+    say2(t('leagueLoading'));
+    try {
+      const r = await cupPost('/' + id + '/start', { playerId: S.playerId, name: S.name });
+      LG.run = { cup: true, code: id, name: r.cup.name, runId: r.runId, seed: r.seed, rules: r.rules, triesLeft: r.triesLeft, end: r.cup.end, prizes: r.cup.prizes };
+      if (G.state === 'cup') $('cup-status').textContent = '';
+      T('cup_play', { game: r.cup.game });
+      startGame('league');
+    } catch (e) { say2(e.message || t('leagueOffline')); }
+  }
+  async function submitCupRun(run, box, msg) {
+    const L = G.league;
+    try {
+      const r = await cupPost('/' + L.code + '/score', { playerId: S.playerId, name: S.name, state: S.state || '', score: run.score, duration: run.duration, level: run.level, runId: L.runId });
+      msg.textContent = t('cup_submitted')(r.rank, r.players, fmtNum(r.best)) + (r.prizePlace ? t('cup_in_prizes')(r.prizePlace) : '') + (r.triesLeft !== null && r.triesLeft !== undefined ? ' · ' + t('lgTriesLeft')(r.triesLeft) : '');
+      box.classList.add(r.prizePlace ? 'is-first' : 'is-ok');
+      L.triesLeft = r.triesLeft;
+      if (r.triesLeft === 0) $('btn-again').hidden = true;
+      const c = CUP.list.find((x) => x.id === L.code);
+      if (c) c.me = { rank: r.rank, score: r.best, triesLeft: r.triesLeft };
+    } catch (e) { msg.textContent = e.message || t('leagueOffline'); box.classList.add('is-err'); }
+    const a = box.querySelector('.ol-actions');
+    const vb = document.createElement('button');
+    vb.type = 'button'; vb.className = 'btn btn-ghost btn-small'; vb.innerHTML = ico('trophy') + '<span></span>'; vb.lastChild.textContent = t('cup_view');
+    vb.addEventListener('click', () => openCup(L.code));
+    a.appendChild(vb);
+  }
+
   /* ==================== Update ==================== */
   function updatePlayer(dt) {
     const p = G.player;
@@ -7498,6 +7710,7 @@
 
   function refreshMenu() {
     if (S.world === 'office' && officeClosed()) { S.world = 'home'; applyWorldText(); }
+    refreshCupCard();
     const HOMEW = S.world === 'home';
     document.body.classList.toggle('is-home', HOMEW);
     ui.menuBest.textContent = fmtNum(HOMEW ? homeBestV() : G.best);
@@ -7846,6 +8059,11 @@
   $('btn-leagues').addEventListener('click', () => openSide('leagues'));
   $('office-card').addEventListener('click', () => openSide('offices'));
   $('office-list').addEventListener('click', (e) => { const b = e.target.closest('[data-office]'); if (b && !b.disabled) setOffice(b.dataset.office); const h = e.target.closest('[data-house]'); if (h && !h.disabled) setHouse(h.dataset.house); });
+  $('cup-card').addEventListener('click', () => openCup());
+  $('cup-tabs').addEventListener('click', (e) => { const b = e.target.closest('[data-cup]'); if (b) { CUP.view = b.dataset.cup; renderCup(); } });
+  $('btn-cup-play').addEventListener('click', () => playCup(CUP.view));
+  $('btn-cup-name').addEventListener('click', () => { saveNameFrom($('cup-name')); if (S.name) { refreshMenu(); renderCup(); } });
+  document.addEventListener('visibilitychange', () => { if (!document.hidden && CUP.available && G.state !== 'playing') probeCups(); });
   $('world-switch').addEventListener('click', (e) => { const b = e.target.closest('[data-world]'); if (b) { setWorld(b.dataset.world); Sound.play('near'); } });
   $('att-card').addEventListener('click', () => openSide('register'));
   $('btn-sign').addEventListener('click', signRegister);
@@ -7960,6 +8178,7 @@
   if (G.challenge) T('challenge_open', { score: G.challenge.score, daily: G.challenge.daily });
   probeLeagues();
   probeHub();
+  probeCups();
   seasonCheckRoll();
   syncReminderConfig();
   setTimeout(() => { if (G.state === 'menu' && stats.games > 0 && !attPreview().signed && !new URLSearchParams(location.search).has('debug')) openSide('register'); }, 900);
@@ -7992,6 +8211,7 @@
       SPRITES, officeClock, setQuality, get quality() { return quality; }, Sound, Music,
       OFFICES, officeUnlocked, setOffice, renderOffices, curOffice, spawnHazard, startMission, endMission, missionProgress, startMeeting, MISSIONS,
       attPreview, signRegister, renderRegister, get ATT() { return ATT; }, seasonXp, renderSeason, get SEASON() { return SEASON; }, grantSticker, STICKERS, MYSTICK, renderAlbum,
+      CUP, probeCups, playCup, openCup, renderCup, refreshCupCard,
       HOMES, setWorld, setHouse, renderRulesFields, readRules, ruleChips, canPlay, spawnMum, spawnDad, spawnSister, spawnNeighbour, spawnVisitor, startHomeErrand, endHomeErrand, startHomeEvent, homeUnlocked, officeClosed, homeBestV, applyWorldText,
       DESK_ITEMS, deskData, renderDesk, viewDesk, HUB, setState, renderStates, myPid, inviteFriend, nudges, renderNudges, setReminders, syncReminderConfig,
     };

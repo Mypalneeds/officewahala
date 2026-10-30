@@ -6,7 +6,7 @@ export const EVENTS = new Set([
   'page_view', 'visible_time', 'screen', 'js_error',
   'game_start', 'commute_end', 'level_up', 'boss', 'event_start', 'blackout', 'powerup_pick', 'powerup_use', 'task_done',
   'game_over', 'career_day', 'promotion', 'badge', 'boss_key',
-  'share', 'challenge_open', 'review_submit', 'league_create', 'league_join', 'league_play', 'league_admin', 'shop_tab', 'look_buy', 'mission', 'meeting5', 'attendance', 'season_tier', 'sticker', 'desk', 'statewar', 'invite', 'world',
+  'share', 'challenge_open', 'review_submit', 'league_create', 'league_join', 'league_play', 'league_admin', 'shop_tab', 'look_buy', 'mission', 'meeting5', 'attendance', 'season_tier', 'sticker', 'desk', 'statewar', 'invite', 'world', 'cup_play', 'cup_claim',
   'shop_buy', 'outfit_buy', 'setting', 'install_prompt', 'install_click', 'install_done',
   'ad_view', 'ad_click',
 ]);

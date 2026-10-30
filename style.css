@@ -1583,3 +1583,56 @@ body.is-home .legend-office { display: none; }
 body.is-home .over-actions .btn-gold { background: #ea580c; color: #fff; box-shadow: 0 4px 0 #9a3412; }
 body.is-home .appraisal h2 { color: #9a3412; }
 body.is-home .row-score { background: #7c2d12; }
+
+/* ---------- v8.2: Weekly Cups ---------- */
+.cup-card { display: flex; align-items: center; gap: 10px; width: 100%; margin: 12px 0 0; padding: 10px 12px; border: 0; border-radius: var(--radius-sm); background: linear-gradient(135deg, #17203a, #2b3a66); color: #fff; font: inherit; text-align: left; cursor: pointer; box-shadow: inset 0 0 0 2px rgba(245, 179, 1, 0.55); }
+.cup-card[hidden] { display: none; }
+.cup-card > .ico { font-size: 1.5rem; color: var(--gold); flex-shrink: 0; }
+.cup-card .cc-body { flex: 1; min-width: 0; display: flex; flex-direction: column; line-height: 1.2; }
+.cup-card small { font-size: 0.68rem; font-weight: 800; color: var(--gold); text-transform: uppercase; letter-spacing: 0.04em; }
+.cup-card strong { font-size: 0.98rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cup-card .cc-body > span { font-size: 0.78rem; color: #c7cfe0; font-weight: 600; }
+.cup-card .cc-go { background: var(--gold); color: var(--ink); font-weight: 900; font-size: 0.8rem; padding: 6px 12px; border-radius: 99px; white-space: nowrap; }
+.cup-card.is-home { background: linear-gradient(135deg, #7c2d12, #c2410c); }
+.cup-card[data-status="ended"] .cc-go { background: #fff; }
+.cup-card:focus-visible { outline: none; box-shadow: var(--focus); }
+.win-card { display: grid; gap: 8px; margin: 0 0 12px; }
+.win-card[hidden] { display: none; }
+.win-item { padding: 12px; border-radius: var(--radius-md); background: #fff3c4; box-shadow: inset 0 0 0 2px var(--gold); color: #5a3f00; animation: win-glow 2.4s ease-in-out infinite; }
+.win-item.is-home { background: #ffedd5; box-shadow: inset 0 0 0 2px #ea580c; color: #7c2d12; }
+.win-item.is-paid { animation: none; background: #e3f4ec; box-shadow: inset 0 0 0 2px var(--green); color: #0b5136; }
+@keyframes win-glow { 50% { box-shadow: inset 0 0 0 2px var(--gold), 0 0 0 5px rgba(245, 179, 1, 0.25); } }
+@media (prefers-reduced-motion: reduce) { .win-item { animation: none; } }
+.wi-head { display: flex; align-items: center; gap: 8px; font-size: 1rem; }
+.wi-head .ico { color: var(--gold-deep); font-size: 1.2rem; }
+.wi-prize { margin: 4px 0 6px; font-weight: 800; }
+.wi-code { margin: 0 0 8px; display: flex; align-items: baseline; gap: 8px; }
+.wi-code small { font-weight: 700; }
+.wi-code b { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 1.2rem; letter-spacing: 0.08em; background: #fff; padding: 2px 8px; border-radius: 6px; }
+.wi-help { margin: 6px 0 0; font-size: 0.76rem; font-weight: 600; opacity: 0.85; }
+.wi-paid { margin: 0; font-weight: 800; display: flex; align-items: center; gap: 6px; }
+.wi-wa { text-decoration: none; }
+.cup-tabs { display: flex; flex-wrap: wrap; margin: 0 0 10px; }
+.cup-tabs[hidden] { display: none; }
+.cup-hero { display: grid; gap: 4px; padding: 14px; border-radius: var(--radius-md); background: linear-gradient(135deg, #17203a, #2b3a66); color: #fff; }
+.cup-hero.is-home { background: linear-gradient(135deg, #7c2d12, #c2410c); }
+.ch-game { display: inline-flex; align-items: center; gap: 6px; font-size: 0.74rem; font-weight: 800; text-transform: uppercase; color: var(--gold); }
+.ch-name { font-family: var(--font-display); font-weight: 400; font-size: 1.6rem; letter-spacing: 0.02em; line-height: 1.05; }
+.ch-when { display: inline-flex; align-items: center; gap: 6px; font-weight: 700; font-size: 0.86rem; }
+.ch-dot { width: 9px; height: 9px; border-radius: 50%; background: #9ca3af; }
+.ch-dot.is-live { background: #19c37d; box-shadow: 0 0 0 3px rgba(25, 195, 125, 0.3); }
+.ch-dot.is-upcoming { background: var(--gold); }
+.ch-meta, .ch-sponsor { font-size: 0.78rem; color: #dbe2f0; }
+.ch-sponsor a { color: var(--gold); }
+.ch-note { margin: 4px 0 0; font-size: 0.82rem; color: #fff; }
+.cup-prizes { list-style: none; margin: 10px 0; padding: 0; display: grid; gap: 6px; }
+.cup-prizes li { display: grid; grid-template-columns: 3.2em 1fr; gap: 8px; align-items: center; padding: 8px 10px; border-radius: var(--radius-sm); background: #f6f7f9; font-weight: 700; }
+.cup-prizes li:first-child { background: #fff3c4; }
+.cup-prizes b { color: var(--gold-deep); }
+.cup-me { margin: 0 0 10px; font-weight: 800; color: var(--green); }
+.cup-name-row { display: flex; gap: 8px; margin: 0 0 10px; }
+.cup-name-row[hidden] { display: none; }
+.cup-name-row input { flex: 1; padding: 9px 12px; border-radius: var(--radius-sm); border: 2px solid #d7dbe3; font: inherit; }
+.board-list li.in-prizes .s { color: var(--gold-deep); }
+.cup-links a { font-weight: 700; }
+.wi-wa { display: flex; width: 100%; justify-content: center; align-items: center; gap: 8px; }

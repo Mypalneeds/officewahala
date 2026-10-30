@@ -15,6 +15,20 @@ Built by **Mmadubuko Micheal**, CEO, [Analaize Limited](https://www.analaize.com
 
 Live: https://officewahala.netlify.app
 
+## What's in version 8.2: Weekly Cups (real prizes)
+
+Official public tournaments you run from the dashboard. Free to enter, highest single score wins, you check the top scores and pay the winners yourself.
+
+| Part | What it does |
+|---|---|
+| Dashboard → **Weekly Cups** tab | Create a cup: name, game (Office, Home or Both = two cups), start/end ("This week" fills Monday–Sunday Lagos time), tries, run length, prizes (one per line, line 1 = 1st place), sponsor + link, a note, and **Repeat every week** (the next cup starts by itself when one ends). Each cup shows its board with flags for suspicious runs (very fast scoring, level not matching time, huge score in a short run), the last runs per player, each winner's **claim code**, **Disqualify / Restore**, and **Mark paid** (method + reference). Cancel or delete a cup. |
+| In the game | A **Weekly Cup** card on the menu for the game you're on (Office Cup is closed at weekends, Home Cup is open every day): prize for 1st, time left and your rank. The cup screen shows the prize table, sponsor, live top 50 and Play. Cup runs use the same seed for everyone, no shop upgrades and no commute. After a run you see your rank and whether you're in the prizes. |
+| Winners | When a cup ends, winners see a **"You won!"** card on the menu with a private claim code (an HMAC of the cup and their device ID, so only their device can show it) and a **Claim on WhatsApp** button that opens a chat with 07066459689 with the cup, place, prize and code filled in. Once you mark it paid, the card says **Paid ✓**. |
+| Public pages | `/winners/` (live boards and past winners with **Paid ✓**, FAQ structured data) and `/cup-rules/` (terms: free entry, skill only, checks, claiming, 18+ for cash, one prize per person, data). Linked from every guide page, the sitemap, llms.txt and the home page's structured data (a weekly `Event`). |
+| Server | `netlify/functions/cup.mjs` (`/api/cup/*`). Office cups refuse runs on Saturdays and Sundays. Optional env: `CUP_SECRET` (claim-code key; falls back to `DASHBOARD_KEY`). |
+
+Before the first paid week, check with a lawyer whether your state (e.g. Lagos LSLGA) or the FCCPC needs a permit or registration for prize promotions.
+
 ## What's in version 8.1
 
 | Feature | What it does |
