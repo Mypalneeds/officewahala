@@ -4828,6 +4828,7 @@
     if (S.name) hubPost('/season', { playerId: S.playerId, name: S.name, state: S.state, score: run.score, duration: run.duration, level: run.level }).catch(() => {});
     claimReferralLater();
     pushDesk();
+    postRich();
   }
 
   /* ---------- "One more shift": the nearest goals on the appraisal ---------- */
@@ -6289,6 +6290,7 @@
     board.innerHTML = ''; st.textContent = '';
     if (!c) { hero.innerHTML = ''; $('cup-prizes').innerHTML = ''; $('cup-me').textContent = ''; $('btn-cup-play').disabled = true; st.textContent = t('leagueOffline'); return; }
     CUP.view = c.id;
+    $('cup-title').textContent = c.auto ? t('wk_screen') : t('cup_screen');
     const now = cupNow();
     hero.className = 'cup-hero' + (c.game === 'home' ? ' is-home' : '');
     hero.innerHTML = `<span class="ch-game">${ico(c.game === 'home' ? 'home' : 'office')}<span></span></span><strong class="ch-name"></strong>` +
@@ -6312,16 +6314,19 @@
     $('cup-why').hidden = !why; $('cup-why').textContent = why;
     const nameRow = $('cup-name-row');
     if (nameRow) nameRow.hidden = !!S.name;
+    if (c.auto) renderRich(c.game); else $('rich-sec').hidden = true;
     st.textContent = t('leagueLoading');
     try {
       const b = await cupApi('/' + c.id + '?me=' + encodeURIComponent(S.playerId));
       Object.assign(c, { players: b.players, me: b.me, top: b.top.slice(0, 10) });
+      const meta = hero.querySelector('.ch-meta'); if (meta) meta.textContent = t('cup_players')(b.players || 0) + (c.shiftSecs ? ' · ' + t('cup_shift')(c.shiftSecs) : '') + (c.tries ? ' · ' + t('lgTries')(c.tries) : '');
       st.textContent = b.top.length ? '' : t('cup_empty');
       b.top.forEach((r, i) => {
         const li = document.createElement('li');
         if (b.me && b.me.rank === r.rank) li.className = 'is-me';
         if (i < c.prizes.length) li.classList.add('in-prizes');
         const n = document.createElement('span'); n.className = 'n'; n.textContent = r.name + (r.state && STATES[r.state] ? ' · ' + STATES[r.state] : '');
+        const tb = trophyBadge(r); if (tb) n.prepend(tb);
         const s = document.createElement('span'); s.className = 's'; s.textContent = fmtNum(r.score);
         const tt = document.createElement('span'); tt.className = 't'; tt.textContent = (i < c.prizes.length ? c.prizes[i] + ' · ' : '') + t('lgSurvived')(fmtTime(r.duration || 0), r.level || 1, r.plays);
         li.append(n, s, tt); board.appendChild(li);
@@ -6588,7 +6593,7 @@
 
   /* ---------- Weekly leaderboards: every normal Office or Home shift counts ---------- */
   Object.assign(STR.en, {
-    wk_kicker: "This week's top players", wk_sub: (me, n, lead) => (me ? `You: #${me} of ${n}` : 'Play a shift to get on the board') + (lead ? ` · Leader: ${lead}` : ''),
+    wk_kicker: "This week's top players", wk_screen: 'Leaderboards', cup_screen: 'Weekly Cup', wk_sub: (me, n, lead) => (me ? `You: #${me} of ${n}` : 'Play a shift to get on the board') + (lead ? ` · Leader: ${lead}` : ''),
     wk_prizes: (p) => ` · Top ${p.length} win prizes`, wk_view: 'Board', wk_title: (g) => `This week's top players (${g === 'home' ? 'Home' : 'Office'})`,
     wk_over: (r, n, best) => `This week's top players: #${r} of ${n} · your best: ${best}`, wk_play: 'Play a shift', wk_note: 'Every shift you play counts. Resets every Monday.',
     wk_last: (n, s) => `Last week's winner: ${n} (${s})`, wk_board: 'View the board', wk_share: 'Share this board',
@@ -6602,6 +6607,7 @@
   function refreshWeeklyCard() {
     const card = $('top-card');
     if (!card) return;
+    refreshRichLine();
     const w = CUP.weekly && CUP.weekly[cupWorld()];
     card.hidden = !w;
     if (!w) return;
@@ -6647,6 +6653,77 @@
     vb.type = 'button'; vb.className = 'btn btn-ghost btn-small'; vb.innerHTML = ico('rank') + '<span></span>'; vb.lastChild.textContent = t('wk_board');
     vb.addEventListener('click', () => { toMenu(); openWeekly(); });
     box.querySelector('.ol-actions').appendChild(vb);
+  }
+
+
+  /* ---------- Richest staff (Office) and richest kid (Home): wallet balances ---------- */
+  Object.assign(STR.en, {
+    rich_staff: 'Richest staff', rich_kid: 'Richest kid', rich_in: (who, where) => `${who} in ${where}`, rich_ng: 'Nigeria', rich_all: 'All Nigeria', rich_state: 'My state',
+    rich_pick_state: 'Pick your state in Settings to see your area.', rich_empty: 'Nobody here yet. Play a shift to get on the list!',
+    rich_earned: (e) => `earned ₦${e} so far`, rich_me: (r, w) => `You are #${r} with ₦${w}.`, rich_me_none: 'Finish a shift to get on the list.',
+    rich_help: 'Ranked by wallet balance (in-game naira). Spend it in the shop and you drop down!', rich_card: (who, where, n, w) => `${who} in ${where}: ${n} ₦${w}`,
+  });
+  Object.assign(STR.pcm, { rich_staff: 'Staff wey get money pass', rich_kid: 'Pikin wey get money pass', rich_empty: 'Nobody dey here yet. Play one shift make you enter!' });
+  CUP.rich = { area: 'ng', top: {} };
+  // A small trophy next to names of players who have won a cup prize or a weekly credit before
+  Object.assign(STR.en, { tro_title: (n, g) => `Won ${n} ${n === 1 ? 'prize' : 'prizes'}` + (g ? ` (${g}× 1st place)` : '') });
+  function trophyBadge(r) {
+    if (!r || !r.won) return null;
+    const b = document.createElement('span');
+    b.className = 'tro' + (r.gold ? ' is-gold' : '');
+    b.title = t('tro_title')(r.won, r.gold);
+    b.setAttribute('aria-label', b.title);
+    b.innerHTML = ico('trophy') + (r.won > 1 ? '<b>' + r.won + '</b>' : '');
+    return b;
+  }
+  let richPostT = 0;
+  function postRich() {
+    if (!HUB.available || Date.now() - richPostT < 7000) return;
+    richPostT = Date.now();
+    const game = G.world === 'home' ? 'home' : 'office';
+    hubPost('/rich', { playerId: S.playerId, name: wkName(), state: S.state || '', game, wallet: Math.floor(S.wallet), earned: Math.floor(stats.earned || 0) })
+      .then(() => { CUP.rich.top = {}; refreshRichLine(); }).catch(() => {});
+  }
+  const richWho = (game) => (game === 'home' ? t('rich_kid') : t('rich_staff'));
+  function richFetch(game, area) {
+    const st = area === 'st' ? S.state : '';
+    const k = game + ':' + (st || 'ng');
+    if (CUP.rich.top[k]) return Promise.resolve(CUP.rich.top[k]);
+    return hubApi('/rich?game=' + game + '&state=' + (st || '') + '&me=' + encodeURIComponent(S.playerId)).then((j) => { CUP.rich.top[k] = j; return j; });
+  }
+  function refreshRichLine() {
+    const el = $('top-card-rich');
+    if (!el || !HUB.available) return;
+    const game = cupWorld();
+    const area = S.state ? 'st' : 'ng';
+    richFetch(game, area).then((j) => {
+      const r = j.top[0];
+      el.hidden = !r;
+      if (r) el.textContent = t('rich_card')(richWho(game), area === 'st' ? STATES[S.state] : t('rich_ng'), r.name, fmtNum(r.wallet));
+    }).catch(() => { el.hidden = true; });
+  }
+  function renderRich(game) {
+    const sec = $('rich-sec');
+    sec.hidden = !HUB.available;
+    if (!HUB.available) return;
+    const area = CUP.rich.area;
+    for (const b of $('rich-area').querySelectorAll('[data-a]')) b.setAttribute('aria-pressed', String(b.dataset.a === area));
+    $('rich-title').textContent = t('rich_in')(richWho(game), area === 'st' && S.state ? STATES[S.state] : t('rich_ng'));
+    const ol = $('rich-board'), st = $('rich-status');
+    ol.innerHTML = '';
+    if (area === 'st' && !S.state) { st.textContent = t('rich_pick_state'); return; }
+    st.textContent = t('leagueLoading');
+    richFetch(game, area).then((j) => {
+      st.textContent = j.top.length ? (j.rank ? t('rich_me')(j.rank, fmtNum(j.mine.wallet)) : t('rich_me_none')) : t('rich_empty');
+      for (const r of j.top) {
+        const li = document.createElement('li'); if (r.me) li.className = 'is-me';
+        const n = document.createElement('span'); n.className = 'n'; n.textContent = r.name + (r.state && STATES[r.state] && area !== 'st' ? ' · ' + STATES[r.state] : '');
+        const tb = trophyBadge(r); if (tb) n.prepend(tb);
+        const s = document.createElement('span'); s.className = 's rich-s'; s.textContent = '₦' + fmtNum(r.wallet);
+        const tt = document.createElement('span'); tt.className = 't'; tt.textContent = t('rich_earned')(fmtNum(r.earned));
+        li.append(n, s, tt); ol.appendChild(li);
+      }
+    }).catch((e) => { st.textContent = e.message; });
   }
 
   /* ==================== Update ==================== */
@@ -8349,6 +8426,7 @@
   $('office-list').addEventListener('click', (e) => { const b = e.target.closest('[data-office]'); if (b && !b.disabled) setOffice(b.dataset.office); const h = e.target.closest('[data-house]'); if (h && !h.disabled) setHouse(h.dataset.house); });
   $('cup-card').addEventListener('click', () => openCup());
   $('top-card').addEventListener('click', openWeekly);
+  $('rich-area').addEventListener('click', (e) => { const b = e.target.closest('[data-a]'); if (!b) return; CUP.rich.area = b.dataset.a; const c = CUP.list.find((x) => x.id === CUP.view); renderRich(c ? c.game : cupWorld()); });
   $('cup-tabs').addEventListener('click', (e) => { const b = e.target.closest('[data-cup]'); if (b) { CUP.view = b.dataset.cup; renderCup(); } });
   $('btn-cup-play').addEventListener('click', () => playCup(CUP.view));
   $('btn-cup-share').addEventListener('click', () => shareCup(CUP.view));
@@ -8501,7 +8579,7 @@
       SPRITES, officeClock, setQuality, get quality() { return quality; }, Sound, Music,
       OFFICES, officeUnlocked, setOffice, renderOffices, curOffice, spawnHazard, startMission, endMission, missionProgress, startMeeting, MISSIONS,
       attPreview, signRegister, renderRegister, get ATT() { return ATT; }, seasonXp, renderSeason, get SEASON() { return SEASON; }, grantSticker, STICKERS, MYSTICK, renderAlbum,
-      probeWeekly, openWeekly, refreshWeeklyCard,
+      probeWeekly, openWeekly, refreshWeeklyCard, postRich, renderRich,
       CUP, probeCups, playCup, openCup, renderCup, refreshCupCard, makeCupImage, shareCup, shareWin,
       HOMES, setWorld, setHouse, renderRulesFields, readRules, ruleChips, canPlay, spawnMum, spawnDad, spawnSister, spawnNeighbour, spawnVisitor, startHomeErrand, endHomeErrand, startHomeEvent, homeUnlocked, officeClosed, homeBestV, applyWorldText,
       DESK_ITEMS, deskData, renderDesk, viewDesk, HUB, setState, renderStates, myPid, inviteFriend, nudges, renderNudges, setReminders, syncReminderConfig,

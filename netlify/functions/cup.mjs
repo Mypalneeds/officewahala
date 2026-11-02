@@ -209,7 +209,27 @@ async function rowsOf(store, c) {
 }
 // Ranked board without disqualified players; prize places follow this order.
 const ranked = (c, rows) => rows.filter((r) => !(c.rejected || []).includes(r.pid));
-const pubRow = (r, i) => ({ rank: i + 1, name: r.name, state: r.state || '', score: r.best, duration: r.duration, level: r.level, plays: r.plays });
+// Trophy cabinet: how many cup prizes / weekly-board credits each player has won (ended cups only).
+let HALL = {};
+export async function getHall(store, now, force) {
+  const doc = await store.get('cups/hall', { type: 'json' }).catch(() => null);
+  if (doc && !force && now - doc.t < 5 * 60 * 1000) return doc.map || {};
+  const idx = await readIndex(store);
+  const map = {};
+  for (const id of idx.ids.slice(0, 200)) {
+    const c = await readCup(store, id);
+    if (!c || c.cancelled || now < c.end) continue;
+    const rows = ranked(c, await rowsOf(store, c));
+    for (const a of awardsOf(c, rows)) {
+      const m = map[a.r.pid] || (map[a.r.pid] = { n: 0, gold: 0, cups: 0 });
+      m.n++; if (a.place === 1) m.gold++; if (!c.auto) m.cups++;
+    }
+  }
+  await store.setJSON('cups/hall', { t: now, map });
+  return map;
+}
+const trophy = (pid) => { const h = HALL[pid]; return h ? { won: h.n, gold: h.gold, cups: h.cups } : { won: 0, gold: 0, cups: 0 }; };
+const pubRow = (r, i) => Object.assign({ rank: i + 1, name: r.name, state: r.state || '', score: r.best, duration: r.duration, level: r.level, plays: r.plays }, trophy(r.pid));
 
 export default async (req) => {
   const url = new URL(req.url);
@@ -218,6 +238,7 @@ export default async (req) => {
   const now = Date.now();
   try {
     if (parts[0] === 'health') return json({ ok: true });
+    if (req.method === 'GET' && parts[0] !== 'claims') HALL = await getHall(store, now).catch(() => ({}));
 
     // ---------- Dashboard ----------
     if (parts[0] === 'admin') {
@@ -289,6 +310,7 @@ export default async (req) => {
       else if (act === 'uncredit') { if (c.credits) delete c.credits[pid]; delete c.paid[pid]; }
       else return fail('Unknown action.');
       await saveCup(store, c);
+      await getHall(store, now, true).catch(() => {});
       return json({ ok: true });
     }
 
@@ -302,7 +324,7 @@ export default async (req) => {
         const rows = ranked(c, await rowsOf(store, c));
         if (st === 'ended') {
           done.push(Object.assign(publicCup(c, now), { players: rows.length,
-            winners: awardsOf(c, rows).map((a) => ({ place: a.place, name: a.r.name, state: a.r.state || '', score: a.r.best, prize: a.prize, paid: !!(c.paid || {})[a.r.pid] })) }));
+            winners: awardsOf(c, rows).map((a) => Object.assign({ place: a.place, name: a.r.name, state: a.r.state || '', score: a.r.best, prize: a.prize, paid: !!(c.paid || {})[a.r.pid] }, trophy(a.r.pid))) }));
         } else live.push(Object.assign(publicCup(c, now), { players: rows.length, top: rows.slice(0, 10).map(pubRow) }));
       }
       for (const d of done) if (d.auto && !d.winners.length) d.skip = true;

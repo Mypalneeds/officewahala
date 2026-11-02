@@ -334,7 +334,7 @@
           </div>
 
           <button id="cup-card" class="cup-card" type="button" hidden><svg class="ico" aria-hidden="true"><use href="#i-trophy"/></svg><span class="cc-body"><small id="cup-card-kicker">Weekly Cup</small><strong id="cup-card-title"></strong><span id="cup-card-sub"></span></span><span class="cc-go" id="cup-card-go">Play</span></button>
-          <button id="top-card" class="top-card" type="button" hidden><svg class="ico" aria-hidden="true"><use href="#i-rank"/></svg><span class="cc-body"><small id="top-card-kicker">This week's top players</small><span id="top-card-sub"></span><span id="top-card-last" class="tc-last" hidden></span></span><span class="cc-go">Board</span></button>
+          <button id="top-card" class="top-card" type="button" hidden><svg class="ico" aria-hidden="true"><use href="#i-rank"/></svg><span class="cc-body"><small id="top-card-kicker">This week's top players</small><span id="top-card-sub"></span><span id="top-card-last" class="tc-last" hidden></span><span id="top-card-rich" class="tc-last tc-rich" hidden></span></span><span class="cc-go">Board</span></button>
           <div class="id-body">
             <canvas id="id-photo" class="id-photo" width="88" height="104" aria-label="Your worker"></canvas>
             <dl class="id-meta">
@@ -872,6 +872,13 @@
           <h3 class="shop-sec"><svg class="ico" aria-hidden="true"><use href="#i-rank"/></svg><span>Live leaderboard</span></h3>
           <ol id="cup-board" class="board-list"></ol>
           <p id="cup-status" class="lb-status"></p>
+          <div id="rich-sec" class="rich-sec" hidden>
+            <h3 class="shop-sec"><svg class="ico" aria-hidden="true"><use href="#i-coins"/></svg><span id="rich-title">Richest staff in Nigeria</span></h3>
+            <div class="pill-tabs" id="rich-area"><button type="button" data-a="ng" aria-pressed="true">All Nigeria</button><button type="button" data-a="st" aria-pressed="false">My state</button></div>
+            <p class="setting-help">Ranked by wallet balance (in-game naira). Spend it in the shop and you drop down!</p>
+            <ol id="rich-board" class="board-list"></ol>
+            <p id="rich-status" class="lb-status"></p>
+          </div>
           <p class="setting-help cup-links"><a href="/winners/" target="_blank" rel="noopener">Past winners</a> · <a href="/cup-rules/" target="_blank" rel="noopener">Cup rules</a></p>
         </article>
       </div>

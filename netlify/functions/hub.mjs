@@ -8,6 +8,8 @@
      GET  /api/hub/states?me= -> this week's State Wars table (+ last week's winner, your contribution)
      POST /api/hub/season     { playerId, name, state, score, duration, level }   your best this month
      GET  /api/hub/season?me= -> this month's top 50
+     POST /api/hub/rich       { playerId, name, state, game, wallet, earned }   richest staff (Office) / richest kid (Home)
+     GET  /api/hub/rich?game=office|home&state=la&me=  -> top 50 by wallet balance, all Nigeria or one state
      POST /api/hub/referral   { playerId, name, ref }   new player finished a first shift via an invite link
      POST /api/hub/desk       { playerId, name, desk }  share your desk so league colleagues can see it
      GET  /api/hub/desk/:pid  -> a colleague's desk
@@ -165,6 +167,55 @@ export default async (req) => {
       const me = url.searchParams.get('me') || '';
       const pid = validPlayer(me) ? await pidOf(me) : '';
       return json({ season: month, top: top.rows.map((r) => ({ name: r.name, score: r.score, state: r.state, me: r.pid === pid })), rank: pid ? top.rows.findIndex((r) => r.pid === pid) + 1 : 0 });
+    }
+
+    // ---------- Richest staff (Office) / richest kid (Home): pretend-naira wallet balances ----------
+    if (parts[0] === 'rich' && req.method === 'POST') {
+      const b = await readBody(req);
+      if (!validPlayer(b.playerId)) return fail('Invalid player.');
+      const game = b.game === 'home' ? 'home' : 'office';
+      const name = cleanName(b.name, 20) || 'Player';
+      if (isRude(name)) return fail('Please choose a friendlier name.');
+      const wallet = Math.floor(Number(b.wallet)), earned = Math.floor(Number(b.earned));
+      if (!(wallet >= 0 && earned >= 0 && wallet <= 50000000 && earned <= 50000000)) return fail('Invalid balance.');
+      if (await limited(store, 'rich' + game, b.playerId, 6)) return fail('Slow down a little.', 429);
+      const pid = await pidOf(b.playerId);
+      // Plausibility: earnings can only grow so fast, and the balance can't run far ahead of what was earned
+      // (badges, the register, seasons, invites and gifts add some on top of salary).
+      const mk = `richp/${b.playerId}`;
+      const prev = (await store.get(mk, { type: 'json' }).catch(() => null)) || { earned: 0, t: now - 3600 * 1000 };
+      const maxEarned = prev.earned + Math.max(20000, ((now - prev.t) / 1000) * 120);
+      if (earned > maxEarned) return fail('Balance does not match the time played.');
+      if (wallet > earned * 2 + 150000) return fail('Balance does not match what you earned.');
+      await store.setJSON(mk, { earned, wallet, t: now });
+      const st = STATES[b.state] ? b.state : '';
+      const row = { pid, name, state: st, wallet, earned, t: now };
+      for (const [key, cap] of [[`rich/${game}/top`, 200], ...(st ? [[`rich/${game}/s/${st}`, 50]] : [])]) {
+        const doc = (await store.get(key, { type: 'json' }).catch(() => null)) || { rows: [] };
+        doc.rows = [row, ...doc.rows.filter((r) => r.pid !== pid)].sort((a, c) => c.wallet - a.wallet || a.t - c.t).slice(0, cap);
+        await store.setJSON(key, doc);
+      }
+      // moved state: drop the old state's entry
+      if (prev.state && prev.state !== st) {
+        const ok2 = `rich/${game}/s/${prev.state}`;
+        const doc = await store.get(ok2, { type: 'json' }).catch(() => null);
+        if (doc) { doc.rows = doc.rows.filter((r) => r.pid !== pid); await store.setJSON(ok2, doc); }
+      }
+      await store.setJSON(mk, { earned, wallet, t: now, state: st });
+      const top = (await store.get(`rich/${game}/top`, { type: 'json' }).catch(() => null)) || { rows: [] };
+      return json({ ok: true, rank: top.rows.findIndex((r) => r.pid === pid) + 1 });
+    }
+    if (parts[0] === 'rich' && req.method === 'GET') {
+      const game = url.searchParams.get('game') === 'home' ? 'home' : 'office';
+      const st = STATES[url.searchParams.get('state')] ? url.searchParams.get('state') : '';
+      const doc = (await store.get(st ? `rich/${game}/s/${st}` : `rich/${game}/top`, { type: 'json' }).catch(() => null)) || { rows: [] };
+      const me = url.searchParams.get('me') || '';
+      const pid = validPlayer(me) ? await pidOf(me) : '';
+      const rank = pid ? doc.rows.findIndex((r) => r.pid === pid) + 1 : 0;
+      const hall = ((await store.get('cups/hall', { type: 'json' }).catch(() => null)) || {}).map || {};
+      const tro = (p) => { const h = hall[p]; return h ? { won: h.n, gold: h.gold, cups: h.cups } : { won: 0, gold: 0, cups: 0 }; };
+      return json({ game, state: st, top: doc.rows.slice(0, 50).map((r) => Object.assign({ name: r.name, state: r.state, wallet: r.wallet, earned: r.earned, me: r.pid === pid }, tro(r.pid))), rank,
+        mine: rank ? { wallet: doc.rows[rank - 1].wallet } : null });
     }
 
     // ---------- Referrals: both players get ₦1,000 (pretend money) ----------

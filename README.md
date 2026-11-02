@@ -15,6 +15,12 @@ Built by **Mmadubuko Micheal**, CEO, [Analaize Limited](https://www.analaize.com
 
 Live: https://officewahala.netlify.app
 
+## What's in version 8.5: richest staff and richest kid
+
+On the weekly leaderboard screen (and a line on the menu card), each game now has a **richest** list ranked by wallet balance (pretend naira): **Richest staff** for Office Wahala and **Richest kid** for Home Wahala, for **All Nigeria** or **My state** ("Richest kid in Lagos"). After each shift the game posts the balance and lifetime earnings to `/api/hub/rich`; the server checks that earnings can't grow faster than play allows and that the balance can't run far ahead of earnings. The wallet is shared between both games, so the two lists differ by who has played which game. Because balances are kept on the player's phone, use these lists for bragging rights rather than real prizes.
+
+**Cup winners get a trophy badge.** Anyone who has won a prize in an ended Weekly Cup or a weekly leaderboard (including organiser credits) gets a small trophy next to their name on every board: weekly, cup, richest lists and the Winners page. First-place wins turn the trophy gold and show the count (🏆3). The server keeps this in `cups/hall`, rebuilds it every 5 minutes, and rebuilds it straight away when you disqualify, credit or mark someone paid from the dashboard.
+
 ## What's in version 8.4: weekly leaderboards you can credit
 
 Every normal Office or Home shift now goes on that week's public leaderboard automatically (no joining). Each game has its own board, Monday to Sunday (Lagos). At the start of a shift the game gets a one-time ticket from the server; at the end it submits the score with it (`/api/cup/weekly/start`, then `/api/cup/<id>/score`). Daily, career and league shifts don't count.
