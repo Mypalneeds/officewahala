@@ -6167,6 +6167,7 @@
     cup_kicker: 'Weekly Cup · real prizes', cup_play: 'Play for the cup', cup_soon: 'Soon', cup_results: 'Results', cup_go: 'Play',
     cup_sub_live: (p, left, me) => `1st: ${p} · ends in ${left}` + (me ? ` · You: #${me}` : ''), cup_sub_soon: (left) => `Starts in ${left}`, cup_sub_ended: 'Ended · see the winners',
     cup_sub_closed: 'Office is closed today. The Office Cup opens again on Monday.',
+    cup_paused: 'Paused by the organiser · back soon', cup_sub_paused: 'Paused for now · back soon', cup_view_btn: 'View',
     cup_live: 'Live', cup_upcoming: 'Starts soon', cup_ended: 'Ended', cup_ends: (l) => `Ends in ${l}`, cup_starts: (l) => `Starts in ${l}`, cup_ended_on: (d) => `Ended ${d}`,
     cup_players: (n) => `${n} ${n === 1 ? 'player' : 'players'}`, cup_place: (n) => ['1st', '2nd', '3rd'][n - 1] || n + 'th',
     cup_me: (r, n, s) => `You are #${r} of ${n} with ${s}.`, cup_me_none: 'You have no score yet. Your best single run counts.',
@@ -6184,6 +6185,7 @@
     cup_kicker: 'Weekly Cup · real money', cup_play: 'Play for the cup', cup_me_none: 'You never get score. Your best one run go count.',
     cup_won: (place, cup) => `You win ${place} place for ${cup}!`, cup_claim: 'Collect am for WhatsApp', cup_empty: 'Nobody don score. Be the first!',
     cup_sub_closed: 'Office close today. Office Cup go open again Monday.',
+    cup_paused: 'Oga pause the cup small · e go soon start', cup_sub_paused: 'Cup pause small · e go soon start',
   });
   function cupApi(path, opts) {
     return fetch(CUP_API + path, Object.assign({ headers: { 'content-type': 'application/json' }, cache: 'no-store' }, opts || {})).then(async (r) => {
@@ -6196,7 +6198,7 @@
   const cupNow = () => Date.now() + (CUP.skew || 0);
   const cupWorld = () => (S.world === 'home' ? 'home' : 'office');
   function cupFor(world) {
-    const order = { live: 0, upcoming: 1, ended: 2 };
+    const order = { live: 0, paused: 1, upcoming: 2, ended: 3 };
     return CUP.list.filter((c) => c.game === world && !c.auto).sort((a, b) => order[a.status] - order[b.status] || a.end - b.end)[0] || null;
   }
   function probeCups() {
@@ -6224,10 +6226,11 @@
     const now = cupNow();
     let sub = '';
     if (c.status === 'live') sub = c.game !== 'home' && officeClosed() ? t('cup_sub_closed') : t('cup_sub_live')(c.prizes[0], fmtLeft(c.end - now), c.me && c.me.rank);
+    else if (c.status === 'paused') sub = t('cup_sub_paused');
     else if (c.status === 'upcoming') sub = t('cup_sub_soon')(fmtLeft(c.start - now));
     else sub = t('cup_sub_ended');
     $('cup-card-sub').textContent = sub;
-    $('cup-card-go').textContent = c.status === 'live' ? t('cup_go') : c.status === 'upcoming' ? t('cup_soon') : t('cup_results');
+    $('cup-card-go').textContent = c.status === 'live' ? t('cup_go') : c.status === 'paused' ? t('cup_view_btn') : c.status === 'upcoming' ? t('cup_soon') : t('cup_results');
   }
   function renderWinCard() {
     const box = $('win-card');
@@ -6269,6 +6272,7 @@
   }
   function cupBlock(c) {
     if (!c) return t('leagueOffline');
+    if (c.status === 'paused') return t('cup_paused');
     if (c.status === 'upcoming') return t('cup_not_live');
     if (c.status === 'ended') return t('cup_over');
     if (c.game !== 'home' && officeClosed()) return t('cup_sub_closed');
@@ -6297,7 +6301,7 @@
       `<span class="ch-when"><i class="ch-dot is-${c.status}"></i><span></span></span><span class="ch-meta"></span>` + (c.sponsor ? '<span class="ch-sponsor"></span>' : '') + (c.note ? '<p class="ch-note"></p>' : '');
     hero.querySelector('.ch-game span').textContent = c.game === 'home' ? 'Home Wahala' : 'Office Wahala';
     hero.querySelector('.ch-name').textContent = c.name;
-    hero.querySelector('.ch-when span').textContent = (c.status === 'live' ? t('cup_live') + ' · ' + t('cup_ends')(fmtLeft(c.end - now)) : c.status === 'upcoming' ? t('cup_starts')(fmtLeft(c.start - now)) : t('cup_ended_on')(fmtWhen(c.end)));
+    hero.querySelector('.ch-when span').textContent = (c.status === 'live' ? t('cup_live') + ' · ' + t('cup_ends')(fmtLeft(c.end - now)) : c.status === 'paused' ? t('cup_paused') : c.status === 'upcoming' ? t('cup_starts')(fmtLeft(c.start - now)) : t('cup_ended_on')(fmtWhen(c.end)));
     hero.querySelector('.ch-meta').textContent = t('cup_players')(c.players || 0) + (c.shiftSecs ? ' · ' + t('cup_shift')(c.shiftSecs) : '') + (c.tries ? ' · ' + t('lgTries')(c.tries) : '');
     if (c.sponsor) {
       const sp = hero.querySelector('.ch-sponsor');
@@ -6448,7 +6452,7 @@
         x.fillStyle = '#ffffff'; x.font = `800 50px ${BODY}`;
         x.fillText(c.name, Wc / 2, 690, Wc - 120);
         const now = cupNow();
-        const when = opts.win ? '' : c.status === 'ended' ? 'WINNERS ANNOUNCED' : c.status === 'upcoming' ? 'STARTS IN ' + fmtLeft(c.start - now).toUpperCase() : 'LIVE NOW · ENDS IN ' + fmtLeft(c.end - now).toUpperCase();
+        const when = opts.win ? '' : c.status === 'ended' ? 'WINNERS ANNOUNCED' : c.status === 'paused' ? 'PAUSED · BACK SOON' : c.status === 'upcoming' ? 'STARTS IN ' + fmtLeft(c.start - now).toUpperCase() : 'LIVE NOW · ENDS IN ' + fmtLeft(c.end - now).toUpperCase();
         if (when) {
           x.font = `900 40px ${BODY}`;
           const tw = x.measureText(when).width + 70;

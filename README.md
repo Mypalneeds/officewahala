@@ -15,6 +15,25 @@ Built by **Mmadubuko Micheal**, CEO, [Analaize Limited](https://www.analaize.com
 
 Live: https://officewahala.netlify.app
 
+## What's in version 8.6: a cleaner dashboard and full cup controls
+
+The dashboard (`/dashboard/`) has a new calm, light look (it follows your phone or computer's dark mode too) with a sidebar and short pages instead of one long scroll:
+
+| Page | What's on it |
+|---|---|
+| **Overview** | 8 key numbers, visitors and games per day, the player journey, busiest hours |
+| **Audience · Gameplay · Economy · Health** | The detailed breakdowns, split into their own pages. Health shows JavaScript errors and every event. |
+| **Billboards** | Ad performance and the billboard editor (same as before) |
+| **Weekly boards** | Prizes for the weekly Office and Home leaderboards, this week's two boards and earlier weeks. **Credit** opens a small box where you type the prize. You can **pause** a weekly board (shifts stop counting until you resume it). |
+| **Weekly Cups** | Every cup as one tidy row: game, status, dates, players, 1st prize. Buttons: **Board** (opens the scores), **Edit**, **Pause / Resume**, **End now** (asks you to confirm), and a ⋯ menu with Cancel and Delete. Filter by Active, Finished or All. |
+| **Payouts** | Everyone you owe: cup, place, player, prize, claim code. **Mark paid** asks for the method and a reference. The sidebar shows how many are still unpaid. |
+
+**One game per cup.** The **New cup** form makes a cup for Office Wahala *or* Home Wahala (there is no "Both" any more; run two cups if you want both). You can change a cup's game only until somebody plays it.
+
+**Edit, pause, resume, end.** Edit changes the name, dates, prizes, tries, run length, sponsor, note and weekly repeat; scores are kept. A paused cup stays on the board with a "Paused" label in the game, on shared images and on the winners page, but nobody can start a new run (a run already started still counts). **End now** finishes the cup straight away; the board at that moment is final and winners go to Payouts. If the cup repeats weekly, next week's copy still starts at the original time.
+
+Public pages updated for this: cup rules (one game per cup, pausing and ending early, trophy badges), FAQ (3 new questions), how to play (weekly boards, richest lists, trophies), winners page and `llms.txt`.
+
 ## What's in version 8.5: richest staff and richest kid
 
 On the weekly leaderboard screen (and a line on the menu card), each game now has a **richest** list ranked by wallet balance (pretend naira): **Richest staff** for Office Wahala and **Richest kid** for Home Wahala, for **All Nigeria** or **My state** ("Richest kid in Lagos"). After each shift the game posts the balance and lifetime earnings to `/api/hub/rich`; the server checks that earnings can't grow faster than play allows and that the balance can't run far ahead of earnings. The wallet is shared between both games, so the two lists differ by who has played which game. Because balances are kept on the player's phone, use these lists for bragging rights rather than real prizes.
@@ -26,7 +45,7 @@ On the weekly leaderboard screen (and a line on the menu card), each game now ha
 Every normal Office or Home shift now goes on that week's public leaderboard automatically (no joining). Each game has its own board, Monday to Sunday (Lagos). At the start of a shift the game gets a one-time ticket from the server; at the end it submits the score with it (`/api/cup/weekly/start`, then `/api/cup/<id>/score`). Daily, career and league shifts don't count.
 
 - **Menu:** a "This week's top players" card for the game you're on (your rank, the leader, last week's winner) that opens the board; after each shift the appraisal shows your weekly rank.
-- **Dashboard → Weekly Cups tab → Weekly leaderboards:** set prizes for the top places (Office and Home separately, optional sponsor), now or from next Monday. On each board you can **Credit** any player (e.g. "₦2,000 airtime"), **Disqualify**, and **Mark paid**.
+- **Dashboard → Weekly boards:** set prizes for the top places (Office and Home separately, optional sponsor), now or from next Monday. On each board you can **Credit** any player (e.g. "₦2,000 airtime"), **Disqualify**, and **Mark paid**.
 - **Winners:** credited players get the same "You won!" card, private claim code and **Claim on WhatsApp** button as cup winners, and appear on `/winners/` with **Paid ✓**. Last week's winner shows on the menu card. Players without a name show as "Player ABCD" until they type one.
 
 ## What's in version 8.2: Weekly Cups (real prizes)
@@ -35,7 +54,7 @@ Official public tournaments you run from the dashboard. Free to enter, highest s
 
 | Part | What it does |
 |---|---|
-| Dashboard → **Weekly Cups** tab | Create a cup: name, game (Office, Home or Both = two cups), start/end ("This week" fills Monday–Sunday Lagos time), tries, run length, prizes (one per line, line 1 = 1st place), sponsor + link, a note, and **Repeat every week** (the next cup starts by itself when one ends). Each cup shows its board with flags for suspicious runs (very fast scoring, level not matching time, huge score in a short run), the last runs per player, each winner's **claim code**, **Disqualify / Restore**, and **Mark paid** (method + reference). Cancel or delete a cup. |
+| Dashboard → **Weekly Cups** tab | Create a cup: name, game (Office or Home, one per cup), start/end ("This week" fills Monday–Sunday Lagos time), tries, run length, prizes (one per line, line 1 = 1st place), sponsor + link, a note, and **Repeat every week** (the next cup starts by itself when one ends). Each cup shows its board with flags for suspicious runs (very fast scoring, level not matching time, huge score in a short run), the last runs per player, each winner's **claim code**, **Disqualify / Restore**, and **Mark paid** (method + reference, now on the Payouts page). Edit, pause, resume, end early, cancel or delete a cup. |
 | In the game | A **Weekly Cup** card on the menu for the game you're on (Office Cup is closed at weekends, Home Cup is open every day): prize for 1st, time left and your rank. The cup screen shows the prize table, sponsor, live top 50 and Play. Cup runs use the same seed for everyone, no shop upgrades and no commute. After a run you see your rank and whether you're in the prizes. |
 | Winners | When a cup ends, winners see a **"You won!"** card on the menu with a private claim code (an HMAC of the cup and their device ID, so only their device can show it) and a **Claim on WhatsApp** button that opens a chat with 07066459689 with the cup, place, prize and code filled in. Once you mark it paid, the card says **Paid ✓**. |
 | Public pages | `/winners/` (live boards and past winners with **Paid ✓**, FAQ structured data) and `/cup-rules/` (terms: free entry, skill only, checks, claiming, 18+ for cash, one prize per person, data). Linked from every guide page, the sitemap, llms.txt and the home page's structured data (a weekly `Event`). |
@@ -134,7 +153,7 @@ The new server routes live in `netlify/functions/hub.mjs` (`/api/hub/*`: State W
 | AEO (answer engines) | Every guide page opens with a short direct answer, questions are written the way people ask them, and `llms.txt` gives ChatGPT, Perplexity, Gemini and Claude a plain summary of the game and its pages. |
 | Crawl files | `sitemap.xml` (with real gameplay screenshots as image entries), `robots.txt` (keeps `/dashboard/` and `/api/` out of search), a `<noscript>` description on the game page, and real screenshots in `screenshots/`. |
 | Analytics dashboard | `/dashboard/`, behind a password you choose: visitors (new and returning), sessions, page views, games, total and average playtime, scores, live visitors, a daily chart, busiest hours (Lagos time), a player funnel, traffic sources and UTM campaigns, countries, devices, languages, and a breakdown of almost every in-game event (what ended each shift, levels reached, bosses, shift events, power-ups, commute, blackouts, career days, badges, shop, outfits, shares, settings, installs) plus any JavaScript errors. Export to CSV. |
-| Roadside billboards | Billboards line the Lagos road during the commute, ad screens hang on the office walls, a sponsored card sits on the menu and a "Shift sponsored by…" line on the appraisal. You manage every ad (brand, message, colours, image, link, dates, where it shows, how often) from the dashboard's **Ads** tab, with a live preview and view and click counts per ad. Changes go live in about two minutes, with no redeploy. |
+| Roadside billboards | Billboards line the Lagos road during the commute, ad screens hang on the office walls, a sponsored card sits on the menu and a "Shift sponsored by…" line on the appraisal. You manage every ad (brand, message, colours, image, link, dates, where it shows, how often) from the dashboard's **Billboards** page, with a live preview and view and click counts per ad. Changes go live in about two minutes, with no redeploy. |
 
 ## What's in version 3
 

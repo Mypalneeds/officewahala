@@ -4,269 +4,484 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="robots" content="noindex,nofollow">
-  <title>Office Wahala Analytics</title>
+  <title>Office Wahala Dashboard</title>
   <link rel="icon" href="/favicon.ico" sizes="any">
   <link rel="icon" href="/icons/favicon-32.png" type="image/png" sizes="32x32">
   <style>
     :root {
-      --bg: #0b1222; --panel: #131c33; --panel-2: #1a2542; --line: #24304f; --text: #e8ecf5; --muted: #93a0bd;
-      --green: #19c37d; --green-d: #008751; --gold: #f5b301; --red: #ef5b61; --blue: #5ab0ff; --purple: #b58cff;
-      --font: system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
-      --display: Impact, "Arial Black", system-ui, sans-serif;
+      --bg: #f5f6f8; --panel: #ffffff; --panel-2: #f1f3f6; --line: #e5e7eb; --line-2: #d1d5db; --text: #111827; --muted: #6b7280; --faint: #9ca3af;
+      --green: #059669; --green-d: #047857; --green-bg: #ecfdf5; --gold: #d97706; --gold-bg: #fffbeb; --red: #dc2626; --red-bg: #fef2f2;
+      --blue: #2563eb; --blue-bg: #eff6ff; --purple: #7c3aed; --orange: #ea580c; --orange-bg: #fff7ed;
+      --shadow: 0 1px 2px rgba(16, 24, 40, 0.05);
+      --font: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+      color-scheme: light;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #0d1117; --panel: #161b22; --panel-2: #1f2630; --line: #2a313c; --line-2: #3a4350; --text: #e6e9ef; --muted: #9aa4b2; --faint: #6b7480;
+        --green: #34d399; --green-d: #10b981; --green-bg: rgba(52, 211, 153, 0.12); --gold: #fbbf24; --gold-bg: rgba(251, 191, 36, 0.12); --red: #f87171; --red-bg: rgba(248, 113, 113, 0.12);
+        --blue: #60a5fa; --blue-bg: rgba(96, 165, 250, 0.12); --purple: #a78bfa; --orange: #fb923c; --orange-bg: rgba(251, 146, 60, 0.12);
+        --shadow: none; color-scheme: dark;
+      }
     }
     * { box-sizing: border-box; }
-    body { margin: 0; background: var(--bg); color: var(--text); font: 15px/1.5 var(--font); }
+    html, body { margin: 0; }
+    body { background: var(--bg); color: var(--text); font: 14px/1.5 var(--font); -webkit-font-smoothing: antialiased; }
     a { color: var(--blue); }
-    button, input, select, textarea { font: inherit; }
-    :focus-visible { outline: 3px solid var(--gold); outline-offset: 2px; }
-    .top { position: sticky; top: 0; z-index: 5; background: rgba(11, 18, 34, 0.94); backdrop-filter: blur(6px); border-bottom: 1px solid var(--line); }
-    .top .in { max-width: 1240px; margin: 0 auto; padding: 10px 16px; display: flex; gap: 10px 16px; align-items: center; flex-wrap: wrap; }
-    .brand { font-family: var(--display); font-weight: 900; font-synthesis: none; font-size: 1.15rem; text-transform: uppercase; letter-spacing: 0.02em; }
-    .brand span { color: var(--green); }
-    .brand { display: inline-flex; align-items: center; gap: 8px; }
-    .brand img { border-radius: 8px; }
-    .login-logo { display: block; width: 120px; height: 120px; border-radius: 22px; margin: 0 auto 10px; }
-    .live { display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px; border-radius: 99px; background: var(--panel-2); color: var(--muted); font-weight: 700; font-size: 0.85rem; }
-    .live i { width: 8px; height: 8px; border-radius: 50%; background: var(--green); box-shadow: 0 0 0 3px rgba(25, 195, 125, 0.25); }
-    .tabs, .range { display: inline-flex; background: var(--panel); border-radius: 99px; padding: 3px; }
-    .tabs button, .range button { border: 0; background: none; color: var(--muted); padding: 5px 10px; border-radius: 99px; cursor: pointer; font-weight: 700; }
-    .tabs button[aria-selected="true"], .range button[aria-pressed="true"] { background: var(--green-d); color: #fff; }
-    .spacer { flex: 1; }
-    .btn { border: 0; border-radius: 99px; padding: 6px 11px; font-weight: 800; cursor: pointer; background: var(--panel-2); color: var(--text); }
-    .btn:hover { background: #22305a; }
-    .btn.primary { background: var(--green-d); color: #fff; }
-    .btn.primary:hover { background: #00a060; }
-    .btn.gold { background: var(--gold); color: #17203a; }
-    main { max-width: 1240px; margin: 0 auto; padding: 18px 16px 60px; }
-    .meta { color: var(--muted); font-size: 0.85rem; margin: 0 0 14px; }
-    .kpis { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 10px; margin-bottom: 14px; }
-    .kpi { background: var(--panel); border-radius: 14px; padding: 12px 14px; }
-    .kpi .k { color: var(--muted); font-size: 0.8rem; font-weight: 700; }
-    .kpi .v { font-size: 1.7rem; font-weight: 800; font-variant-numeric: tabular-nums; line-height: 1.2; }
-    .kpi .s { color: var(--muted); font-size: 0.78rem; }
-    .grid { display: grid; grid-template-columns: repeat(12, 1fr); gap: 12px; }
-    .card { background: var(--panel); border-radius: 14px; padding: 14px 16px; grid-column: span 6; min-width: 0; }
-    .card.w12 { grid-column: span 12; } .card.w8 { grid-column: span 8; } .card.w4 { grid-column: span 4; }
-    .card h2 { font-size: 0.95rem; margin: 0 0 10px; display: flex; justify-content: space-between; gap: 8px; }
-    .card h2 small { color: var(--muted); font-weight: 600; }
-    .section-title { grid-column: span 12; margin: 14px 0 0; font-size: 1.05rem; color: var(--gold); }
-    .bars { display: grid; gap: 5px; }
-    .bar { display: grid; grid-template-columns: minmax(80px, 38%) 1fr auto; gap: 8px; align-items: center; font-size: 0.86rem; }
-    .bar .l { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #cfd6e6; }
-    .bar .t { height: 10px; border-radius: 99px; background: var(--panel-2); overflow: hidden; }
-    .bar .t i { display: block; height: 100%; border-radius: 99px; background: var(--green); }
-    .bar .n { font-variant-numeric: tabular-nums; font-weight: 700; min-width: 3ch; text-align: right; }
-    .empty { color: var(--muted); font-size: 0.86rem; margin: 0; }
-    svg { display: block; width: 100%; height: auto; }
-    .legend { display: flex; gap: 14px; flex-wrap: wrap; font-size: 0.8rem; color: var(--muted); margin-top: 6px; }
-    .legend b { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 5px; vertical-align: -1px; }
-    table { width: 100%; border-collapse: collapse; font-size: 0.86rem; }
-    th, td { text-align: left; padding: 7px 8px; border-bottom: 1px solid var(--line); }
-    th { color: var(--muted); font-weight: 700; }
-    td.n, th.n { text-align: right; font-variant-numeric: tabular-nums; }
-    .funnel { display: grid; gap: 6px; }
-    .fstep { display: grid; grid-template-columns: 150px 1fr 90px; gap: 10px; align-items: center; font-size: 0.88rem; }
-    .fstep .t { height: 22px; border-radius: 6px; background: var(--panel-2); overflow: hidden; }
-    .fstep .t i { display: block; height: 100%; background: linear-gradient(90deg, var(--green-d), var(--green)); }
-    .fstep .n { text-align: right; font-weight: 700; font-variant-numeric: tabular-nums; }
-    .login { max-width: 420px; margin: 12vh auto; background: var(--panel); border-radius: 18px; padding: 26px; }
-    .login h1 { font-family: var(--display); font-weight: 900; font-synthesis: none; text-transform: uppercase; margin: 0 0 6px; }
-    .login input { width: 100%; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--line); background: var(--bg); color: var(--text); margin: 10px 0; }
-    .err { color: var(--red); font-weight: 700; }
-    .ok { color: var(--green); font-weight: 700; }
+    button, input, select, textarea { font: inherit; color: inherit; }
+    :focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
     .hidden { display: none !important; }
-    /* ads */
-    .ad-list { display: grid; gap: 12px; }
-    .ad-edit { background: var(--panel); border-radius: 14px; padding: 14px; display: grid; grid-template-columns: 300px 1fr; gap: 16px; }
-    .ad-edit .fields { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 8px 12px; }
-    .ad-edit label { display: flex; flex-direction: column; gap: 3px; font-size: 0.78rem; color: var(--muted); font-weight: 700; }
-    .ad-edit input[type=text], .ad-edit input[type=url], .ad-edit input[type=date], .ad-edit input[type=number] { padding: 7px 9px; border-radius: 8px; border: 1px solid var(--line); background: var(--bg); color: var(--text); }
-    .ad-edit input[type=color] { width: 100%; height: 34px; border: 1px solid var(--line); border-radius: 8px; background: var(--bg); padding: 2px; }
-    .ad-edit .checks { display: flex; gap: 12px; align-items: center; color: var(--text); font-weight: 600; }
-    .ad-edit .checks label { flex-direction: row; align-items: center; gap: 5px; color: var(--text); }
-    .ad-preview canvas { width: 100%; height: auto; border-radius: 10px; background: #3b4049; }
-    .ad-stats { font-size: 0.82rem; color: var(--muted); margin-top: 6px; }
-    .ad-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 8px; }
-    /* cups */
-    .cup-form { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px 12px; }
-    .cup-form label { display: flex; flex-direction: column; gap: 3px; font-size: 0.78rem; color: var(--muted); font-weight: 700; }
-    .cup-form input, .cup-form select, .cup-form textarea { padding: 7px 9px; border-radius: 8px; border: 1px solid var(--line); background: var(--bg); color: var(--text); }
-    .cup-form .wide { grid-column: 1 / -1; }
-    .cup-form .row { flex-direction: row; align-items: center; gap: 6px; color: var(--text); }
-    .cups { display: grid; gap: 14px; }
-    .cupbox { background: var(--panel); border-radius: 14px; padding: 14px 16px; border-left: 5px solid var(--green-d); }
-    .cupbox.home { border-left-color: #ea580c; }
-    .cupbox h3 { margin: 0; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; font-size: 1.05rem; }
-    .pill { display: inline-block; padding: 2px 9px; border-radius: 99px; font-size: 0.75rem; font-weight: 800; background: var(--panel-2); color: var(--muted); }
-    .pill.live { background: rgba(25, 195, 125, 0.18); color: var(--green); }
-    .pill.upcoming { background: rgba(245, 179, 1, 0.18); color: var(--gold); }
-    .pill.cancelled { background: rgba(239, 91, 97, 0.18); color: var(--red); }
-    .cupbox .sub { color: var(--muted); font-size: 0.85rem; margin: 4px 0 10px; }
-    .cupbox table td .flag { color: var(--red); font-size: 0.75rem; display: block; }
-    .cupbox tr.rej td { opacity: 0.45; text-decoration: line-through; }
-    .cupbox tr.prize td:first-child { color: var(--gold); font-weight: 800; }
-    .code { font-family: ui-monospace, Menlo, Consolas, monospace; font-weight: 800; letter-spacing: 0.06em; color: var(--gold); }
-    .acts { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
-    .acts select, .acts input { padding: 4px 6px; border-radius: 6px; border: 1px solid var(--line); background: var(--bg); color: var(--text); font-size: 0.8rem; max-width: 130px; }
-    .btn.small { padding: 3px 9px; font-size: 0.78rem; }
-    .btn.danger { background: rgba(239, 91, 97, 0.2); color: var(--red); }
-    .btn.armed { background: var(--red); color: #fff; }
+    .muted { color: var(--muted); }
+    .ok { color: var(--green); font-weight: 600; }
+    .err { color: var(--red); font-weight: 600; }
+
+    /* ---------- login ---------- */
+    .login { max-width: 380px; margin: 14vh auto; padding: 0 16px; text-align: center; }
+    .login-card { background: var(--panel); border: 1px solid var(--line); border-radius: 16px; padding: 28px 24px; box-shadow: var(--shadow); text-align: left; }
+    .login img { display: block; width: 64px; height: 64px; border-radius: 14px; margin: 0 auto 14px; }
+    .login h1 { font-size: 1.25rem; margin: 0 0 4px; text-align: center; }
+    .login p { margin: 0 0 18px; text-align: center; }
+    .login label { font-weight: 600; font-size: 0.85rem; }
+    .login input { width: 100%; margin: 6px 0 14px; }
+    .login .btn { width: 100%; justify-content: center; }
+
+    /* ---------- controls ---------- */
+    input[type=text], input[type=url], input[type=password], input[type=date], input[type=number], input[type=datetime-local], select, textarea {
+      padding: 8px 10px; border-radius: 8px; border: 1px solid var(--line-2); background: var(--panel); min-width: 0;
+    }
+    textarea { resize: vertical; }
+    .btn { display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--line-2); border-radius: 8px; padding: 7px 12px; font-weight: 600; cursor: pointer; background: var(--panel); color: var(--text); white-space: nowrap; }
+    .btn:hover { background: var(--panel-2); }
+    .btn:disabled { opacity: 0.5; cursor: default; }
+    .btn.primary { background: var(--green-d); border-color: var(--green-d); color: #fff; }
+    .btn.primary:hover { filter: brightness(1.08); }
+    .btn.ghost { border-color: transparent; background: none; color: var(--muted); }
+    .btn.ghost:hover { background: var(--panel-2); color: var(--text); }
+    .btn.small { padding: 4px 9px; font-size: 0.8rem; border-radius: 7px; }
+    .btn.danger { color: var(--red); }
+    .btn.armed { background: var(--red); border-color: var(--red); color: #fff; }
+    .seg { display: inline-flex; background: var(--panel-2); border-radius: 9px; padding: 3px; gap: 2px; }
+    .seg button, .seg label { border: 0; background: none; color: var(--muted); padding: 5px 11px; border-radius: 7px; cursor: pointer; font-weight: 600; font-size: 0.85rem; }
+    .seg button[aria-pressed="true"], .seg label:has(input:checked) { background: var(--panel); color: var(--text); box-shadow: 0 1px 2px rgba(0,0,0,.08); }
+    .seg input { position: absolute; opacity: 0; pointer-events: none; }
+    #cup-game { display: flex; } #cup-game label { flex: 1; text-align: left; } #cup-game .hint { display: block; margin: 0; }
+    .pill { display: inline-flex; align-items: center; gap: 5px; padding: 2px 9px; border-radius: 99px; font-size: 0.75rem; font-weight: 600; background: var(--panel-2); color: var(--muted); white-space: nowrap; }
+    .pill::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+    .pill.plain::before { display: none; }
+    .pill.live { background: var(--green-bg); color: var(--green); }
+    .pill.upcoming { background: var(--blue-bg); color: var(--blue); }
+    .pill.paused { background: var(--orange-bg); color: var(--orange); }
+    .pill.ended { background: var(--panel-2); color: var(--muted); }
+    .pill.cancelled { background: var(--red-bg); color: var(--red); }
+    .pill.paid { background: var(--green-bg); color: var(--green); }
+    .pill.unpaid { background: var(--gold-bg); color: var(--gold); }
+
+    /* ---------- shell ---------- */
+    .shell { display: grid; grid-template-columns: 232px 1fr; min-height: 100vh; }
+    .side { position: sticky; top: 0; height: 100vh; overflow-y: auto; background: var(--panel); border-right: 1px solid var(--line); padding: 18px 12px; display: flex; flex-direction: column; gap: 4px; }
+    .brand { display: flex; align-items: center; gap: 10px; font-weight: 700; padding: 0 8px 14px; }
+    .brand img { border-radius: 8px; }
+    .brand small { display: block; color: var(--muted); font-weight: 500; font-size: 0.75rem; }
+    .nav-group { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--faint); font-weight: 700; padding: 14px 10px 4px; }
+    .tabs { display: contents; }
+    .tabs button { display: flex; align-items: center; gap: 10px; width: 100%; border: 0; background: none; padding: 7px 10px; border-radius: 8px; color: var(--muted); font-weight: 600; cursor: pointer; text-align: left; }
+    .tabs button svg { width: 16px; height: 16px; flex: none; }
+    .tabs button:hover { background: var(--panel-2); color: var(--text); }
+    .tabs button[aria-selected="true"] { background: var(--green-bg); color: var(--green-d); }
+    @media (prefers-color-scheme: dark) { .tabs button[aria-selected="true"] { color: var(--green); } }
+    .tabs .count { margin-left: auto; background: var(--gold); color: #fff; border-radius: 99px; font-size: 0.7rem; padding: 0 7px; min-width: 20px; text-align: center; }
+    .side-foot { margin-top: auto; padding: 14px 8px 0; border-top: 1px solid var(--line); display: grid; gap: 8px; }
+    .live { display: inline-flex; align-items: center; gap: 7px; color: var(--muted); font-size: 0.85rem; }
+    .live i { width: 8px; height: 8px; border-radius: 50%; background: var(--green); box-shadow: 0 0 0 3px var(--green-bg); }
+    .live b { color: var(--text); }
+    .main { min-width: 0; }
+    .bar { position: sticky; top: 0; z-index: 5; background: color-mix(in srgb, var(--bg) 88%, transparent); backdrop-filter: blur(8px); border-bottom: 1px solid var(--line); }
+    .bar .in { max-width: 1180px; margin: 0 auto; padding: 14px 28px; display: flex; gap: 10px 14px; align-items: center; flex-wrap: wrap; }
+    .bar h1 { font-size: 1.15rem; margin: 0; }
+    .bar .meta { margin: 0; font-size: 0.8rem; color: var(--muted); }
+    .spacer { flex: 1; }
+    main { max-width: 1180px; margin: 0 auto; padding: 22px 28px 70px; }
+    .page-intro { color: var(--muted); margin: -4px 0 18px; max-width: 70ch; }
+
+    /* ---------- cards ---------- */
+    .kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin-bottom: 16px; }
+    .kpi { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; box-shadow: var(--shadow); }
+    .kpi .k { color: var(--muted); font-size: 0.8rem; font-weight: 600; }
+    .kpi .v { font-size: 1.6rem; font-weight: 700; font-variant-numeric: tabular-nums; line-height: 1.25; margin-top: 2px; letter-spacing: -0.01em; }
+    .kpi .s { color: var(--faint); font-size: 0.78rem; }
+    .grid { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 14px; }
+    .card { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 16px 18px; grid-column: span 6; min-width: 0; box-shadow: var(--shadow); }
+    .card.w12 { grid-column: span 12; } .card.w8 { grid-column: span 8; } .card.w4 { grid-column: span 4; }
+    .card h2 { font-size: 0.92rem; font-weight: 650; margin: 0 0 12px; display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+    .card h2 small { color: var(--faint); font-weight: 500; font-size: 0.78rem; }
+    .bars { display: grid; gap: 7px; }
+    .bar-row { display: grid; grid-template-columns: minmax(80px, 38%) 1fr auto; gap: 10px; align-items: center; font-size: 0.85rem; }
+    .bar-row .l { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .bar-row .t { height: 8px; border-radius: 99px; background: var(--panel-2); overflow: hidden; }
+    .bar-row .t i { display: block; height: 100%; border-radius: 99px; background: var(--green); }
+    .bar-row .n { font-variant-numeric: tabular-nums; font-weight: 600; min-width: 3ch; text-align: right; }
+    .bar-row .n small { color: var(--faint); font-weight: 500; }
+    .empty { color: var(--muted); font-size: 0.86rem; margin: 0; padding: 6px 0; }
+    svg { display: block; width: 100%; height: auto; }
+    .legend { display: flex; gap: 14px; flex-wrap: wrap; font-size: 0.78rem; color: var(--muted); margin-top: 8px; }
+    .legend b { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 6px; vertical-align: -1px; }
+    table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+    th, td { text-align: left; padding: 9px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+    th { color: var(--muted); font-weight: 600; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.04em; background: var(--panel-2); border-bottom: 0; }
+    th:first-child { border-radius: 8px 0 0 8px; } th:last-child { border-radius: 0 8px 8px 0; }
+    tr:last-child td { border-bottom: 0; }
+    td.n, th.n { text-align: right; font-variant-numeric: tabular-nums; }
     .table-wrap { overflow-x: auto; }
-    @media (max-width: 900px) {
-      .card, .card.w8, .card.w4 { grid-column: span 12; }
-      .ad-edit { grid-template-columns: 1fr; }
+    .funnel { display: grid; gap: 8px; }
+    .fstep { display: grid; grid-template-columns: 150px 1fr 90px; gap: 10px; align-items: center; font-size: 0.85rem; }
+    .fstep .t { height: 20px; border-radius: 6px; background: var(--panel-2); overflow: hidden; }
+    .fstep .t i { display: block; height: 100%; background: var(--green); opacity: 0.85; border-radius: 6px; }
+    .fstep .n { text-align: right; font-weight: 600; font-variant-numeric: tabular-nums; }
+    .fstep .n small { color: var(--faint); font-weight: 500; }
+
+    /* ---------- forms ---------- */
+    .form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px 16px; }
+    .field { display: flex; flex-direction: column; gap: 5px; font-size: 0.82rem; font-weight: 600; }
+    .field .hint { font-weight: 400; color: var(--faint); font-size: 0.78rem; margin-top: -4px; }
+    .field.wide, .form-grid .wide { grid-column: 1 / -1; }
+    .check { display: flex; align-items: center; gap: 8px; font-weight: 500; font-size: 0.88rem; }
+    .form-foot { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-top: 16px; }
+
+    /* ---------- ads ---------- */
+    .ad-list { display: grid; gap: 12px; }
+    .ad-edit { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 16px; display: grid; grid-template-columns: 280px 1fr; gap: 18px; box-shadow: var(--shadow); }
+    .ad-edit .fields { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 10px 12px; }
+    .ad-edit label { display: flex; flex-direction: column; gap: 4px; font-size: 0.78rem; color: var(--muted); font-weight: 600; }
+    .ad-edit input[type=color] { width: 100%; height: 36px; border: 1px solid var(--line-2); border-radius: 8px; background: var(--panel); padding: 2px; }
+    .ad-edit .checks { display: flex; gap: 14px; align-items: center; flex-wrap: wrap; font-weight: 600; font-size: 0.85rem; }
+    .ad-edit .checks label { flex-direction: row; align-items: center; gap: 6px; color: var(--text); }
+    .ad-preview canvas { width: 100%; height: auto; border-radius: 10px; background: #3b4049; }
+    .ad-stats { font-size: 0.8rem; color: var(--muted); margin-top: 6px; }
+    .ad-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 12px; }
+
+    /* ---------- cups ---------- */
+    .toolbar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 14px; }
+    .toolbar h2 { font-size: 1rem; margin: 0; }
+    .cups { display: grid; gap: 10px; }
+    .cupbox { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; box-shadow: var(--shadow); overflow: hidden; }
+    .cb-head { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 6px 14px; align-items: center; padding: 14px 16px; }
+    .gtag { width: 36px; height: 36px; border-radius: 10px; display: grid; place-items: center; background: var(--green-bg); color: var(--green-d); font-weight: 800; font-size: 0.78rem; }
+    .cupbox.home .gtag { background: var(--orange-bg); color: var(--orange); }
+    .cb-title h3 { margin: 0; font-size: 0.98rem; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+    .cb-title .sub { margin: 2px 0 0; color: var(--muted); font-size: 0.82rem; }
+    .cb-acts { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; justify-content: flex-end; }
+    .cb-body { border-top: 1px solid var(--line); padding: 12px 16px 14px; }
+    .cb-body .info { display: flex; gap: 6px 18px; flex-wrap: wrap; color: var(--muted); font-size: 0.82rem; margin-bottom: 10px; }
+    .cb-body .info b { color: var(--text); font-weight: 600; }
+    .cupbox tr.rej td { opacity: 0.45; }
+    .cupbox tr.rej td .nm { text-decoration: line-through; }
+    .place { font-weight: 700; color: var(--muted); }
+    tr.prize .place { color: var(--gold); }
+    .flag { display: block; color: var(--red); font-size: 0.75rem; }
+    .code { font-family: ui-monospace, Menlo, Consolas, monospace; font-weight: 700; letter-spacing: 0.05em; font-size: 0.8rem; }
+    .more { position: relative; }
+    .more summary { list-style: none; }
+    .more summary::-webkit-details-marker { display: none; }
+    .more .menu { position: absolute; right: 0; top: calc(100% + 4px); z-index: 4; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; box-shadow: 0 8px 24px rgba(0,0,0,.12); padding: 6px; display: grid; min-width: 170px; }
+    .more .menu .btn { border: 0; justify-content: flex-start; width: 100%; }
+    .section-h { font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--faint); font-weight: 700; margin: 22px 0 10px; }
+    .chev { transition: transform 0.15s; }
+    [aria-expanded="true"] .chev { transform: rotate(180deg); }
+
+    /* ---------- dialogs & toast ---------- */
+    dialog { border: 0; border-radius: 16px; padding: 0; width: min(620px, calc(100vw - 24px)); background: var(--panel); color: var(--text); box-shadow: 0 24px 60px rgba(0,0,0,.25); }
+    dialog[open] { display: flex; flex-direction: column; max-height: calc(100dvh - 32px); }
+    dialog form { overflow-y: auto; }
+    dialog .form-foot { position: sticky; bottom: -22px; background: var(--panel); }
+    dialog::backdrop { background: rgba(15, 23, 42, 0.45); }
+    dialog form { padding: 22px 24px; }
+    dialog h2 { margin: 0 0 4px; font-size: 1.1rem; }
+    dialog .lead { color: var(--muted); margin: 0 0 18px; font-size: 0.88rem; }
+    dialog .form-foot { justify-content: flex-end; border-top: 1px solid var(--line); margin: 20px -24px -22px; padding: 14px 24px; }
+    dialog.small { width: min(420px, calc(100vw - 24px)); }
+    .toast { position: fixed; left: 50%; bottom: 22px; transform: translateX(-50%) translateY(20px); opacity: 0; pointer-events: none; background: var(--text); color: var(--bg); padding: 10px 16px; border-radius: 10px; font-weight: 600; transition: 0.2s; z-index: 50; max-width: calc(100vw - 32px); }
+    .toast.show { opacity: 1; transform: translateX(-50%); }
+    .toast.bad { background: var(--red); color: #fff; }
+
+    @media (max-width: 1000px) { .kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); } .card, .card.w8, .card.w4 { grid-column: span 12; } .ad-edit { grid-template-columns: 1fr; } }
+    @media (max-width: 820px) {
+      .shell { grid-template-columns: 1fr; }
+      .side { position: sticky; top: 0; z-index: 8; height: auto; flex-direction: row; align-items: center; overflow-x: auto; padding: 8px 10px; border-right: 0; border-bottom: 1px solid var(--line); gap: 2px; }
+      .brand { padding: 0 8px 0 0; } .brand span, .nav-group, .side-foot .live { display: none; }
+      .tabs button { width: auto; white-space: nowrap; }
+      .tabs button svg { display: none; }
+      .side-foot { margin: 0 0 0 6px; padding: 0; border: 0; }
+      .bar { position: static; }
+      .bar .in, main { padding-left: 16px; padding-right: 16px; }
+      .form-grid { grid-template-columns: 1fr; }
+      .cb-head { grid-template-columns: auto minmax(0, 1fr); }
+      .cb-acts { grid-column: 1 / -1; justify-content: flex-start; }
       .fstep { grid-template-columns: 110px 1fr 70px; }
     }
   </style>
 </head>
 <body>
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+    <symbol id="i-home" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M3 12h4l3-8 4 16 3-8h4"/></symbol>
+    <symbol id="i-users" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></symbol>
+    <symbol id="i-game" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M6 11h4M8 9v4M15 12h.01M18 10h.01M17.32 5H6.68a4 4 0 0 0-3.98 3.59L2 15a3 3 0 0 0 5.4 1.8L9 15h6l1.6 1.8A3 3 0 0 0 22 15l-.7-6.41A4 4 0 0 0 17.32 5z"/></symbol>
+    <symbol id="i-coin" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20zM15 9.5c-.5-1-1.6-1.5-3-1.5-1.7 0-3 .9-3 2s1.3 1.7 3 2 3 .9 3 2-1.3 2-3 2c-1.4 0-2.5-.5-3-1.5M12 6v2M12 16v2"/></symbol>
+    <symbol id="i-pulse" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M12 9v4M12 17h.01M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/></symbol>
+    <symbol id="i-ad" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M3 5h18v11H3zM8 21h8M12 16v5"/></symbol>
+    <symbol id="i-board" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M8 21V11M16 21V7M12 21v-6M4 21h16"/></symbol>
+    <symbol id="i-cup" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0zM17 5h3v2a3 3 0 0 1-3 3M7 5H4v2a3 3 0 0 0 3 3"/></symbol>
+    <symbol id="i-pay" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M2 6h20v12H2zM2 10h20M6 15h4"/></symbol>
+    <symbol id="i-chev" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" d="m6 9 6 6 6-6"/></symbol>
+    <symbol id="i-dots" viewBox="0 0 24 24"><path fill="currentColor" d="M5 10.5a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3zm7 0a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3zm7 0a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3z"/></symbol>
+    <symbol id="i-plus" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" d="M12 5v14M5 12h14"/></symbol>
+  </svg>
+
   <section id="login" class="login hidden" aria-labelledby="login-title">
-    <img class="login-logo" src="/icons/logo-512.webp" width="120" height="120" alt="Office Wahala logo">
-    <h1 id="login-title">Office Wahala Analytics</h1>
-    <p class="meta">Enter the dashboard key you set as <code>DASHBOARD_KEY</code> in Netlify.</p>
-    <form id="login-form">
-      <label for="key">Dashboard key</label>
-      <input id="key" type="password" autocomplete="current-password" required>
-      <button class="btn primary" type="submit">Open dashboard</button>
-      <p id="login-msg" class="err" role="status"></p>
-    </form>
+    <div class="login-card">
+      <img src="/icons/logo-512.webp" width="64" height="64" alt="Office Wahala logo">
+      <h1 id="login-title">Office Wahala Dashboard</h1>
+      <p class="muted">Enter the key you set as <code>DASHBOARD_KEY</code> in Netlify.</p>
+      <form id="login-form">
+        <label for="key">Dashboard key</label>
+        <input id="key" type="password" autocomplete="current-password" required>
+        <button class="btn primary" type="submit">Open dashboard</button>
+        <p id="login-msg" class="err" role="status"></p>
+      </form>
+    </div>
   </section>
 
-  <div id="app" class="hidden">
-    <header class="top">
-      <div class="in">
-        <div class="brand"><img src="/icons/logo-mark-96.webp" width="32" height="32" alt="">Office <span>Wahala</span> analytics</div>
-        <span class="live" title="Visitors active in the last 5 minutes"><i></i><span id="live">0</span>&nbsp;live now</span>
-        <div class="tabs" role="tablist">
-          <button role="tab" aria-selected="true" data-tab="overview">Overview</button>
-          <button role="tab" aria-selected="false" data-tab="ads">Ads</button>
-          <button role="tab" aria-selected="false" data-tab="cups">Weekly Cups</button>
-        </div>
-        <span class="spacer"></span>
-        <div class="range" aria-label="Date range">
-          <button type="button" data-days="1">Today</button>
-          <button type="button" data-days="7" aria-pressed="true">7 days</button>
-          <button type="button" data-days="30">30 days</button>
-          <button type="button" data-days="90">90 days</button>
-        </div>
-        <button id="refresh" class="btn" type="button">Refresh</button>
-        <button id="export" class="btn" type="button">Export CSV</button>
-        <button id="logout" class="btn" type="button">Log out</button>
+  <div id="app" class="shell hidden">
+    <aside class="side" aria-label="Dashboard sections">
+      <div class="brand"><img src="/icons/logo-mark-96.webp" width="30" height="30" alt=""><span>Office Wahala<small>Dashboard</small></span></div>
+      <nav class="tabs" role="tablist">
+        <div class="nav-group">Analytics</div>
+        <button role="tab" aria-selected="true" data-tab="overview"><svg><use href="#i-home"/></svg>Overview</button>
+        <button role="tab" aria-selected="false" data-tab="audience"><svg><use href="#i-users"/></svg>Audience</button>
+        <button role="tab" aria-selected="false" data-tab="gameplay"><svg><use href="#i-game"/></svg>Gameplay</button>
+        <button role="tab" aria-selected="false" data-tab="economy"><svg><use href="#i-coin"/></svg>Economy</button>
+        <button role="tab" aria-selected="false" data-tab="health"><svg><use href="#i-pulse"/></svg>Health</button>
+        <div class="nav-group">Sponsors</div>
+        <button role="tab" aria-selected="false" data-tab="ads"><svg><use href="#i-ad"/></svg>Billboards</button>
+        <div class="nav-group">Prizes</div>
+        <button role="tab" aria-selected="false" data-tab="weekly"><svg><use href="#i-board"/></svg>Weekly boards</button>
+        <button role="tab" aria-selected="false" data-tab="cups"><svg><use href="#i-cup"/></svg>Weekly Cups</button>
+        <button role="tab" aria-selected="false" data-tab="payouts"><svg><use href="#i-pay"/></svg>Payouts<span id="pay-count" class="count" hidden></span></button>
+      </nav>
+      <div class="side-foot">
+        <span class="live" title="Visitors active in the last 5 minutes"><i></i><b id="live">0</b> playing now</span>
+        <button id="logout" class="btn ghost small" type="button">Log out</button>
       </div>
-    </header>
+    </aside>
 
-    <main>
-      <p id="meta" class="meta">Loading…</p>
-
-      <!-- ================= OVERVIEW ================= -->
-      <section id="tab-overview">
-        <div id="kpis" class="kpis"></div>
-        <div class="grid">
-          <div class="card w8"><h2>Visitors and games per day <small id="series-note"></small></h2><div id="chart-daily"></div>
-            <div class="legend"><span><b style="background:var(--green)"></b>Visitors</span><span><b style="background:var(--gold)"></b>Games started</span><span><b style="background:var(--blue)"></b>Page views</span></div></div>
-          <div class="card w4"><h2>Player journey <small>sessions</small></h2><div id="funnel" class="funnel"></div></div>
-          <div class="card w12"><h2>Busiest hours <small>Lagos time, whole range</small></h2><div id="chart-hours"></div>
-            <div class="legend"><span><b style="background:var(--green)"></b>Visitors</span><span><b style="background:var(--gold)"></b>Games</span></div></div>
-
-          <h3 class="section-title">Audience</h3>
-          <div class="card w4"><h2>Where visitors come from</h2><div id="d-ref"></div></div>
-          <div class="card w4"><h2>Campaigns &amp; links <small>utm / challenge / invite</small></h2><div id="d-src"></div></div>
-          <div class="card w4"><h2>Countries</h2><div id="d-country"></div></div>
-          <div class="card w4"><h2>Devices</h2><div id="d-dev"></div></div>
-          <div class="card w4"><h2>Browser vs installed app</h2><div id="d-app"></div></div>
-          <div class="card w4"><h2>Language <small>device / game</small></h2><div id="d-lang"></div></div>
-          <div class="card w12"><h2>Do new players come back? <small>new visitors per day, and how many returned</small></h2><div id="d-retention"></div></div>
-          <div class="card w6"><h2>Pages viewed</h2><div id="d-path"></div></div>
-          <div class="card w6"><h2>Screens opened in the game</h2><div id="d-screen"></div></div>
-
-          <h3 class="section-title">Gameplay</h3>
-          <div class="card w4"><h2>Game modes</h2><div id="d-mode"></div></div>
-          <div class="card w4"><h2>What ended the shift</h2><div id="d-cause"></div></div>
-          <div class="card w4"><h2>Level reached</h2><div id="d-level"></div></div>
-          <div class="card w4"><h2>Scores</h2><div id="d-scoreb"></div></div>
-          <div class="card w4"><h2>Morning commute</h2><div id="d-commute"></div></div>
-          <div class="card w4"><h2>NEPA blackouts</h2><div id="d-blackout"></div></div>
-          <div class="card w4"><h2>Bosses spawned</h2><div id="d-boss"></div></div>
-          <div class="card w4"><h2>Shift events</h2><div id="d-event"></div></div>
-          <div class="card w4"><h2>Power-ups <small>picked / used</small></h2><div id="d-power"></div></div>
-          <div class="card w4"><h2>Offices played</h2><div id="d-office"></div></div>
-          <div class="card w4"><h2>Missions &amp; 5pm meetings</h2><div id="d-mission"></div></div>
-          <div class="card w4"><h2>Attendance register</h2><div id="d-attendance"></div></div>
-          <div class="card w6"><h2>State Wars: players by state</h2><div id="d-statewar"></div></div>
-          <div class="card w6"><h2>Office ↔ Home switches</h2><div id="d-world"></div></div>
-          <div class="card w6"><h2>Career days</h2><div id="d-career"></div></div>
-          <div class="card w6"><h2>Badges unlocked</h2><div id="d-badge"></div></div>
-
-          <h3 class="section-title">Economy &amp; social</h3>
-          <div class="card w4"><h2>Shop upgrades bought</h2><div id="d-shop"></div></div>
-          <div class="card w4"><h2>Outfits bought</h2><div id="d-outfit"></div></div>
-          <div class="card w4"><h2>Shares <small>by type</small></h2><div id="d-share"></div></div>
-          <div class="card w6"><h2>Settings chosen</h2><div id="d-setting"></div></div>
-          <div class="card w6"><h2>Install to home screen</h2><div id="d-install"></div></div>
-
-          <h3 class="section-title">All events &amp; errors</h3>
-          <div class="card w6"><h2>Every event <small>count</small></h2><div id="d-events"></div></div>
-          <div class="card w6"><h2>JavaScript errors <small>should be empty</small></h2><div id="d-errors"></div></div>
+    <div class="main">
+      <header class="bar">
+        <div class="in">
+          <div><h1 id="page-title">Overview</h1><p id="meta" class="meta">Loading…</p></div>
+          <span class="spacer"></span>
+          <div class="range seg" aria-label="Date range" data-for="analytics">
+            <button type="button" data-days="1">Today</button>
+            <button type="button" data-days="7" aria-pressed="true">7 days</button>
+            <button type="button" data-days="30">30 days</button>
+            <button type="button" data-days="90">90 days</button>
+          </div>
+          <button id="export" class="btn" type="button" data-for="analytics">Export CSV</button>
+          <button id="refresh" class="btn" type="button">Refresh</button>
+          <button id="cup-new" class="btn primary" type="button" data-for="cups"><svg width="14" height="14"><use href="#i-plus"/></svg>New cup</button>
         </div>
-      </section>
+      </header>
 
-      <!-- ================= ADS ================= -->
-      <section id="tab-ads" class="hidden">
-        <div class="grid">
-          <div class="card w12"><h2>Ad performance <small id="ads-range"></small></h2><div id="ads-perf"></div></div>
+      <main>
+        <!-- ================= OVERVIEW ================= -->
+        <section id="tab-overview" data-title="Overview">
+          <div id="kpis" class="kpis"></div>
+          <div class="grid">
+            <div class="card w8"><h2>Visitors and games per day <small id="series-note"></small></h2><div id="chart-daily"></div>
+              <div class="legend"><span><b style="background:var(--green)"></b>Visitors</span><span><b style="background:var(--gold)"></b>Games started</span><span><b style="background:var(--blue)"></b>Page views</span></div></div>
+            <div class="card w4"><h2>Player journey <small>sessions</small></h2><div id="funnel" class="funnel"></div></div>
+            <div class="card w12"><h2>Busiest hours <small>Lagos time</small></h2><div id="chart-hours"></div>
+              <div class="legend"><span><b style="background:var(--green)"></b>Visitors</span><span><b style="background:var(--gold)"></b>Games</span></div></div>
+          </div>
+        </section>
+
+        <!-- ================= AUDIENCE ================= -->
+        <section id="tab-audience" class="hidden" data-title="Audience">
+          <div id="kpis-aud" class="kpis"></div>
+          <div class="grid">
+            <div class="card w12"><h2>Do new players come back? <small>new visitors per day, and how many returned</small></h2><div id="d-retention" class="table-wrap"></div></div>
+            <div class="card"><h2>Where visitors come from</h2><div id="d-ref"></div></div>
+            <div class="card"><h2>Campaigns &amp; links <small>utm / challenge / invite</small></h2><div id="d-src"></div></div>
+            <div class="card w4"><h2>Countries</h2><div id="d-country"></div></div>
+            <div class="card w4"><h2>Devices</h2><div id="d-dev"></div></div>
+            <div class="card w4"><h2>Browser vs installed app</h2><div id="d-app"></div></div>
+            <div class="card w4"><h2>Language <small>device / game</small></h2><div id="d-lang"></div></div>
+            <div class="card w4"><h2>Pages viewed</h2><div id="d-path"></div></div>
+            <div class="card w4"><h2>Screens opened in the game</h2><div id="d-screen"></div></div>
+          </div>
+        </section>
+
+        <!-- ================= GAMEPLAY ================= -->
+        <section id="tab-gameplay" class="hidden" data-title="Gameplay">
+          <div class="grid">
+            <div class="card w4"><h2>Game modes</h2><div id="d-mode"></div></div>
+            <div class="card w4"><h2>What ended the shift</h2><div id="d-cause"></div></div>
+            <div class="card w4"><h2>Level reached</h2><div id="d-level"></div></div>
+            <div class="card w4"><h2>Scores</h2><div id="d-scoreb"></div></div>
+            <div class="card w4"><h2>Offices played</h2><div id="d-office"></div></div>
+            <div class="card w4"><h2>Office ↔ Home switches</h2><div id="d-world"></div></div>
+            <div class="card w4"><h2>Bosses spawned</h2><div id="d-boss"></div></div>
+            <div class="card w4"><h2>Shift events</h2><div id="d-event"></div></div>
+            <div class="card w4"><h2>Power-ups <small>picked / used</small></h2><div id="d-power"></div></div>
+            <div class="card w4"><h2>Morning commute</h2><div id="d-commute"></div></div>
+            <div class="card w4"><h2>NEPA blackouts</h2><div id="d-blackout"></div></div>
+            <div class="card w4"><h2>Missions &amp; 5pm meetings</h2><div id="d-mission"></div></div>
+            <div class="card w4"><h2>Attendance register</h2><div id="d-attendance"></div></div>
+            <div class="card w4"><h2>Career days</h2><div id="d-career"></div></div>
+            <div class="card w4"><h2>Badges unlocked</h2><div id="d-badge"></div></div>
+            <div class="card w12"><h2>State Wars: players by state</h2><div id="d-statewar"></div></div>
+          </div>
+        </section>
+
+        <!-- ================= ECONOMY ================= -->
+        <section id="tab-economy" class="hidden" data-title="Economy &amp; sharing">
+          <div class="grid">
+            <div class="card w4"><h2>Shop upgrades bought</h2><div id="d-shop"></div></div>
+            <div class="card w4"><h2>Outfits bought</h2><div id="d-outfit"></div></div>
+            <div class="card w4"><h2>Shares <small>by type</small></h2><div id="d-share"></div></div>
+            <div class="card"><h2>Settings chosen</h2><div id="d-setting"></div></div>
+            <div class="card"><h2>Install to home screen</h2><div id="d-install"></div></div>
+          </div>
+        </section>
+
+        <!-- ================= HEALTH ================= -->
+        <section id="tab-health" class="hidden" data-title="Health">
+          <div class="grid">
+            <div class="card"><h2>JavaScript errors <small>should be empty</small></h2><div id="d-errors"></div></div>
+            <div class="card"><h2>Every event <small>count</small></h2><div id="d-events"></div></div>
+          </div>
+        </section>
+
+        <!-- ================= ADS ================= -->
+        <section id="tab-ads" class="hidden" data-title="Billboards">
+          <p class="page-intro">Billboards show on the road during the commute, on office wall screens and as the sponsored card on the menu. Changes go live within about 2 minutes.</p>
+          <div class="grid">
+            <div class="card w12"><h2>Performance <small id="ads-range"></small></h2><div id="ads-perf" class="table-wrap"></div></div>
+          </div>
+          <div class="toolbar" style="margin-top:22px"><h2>Your billboards</h2><span class="spacer"></span><button id="ad-add" class="btn" type="button">+ Add billboard</button><button id="ad-save" class="btn primary" type="button">Save billboards</button></div>
+          <p class="muted" style="margin:-6px 0 12px;font-size:.84rem">Leave the image empty to use the text design, or paste an <strong>https</strong> image link (wide, about 16:9). Dates are optional.</p>
+          <div id="ad-list" class="ad-list"></div>
+          <p id="ad-msg" role="status"></p>
+        </section>
+
+        <!-- ================= WEEKLY BOARDS ================= -->
+        <section id="tab-weekly" class="hidden" data-title="Weekly leaderboards">
+          <p class="page-intro">Every normal Office or Home shift counts on these boards. Nobody has to join. They reset every Monday at midnight (Lagos). Give prizes to set places, or credit any player you like.</p>
           <div class="card w12">
-            <h2>Manage billboards <small>Changes go live within ~2 minutes, no redeploy needed</small></h2>
-            <p class="meta">Each ad can show on road billboards (commute), office wall screens and the sponsored card on the menu and appraisal. Leave the image empty to use the text design, or paste an <strong>https</strong> image link (wide, about 16:9, e.g. 640×360). Dates are optional (YYYY-MM-DD).</p>
-            <div id="ad-list" class="ad-list"></div>
-            <div class="ad-actions">
-              <button id="ad-add" class="btn" type="button">+ Add ad</button>
-              <button id="ad-save" class="btn primary" type="button">Save ads</button>
+            <h2>Prizes for the weekly boards <small>line 1 = 1st place</small></h2>
+            <form id="wk-form">
+              <div class="form-grid">
+                <label class="field">Office Wahala prizes<textarea name="office" rows="3" placeholder="₦5,000 airtime&#10;₦2,000 airtime&#10;₦1,000 airtime"></textarea></label>
+                <label class="field">Home Wahala prizes<textarea name="home" rows="3" placeholder="₦5,000 airtime&#10;₦2,000 airtime"></textarea></label>
+                <label class="field">Sponsor <span class="hint">optional</span><input name="sponsor" type="text" maxlength="40"></label>
+                <label class="field">Sponsor link <span class="hint">https, optional</span><input name="sponsorUrl" type="url" maxlength="200"></label>
+                <label class="check wide"><input name="applyNow" type="checkbox" checked> Use these for this week too (otherwise from next Monday)</label>
+              </div>
+              <div class="form-foot"><button class="btn primary" type="submit">Save prizes</button><span id="wk-msg" role="status"></span></div>
+            </form>
+          </div>
+          <div class="section-h">This week</div>
+          <div id="wk-list" class="cups"><p class="empty">Loading…</p></div>
+          <div class="section-h">Earlier weeks</div>
+          <div id="wk-past" class="cups"></div>
+        </section>
+
+        <!-- ================= CUPS ================= -->
+        <section id="tab-cups" class="hidden" data-title="Weekly Cups">
+          <p class="page-intro">Cups are tournaments with real prizes. Each cup is for one game, Office Wahala or Home Wahala. You can edit, pause, resume or end a cup at any time. Results are public on <a href="/winners/" target="_blank" rel="noopener">/winners/</a>.</p>
+          <div class="toolbar">
+            <div class="seg" id="cup-filter" aria-label="Show">
+              <button type="button" data-f="active" aria-pressed="true">Active</button>
+              <button type="button" data-f="ended">Finished</button>
+              <button type="button" data-f="all">All</button>
             </div>
-            <p id="ad-msg" role="status"></p>
+            <span class="spacer"></span>
+            <span id="cup-msg" role="status" class="muted"></span>
           </div>
-        </div>
-      </section>
+          <div id="cup-list" class="cups"><p class="empty">Loading…</p></div>
+        </section>
 
-      <!-- ================= WEEKLY CUPS ================= -->
-      <section id="tab-cups" class="hidden">
-        <div class="grid">
-          <div class="card w12">
-            <h2>Weekly leaderboards <small>Everyone who plays a normal Office or Home shift is on these boards. Reset every Monday (Lagos).</small></h2>
-            <p class="meta">Set prizes for the top places (line 1 = 1st place). Leave empty and just credit any player from the board below. Winners see a claim code in the game and claim on WhatsApp.</p>
-            <form id="wk-form" class="cup-form">
-              <label>Office prizes, one per line<textarea name="office" rows="3" placeholder="₦5,000 airtime&#10;₦2,000 airtime&#10;₦1,000 airtime"></textarea></label>
-              <label>Home prizes, one per line<textarea name="home" rows="3" placeholder="₦5,000 airtime&#10;₦2,000 airtime"></textarea></label>
-              <label>Sponsor (optional)<input name="sponsor" type="text" maxlength="40"></label>
-              <label>Sponsor link (https, optional)<input name="sponsorUrl" type="url" maxlength="200"></label>
-              <label class="row wide"><input name="applyNow" type="checkbox" checked> Also use these for this week's boards (otherwise from next Monday)</label>
-              <div class="wide acts"><button class="btn primary" type="submit">Save weekly prizes</button><span id="wk-msg" role="status"></span></div>
-            </form>
+        <!-- ================= PAYOUTS ================= -->
+        <section id="tab-payouts" class="hidden" data-title="Payouts">
+          <p class="page-intro">Everyone who won a prize in a finished cup or weekly board. Check their claim code on WhatsApp, pay them, then mark them paid. They see "Paid" in the game and on the winners page.</p>
+          <div class="toolbar">
+            <div class="seg" id="pay-filter" aria-label="Show">
+              <button type="button" data-f="unpaid" aria-pressed="true">To pay</button>
+              <button type="button" data-f="paid">Paid</button>
+              <button type="button" data-f="all">All</button>
+            </div>
           </div>
-          <div class="card w12">
-            <h2>Create a Weekly Cup <small>Shows in the game right away · times are your browser's local time</small></h2>
-            <form id="cup-form" class="cup-form">
-              <label class="wide">Name<input name="name" type="text" maxlength="60" placeholder="e.g. Weekly Cup, week 45" required></label>
-              <label>Game<select name="game"><option value="both">Both (makes two cups)</option><option value="office">Office Wahala (Mon–Fri)</option><option value="home">Home Wahala (every day)</option></select></label>
-              <label>Starts<input name="start" type="datetime-local" required></label>
-              <label>Ends<input name="end" type="datetime-local" required></label>
-              <label>Tries per player<select name="tries"><option value="0">Unlimited</option><option value="3">3</option><option value="5">5</option><option value="10">10</option><option value="20">20</option></select></label>
-              <label>Run length<select name="shiftSecs"><option value="0">No limit</option><option value="60">1 minute</option><option value="90">1.5 minutes</option><option value="120">2 minutes</option><option value="180">3 minutes</option><option value="300">5 minutes</option></select></label>
-              <label class="wide">Prizes, one per line (line 1 = 1st place)<textarea name="prizes" rows="4" placeholder="₦20,000 bank transfer&#10;₦10,000 bank transfer&#10;₦5,000 airtime&#10;₦5,000 Shoprite voucher"></textarea></label>
-              <label>Sponsor (optional)<input name="sponsor" type="text" maxlength="40"></label>
-              <label>Sponsor link (https, optional)<input name="sponsorUrl" type="url" maxlength="200"></label>
-              <label class="wide">Note shown to players (optional)<input name="note" type="text" maxlength="200" placeholder="e.g. Winners are announced on Monday and paid within 48 hours."></label>
-              <label class="row wide"><input name="repeat" type="checkbox" checked> Repeat every week (the next cup starts automatically when this one ends)</label>
-              <div class="wide acts"><button class="btn" type="button" id="cup-thisweek">This week (Mon–Sun, Lagos)</button><button class="btn primary" type="submit">Create cup</button><span id="cup-msg" role="status"></span></div>
-            </form>
-          </div>
-          <div class="card w12">
-            <h2>Cups <small>Check the top scores, then pay winners and mark them paid. The public page is <a href="/winners/" target="_blank" rel="noopener">/winners/</a></small></h2>
-            <div id="cup-list" class="cups"><p class="empty">Loading…</p></div>
-          </div>
-        </div>
-      </section>
-    </main>
+          <div class="card w12"><div id="payout-list" class="table-wrap"><p class="empty">Loading…</p></div></div>
+        </section>
+      </main>
+    </div>
   </div>
+
+  <!-- create / edit cup -->
+  <dialog id="cup-dialog" aria-labelledby="cup-dialog-title">
+    <form id="cup-form" method="dialog">
+      <h2 id="cup-dialog-title">New cup</h2>
+      <p class="lead" id="cup-dialog-lead">Shows in the game as soon as it starts. Times are your device's local time.</p>
+      <input type="hidden" name="id">
+      <div class="form-grid">
+        <div class="field wide">Game
+          <div class="seg" id="cup-game">
+            <label><input type="radio" name="game" value="office" checked>Office Wahala <span class="hint">Mon–Fri</span></label>
+            <label><input type="radio" name="game" value="home">Home Wahala <span class="hint">every day</span></label>
+          </div>
+          <span class="hint" id="cup-game-hint"></span>
+        </div>
+        <label class="field wide">Name<input name="name" type="text" maxlength="60" placeholder="e.g. Weekly Cup, week 45" required></label>
+        <label class="field">Starts<input name="start" type="datetime-local" required></label>
+        <label class="field">Ends<input name="end" type="datetime-local" required></label>
+        <div class="wide"><button class="btn small" type="button" id="cup-thisweek">Fill in this week (Mon–Sun, Lagos)</button></div>
+        <label class="field">Tries per player<select name="tries"><option value="0">Unlimited</option><option value="3">3</option><option value="5">5</option><option value="10">10</option><option value="20">20</option></select></label>
+        <label class="field">Run length<select name="shiftSecs"><option value="0">No limit</option><option value="60">1 minute</option><option value="90">1.5 minutes</option><option value="120">2 minutes</option><option value="180">3 minutes</option><option value="300">5 minutes</option></select></label>
+        <label class="field wide">Prizes <span class="hint">one per line, line 1 = 1st place</span><textarea name="prizes" rows="3" placeholder="₦20,000 bank transfer&#10;₦10,000 bank transfer&#10;₦5,000 airtime"></textarea></label>
+        <label class="field">Sponsor <span class="hint">optional</span><input name="sponsor" type="text" maxlength="40"></label>
+        <label class="field">Sponsor link <span class="hint">https, optional</span><input name="sponsorUrl" type="url" maxlength="200"></label>
+        <label class="field wide">Note to players <span class="hint">optional</span><input name="note" type="text" maxlength="200" placeholder="e.g. Winners are announced on Monday and paid within 48 hours."></label>
+        <label class="check wide"><input name="repeat" type="checkbox" checked> Repeat every week (the next cup starts by itself when this one ends)</label>
+      </div>
+      <p id="cup-form-msg" class="err" role="status"></p>
+      <div class="form-foot"><button class="btn ghost" type="button" data-close>Cancel</button><button class="btn primary" type="submit" id="cup-submit">Create cup</button></div>
+    </form>
+  </dialog>
+
+  <!-- credit a player -->
+  <dialog id="credit-dialog" class="small" aria-labelledby="credit-title">
+    <form id="credit-form" method="dialog">
+      <h2 id="credit-title">Credit a player</h2>
+      <p class="lead" id="credit-lead"></p>
+      <label class="field">What are you giving?<input name="prize" type="text" maxlength="60" placeholder="e.g. ₦2,000 airtime" required></label>
+      <p id="credit-msg" class="err" role="status"></p>
+      <div class="form-foot"><button class="btn ghost" type="button" data-close>Cancel</button><button class="btn primary" type="submit">Give credit</button></div>
+    </form>
+  </dialog>
+
+  <!-- mark paid -->
+  <dialog id="paid-dialog" class="small" aria-labelledby="paid-title">
+    <form id="paid-form" method="dialog">
+      <h2 id="paid-title">Mark as paid</h2>
+      <p class="lead" id="paid-lead"></p>
+      <div class="form-grid">
+        <label class="field">Paid with<select name="method"><option>Bank transfer</option><option>Airtime</option><option>Data</option><option>Gift card</option><option>Voucher / promo code</option><option>Supermarket voucher</option><option>Other</option></select></label>
+        <label class="field">Reference <span class="hint">optional</span><input name="note" type="text" maxlength="120" placeholder="e.g. TRX123"></label>
+      </div>
+      <p id="paid-msg" class="err" role="status"></p>
+      <div class="form-foot"><button class="btn ghost" type="button" data-close>Cancel</button><button class="btn primary" type="submit">Mark paid</button></div>
+    </form>
+  </dialog>
+
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
 <script>
 (() => {
@@ -277,7 +492,9 @@
   const dur = (s) => { s = Math.round(s || 0); if (s < 60) return s + 's'; const m = Math.floor(s / 60); if (m < 60) return m + 'm ' + (s % 60) + 's'; return Math.floor(m / 60) + 'h ' + (m % 60) + 'm'; };
   const pct = (a, b) => (b ? Math.round((a / b) * 100) + '%' : '–');
   let KEY = sessionStorage.getItem('ow_dash_key') || '';
-  let DAYS = 7, DATA = null, ADS = null;
+  let DAYS = 7, DATA = null, ADS = null, TAB = 'overview';
+  let toastT = 0;
+  function toast(msg, bad) { const t = $('toast'); t.textContent = msg; t.className = 'toast show' + (bad ? ' bad' : ''); clearTimeout(toastT); toastT = setTimeout(() => { t.className = 'toast'; }, 3200); }
 
   async function api(path, opts) {
     const r = await fetch(path, Object.assign({ cache: 'no-store' }, opts || {}, { headers: Object.assign({ 'x-dashboard-key': KEY, 'content-type': 'application/json' }, (opts || {}).headers || {}) }));
@@ -289,30 +506,30 @@
   /* ---------- charts ---------- */
   function lineChart(el, labels, series, h = 220) {
     const W = 760, H = h, P = { l: 40, r: 26, t: 10, b: 26 };
-    const max = Math.max(1, ...series.flatMap((s) => s.values));
+    const max = Math.max(4, ...series.flatMap((s) => s.values));
     const nice = Math.pow(10, Math.floor(Math.log10(max))); const top = Math.ceil(max / nice) * nice;
     const x = (i) => P.l + (labels.length <= 1 ? (W - P.l - P.r) / 2 : (i * (W - P.l - P.r)) / (labels.length - 1));
     const y = (v) => H - P.b - (v / top) * (H - P.t - P.b);
     let g = '';
-    for (let k = 0; k <= 4; k++) { const v = (top * k) / 4; g += `<line x1="${P.l}" x2="${W - P.r}" y1="${y(v)}" y2="${y(v)}" stroke="#24304f"/><text x="${P.l - 6}" y="${y(v) + 4}" fill="#93a0bd" font-size="11" text-anchor="end">${fmt(v)}</text>`; }
+    for (let k = 0; k <= 4; k++) { const v = (top * k) / 4; g += `<line x1="${P.l}" x2="${W - P.r}" y1="${y(v)}" y2="${y(v)}" stroke="var(--line)"/><text x="${P.l - 6}" y="${y(v) + 4}" fill="var(--muted)" font-size="11" text-anchor="end">${fmt(v)}</text>`; }
     const step = Math.max(1, Math.ceil(labels.length / 10));
-    labels.forEach((l, i) => { if (i % step === 0 || i === labels.length - 1) g += `<text x="${x(i)}" y="${H - 8}" fill="#93a0bd" font-size="11" text-anchor="middle">${esc(l)}</text>`; });
+    labels.forEach((l, i) => { if (i % step === 0 || i === labels.length - 1) g += `<text x="${x(i)}" y="${H - 8}" fill="var(--muted)" font-size="11" text-anchor="middle">${esc(l)}</text>`; });
     for (const s of series) {
       const pts = s.values.map((v, i) => `${x(i)},${y(v)}`).join(' ');
-      g += `<polyline points="${pts}" fill="none" stroke="${s.color}" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>`;
-      s.values.forEach((v, i) => { g += `<circle cx="${x(i)}" cy="${y(v)}" r="3" fill="${s.color}"><title>${esc(labels[i])}: ${fmt(v)} ${esc(s.name)}</title></circle>`; });
+      g += `<polyline points="${pts}" fill="none" stroke="${s.color}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>`;
+      s.values.forEach((v, i) => { g += `<circle cx="${x(i)}" cy="${y(v)}" r="2.5" fill="${s.color}"><title>${esc(labels[i])}: ${fmt(v)} ${esc(s.name)}</title></circle>`; });
     }
     el.innerHTML = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Chart">${g}</svg>`;
   }
   function barChart(el, labels, series, h = 180) {
     const W = 760, H = h, P = { l: 36, r: 6, t: 8, b: 24 };
-    const max = Math.max(1, ...series.flatMap((s) => s.values));
+    const max = Math.max(3, ...series.flatMap((s) => s.values));
     const gw = (W - P.l - P.r) / labels.length, bw = Math.max(2, (gw - 4) / series.length);
     let g = '';
-    for (let k = 0; k <= 3; k++) { const v = (max * k) / 3; const yy = H - P.b - (v / max) * (H - P.t - P.b); g += `<line x1="${P.l}" x2="${W - P.r}" y1="${yy}" y2="${yy}" stroke="#24304f"/><text x="${P.l - 5}" y="${yy + 4}" fill="#93a0bd" font-size="10" text-anchor="end">${fmt(v)}</text>`; }
+    for (let k = 0; k <= 3; k++) { const v = (max * k) / 3; const yy = H - P.b - (v / max) * (H - P.t - P.b); g += `<line x1="${P.l}" x2="${W - P.r}" y1="${yy}" y2="${yy}" stroke="var(--line)"/><text x="${P.l - 5}" y="${yy + 4}" fill="var(--muted)" font-size="10" text-anchor="end">${fmt(v)}</text>`; }
     labels.forEach((l, i) => {
       series.forEach((s, j) => { const v = s.values[i]; const bh = (v / max) * (H - P.t - P.b); g += `<rect x="${P.l + i * gw + 2 + j * bw}" y="${H - P.b - bh}" width="${bw - 1}" height="${bh}" rx="2" fill="${s.color}"><title>${esc(l)}: ${fmt(v)} ${esc(s.name)}</title></rect>`; });
-      if (i % 2 === 0) g += `<text x="${P.l + i * gw + gw / 2}" y="${H - 7}" fill="#93a0bd" font-size="10" text-anchor="middle">${esc(l)}</text>`;
+      if (i % 2 === 0) g += `<text x="${P.l + i * gw + gw / 2}" y="${H - 7}" fill="var(--muted)" font-size="10" text-anchor="middle">${esc(l)}</text>`;
     });
     el.innerHTML = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Chart">${g}</svg>`;
   }
@@ -321,7 +538,7 @@
     const max = Math.max(...rows.map((r) => r[1]));
     const total = rows.reduce((n, r) => n + r[1], 0);
     el.innerHTML = '<div class="bars">' + rows.slice(0, opts.limit || 12).map(([k, v]) =>
-      `<div class="bar"><span class="l" title="${esc(k)}">${esc(opts.label ? opts.label(k) : k)}</span><span class="t"><i style="width:${(v / max) * 100}%;background:${opts.color || 'var(--green)'}"></i></span><span class="n">${fmt(v)}${opts.share ? ' <small style="color:var(--muted)">' + pct(v, total) + '</small>' : ''}</span></div>`).join('') + '</div>';
+      `<div class="bar-row"><span class="l" title="${esc(k)}">${esc(opts.label ? opts.label(k) : k)}</span><span class="t"><i style="width:${(v / max) * 100}%;background:${opts.color || 'var(--green)'}"></i></span><span class="n">${fmt(v)}${opts.share ? ' <small>' + pct(v, total) + '</small>' : ''}</span></div>`).join('') + '</div>';
   }
 
   const NAMES = {
@@ -337,23 +554,25 @@
   function render() {
     const d = DATA, T = d.total;
     $('live').textContent = d.live;
-    $('meta').textContent = `${d.from} → ${d.to} (Lagos time) · updated ${new Date(d.generated).toLocaleTimeString()}`;
     const avgPlay = T.visitors ? T.playSeconds / T.visitors : 0;
-    const k = [
+    const d1 = d.retention && d.retention.d1.cohort, d7 = d.retention && d.retention.d7.cohort;
+    const tiles = (list) => list.map(([a, b, c]) => `<div class="kpi"><div class="k">${a}</div><div class="v">${b}</div><div class="s">${c}</div></div>`).join('');
+    $('kpis').innerHTML = tiles([
       ['Visitors', fmt(T.visitors), `${fmt(T.newVisitors)} new · ${fmt(T.returning)} returning`],
-      ['Came back next day', d.retention && d.retention.d1.cohort ? pct(d.retention.d1.back, d.retention.d1.cohort) : '–', d.retention && d.retention.d1.cohort ? `${fmt(d.retention.d1.back)} of ${fmt(d.retention.d1.cohort)} new visitors (D1)` : 'needs 2+ days of data'],
-      ['Came back within a week', d.retention && d.retention.d7.cohort ? pct(d.retention.d7.back, d.retention.d7.cohort) : '–', d.retention && d.retention.d7.cohort ? `${fmt(d.retention.d7.back)} of ${fmt(d.retention.d7.cohort)} new visitors (D7)` : 'pick 30 or 90 days'],
-      ['Sessions', fmt(T.sessions), `${fmt(T.pageViews)} page views`],
       ['Games started', fmt(T.gamesStarted), `${fmt(T.gamesFinished)} finished`],
-      ['Total playtime', dur(T.playSeconds), 'all shifts, wall-clock'],
       ['Playtime per visitor', dur(avgPlay), `avg shift ${dur(T.gamesFinished ? T.playSeconds / T.gamesFinished : 0)}`],
-      ['Time on site', dur(T.visibleSeconds), `avg ${dur(T.visitors ? T.visibleSeconds / T.visitors : 0)} per visitor`],
-      ['Average score', fmt(T.avgScore), `best ${fmt(T.maxScore)}`],
+      ['Came back next day', d1 ? pct(d.retention.d1.back, d1) : '–', d1 ? `${fmt(d.retention.d1.back)} of ${fmt(d1)} new visitors` : 'needs 2+ days of data'],
       ['Games per visitor', T.visitors ? (T.gamesStarted / T.visitors).toFixed(1) : '0', 'replay rate'],
-      ['Shares', fmt((T.dims.share || []).reduce((n, r) => n + r[1], 0)), 'challenge, image, promo, league'],
-      ['In-game naira spent', '₦' + fmt(T.nairaSpent), 'shop + outfits'],
-    ];
-    $('kpis').innerHTML = k.map(([a, b, c]) => `<div class="kpi"><div class="k">${a}</div><div class="v">${b}</div><div class="s">${c}</div></div>`).join('');
+      ['Average score', fmt(T.avgScore), `best ${fmt(T.maxScore)}`],
+      ['Shares', fmt((T.dims.share || []).reduce((n, r) => n + r[1], 0)), 'challenge, image, cup, league'],
+      ['In-game naira spent', '₦' + fmt(T.nairaSpent), 'shop + outfits (pretend money)'],
+    ]);
+    $('kpis-aud').innerHTML = tiles([
+      ['Sessions', fmt(T.sessions), `${fmt(T.pageViews)} page views`],
+      ['Time on site', dur(T.visibleSeconds), `avg ${dur(T.visitors ? T.visibleSeconds / T.visitors : 0)} per visitor`],
+      ['Total playtime', dur(T.playSeconds), 'all shifts'],
+      ['Came back within a week', d7 ? pct(d.retention.d7.back, d7) : '–', d7 ? `${fmt(d.retention.d7.back)} of ${fmt(d7)} new visitors` : 'pick 30 or 90 days'],
+    ]);
     const lab = d.series.map((s) => s.day.slice(5));
     lineChart($('chart-daily'), lab, [
       { name: 'visitors', color: 'var(--green)', values: d.series.map((s) => s.visitors) },
@@ -366,7 +585,7 @@
       { name: 'games', color: 'var(--gold)', values: T.hours.map((h) => h.games) },
     ]);
     const F = T.funnel, steps = [['Opened the game', F.view], ['Started a shift', F.start], ['Got to the office', F.arrive], ['Reached 10am (level 3)', F.lvl3], ['Finished a shift', F.over], ['Shared', F.share]];
-    $('funnel').innerHTML = steps.map(([l, v]) => `<div class="fstep"><span>${l}</span><span class="t"><i style="width:${F.view ? (v / F.view) * 100 : 0}%"></i></span><span class="n">${fmt(v)} <small style="color:var(--muted)">${pct(v, F.view)}</small></span></div>`).join('');
+    $('funnel').innerHTML = steps.map(([l, v]) => `<div class="fstep"><span>${l}</span><span class="t"><i style="width:${F.view ? (v / F.view) * 100 : 0}%"></i></span><span class="n">${fmt(v)} <small>${pct(v, F.view)}</small></span></div>`).join('');
     const D = T.dims;
     bars($('d-ref'), D.ref, { label: nm, share: true });
     bars($('d-src'), D.src, { share: true });
@@ -377,7 +596,7 @@
     bars($('d-path'), D.path, { share: true });
     const R = (d.retention && d.retention.daily) || [];
     $('d-retention').innerHTML = R.length ? '<table><thead><tr><th>First visit</th><th class="n">New visitors</th><th class="n">Back next day</th><th class="n">Back within 7 days</th></tr></thead><tbody>' +
-      R.slice().reverse().map((r) => `<tr><td>${esc(r.day)}</td><td class="n">${fmt(r.new)}</td><td class="n">${r.d1 === null ? '<span style="color:var(--muted)">not yet</span>' : fmt(r.d1) + ' <small style="color:var(--muted)">' + pct(r.d1, r.new) + '</small>'}</td><td class="n">${r.d7 === null ? '<span style="color:var(--muted)">not yet</span>' : fmt(r.d7) + ' <small style="color:var(--muted)">' + pct(r.d7, r.new) + '</small>'}</td></tr>`).join('') + '</tbody></table>' : '<p class="empty">No data yet.</p>';
+      R.slice().reverse().map((r) => `<tr><td>${esc(r.day)}</td><td class="n">${fmt(r.new)}</td><td class="n">${r.d1 === null ? '<span class="muted">not yet</span>' : fmt(r.d1) + ' <small>' + pct(r.d1, r.new) + '</small>'}</td><td class="n">${r.d7 === null ? '<span class="muted">not yet</span>' : fmt(r.d7) + ' <small>' + pct(r.d7, r.new) + '</small>'}</td></tr>`).join('') + '</tbody></table>' : '<p class="empty">No data yet.</p>';
     bars($('d-screen'), D.screen);
     bars($('d-mode'), D.mode, { label: nm, share: true, color: 'var(--gold)' });
     bars($('d-cause'), D.cause, { label: nm, share: true, color: 'var(--red)' });
@@ -496,11 +715,16 @@
     } catch (e) { msg.className = 'err'; msg.textContent = e.message; }
   }
 
-  /* ---------- weekly cups ---------- */
-  const CUPS_STATE = ['ab','ad','ak','an','ba','by','be','bo','cr','de','eb','ed','ek','en','fc','go','im','ji','kd','kn','kt','ke','ko','kw','la','na','ni','og','on','os','oy','pl','ri','so','ta','yo','za'];
+  /* ---------- prizes: weekly boards, cups, payouts ---------- */
   const STATE_NAMES = { ab: 'Abia', ad: 'Adamawa', ak: 'Akwa Ibom', an: 'Anambra', ba: 'Bauchi', by: 'Bayelsa', be: 'Benue', bo: 'Borno', cr: 'Cross River', de: 'Delta', eb: 'Ebonyi', ed: 'Edo', ek: 'Ekiti', en: 'Enugu', fc: 'FCT', go: 'Gombe', im: 'Imo', ji: 'Jigawa', kd: 'Kaduna', kn: 'Kano', kt: 'Katsina', ke: 'Kebbi', ko: 'Kogi', kw: 'Kwara', la: 'Lagos', na: 'Nasarawa', ni: 'Niger', og: 'Ogun', on: 'Ondo', os: 'Osun', oy: 'Oyo', pl: 'Plateau', ri: 'Rivers', so: 'Sokoto', ta: 'Taraba', yo: 'Yobe', za: 'Zamfara' };
+  const STATUS = { live: 'Live', upcoming: 'Starts soon', paused: 'Paused', ended: 'Finished', cancelled: 'Cancelled' };
+  const GAME = { office: 'Office Wahala', home: 'Home Wahala' };
   const toLocal = (ts) => { const d = new Date(ts - new Date(ts).getTimezoneOffset() * 60000); return d.toISOString().slice(0, 16); };
   const when = (ts) => new Date(ts).toLocaleString(undefined, { weekday: 'short', day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' });
+  const day = (ts) => new Date(ts).toLocaleDateString(undefined, { day: 'numeric', month: 'short' });
+  const lines = (s) => String(s || '').split('\n').map((x) => x.trim()).filter(Boolean);
+  let CUPS = [], CUPF = 'active', PAYF = 'unpaid';
+  const OPEN = new Set();
   function thisWeek() {
     // Monday 00:00 to Sunday 23:59 in Lagos (UTC+1)
     const now = Date.now(), lag = new Date(now + 3600e3);
@@ -508,75 +732,208 @@
     const mon = Date.UTC(lag.getUTCFullYear(), lag.getUTCMonth(), lag.getUTCDate() - dow) - 3600e3;
     return [Math.max(now, mon), mon + 7 * 86400e3 - 60e3];
   }
-  function fillThisWeek() {
-    const [s, e] = thisWeek(); const f = $('cup-form');
-    f.start.value = toLocal(s); f.end.value = toLocal(e);
-    if (!f.name.value) f.name.value = 'Weekly Cup';
+
+  // One cup (or weekly board) as a compact card. The board opens on demand.
+  function cupCard(c) {
+    const st = c.status, open = OPEN.has(c.id), act = st === 'live' || st === 'upcoming' || st === 'paused';
+    const prize1 = c.prizes[0] ? '1st: ' + esc(c.prizes[0]) : (c.auto ? 'No set prizes · credit anyone' : '');
+    const meta = [GAME[c.game], c.auto ? (st === 'ended' ? 'week of ' + day(c.start) : 'ends ' + when(c.end)) : when(c.start) + ' → ' + when(c.end), fmt(c.players) + (c.players === 1 ? ' player' : ' players'), prize1].filter(Boolean).join(' · ');
+    let acts = `<button class="btn small" type="button" data-act="toggle" data-id="${c.id}" aria-expanded="${open}">Board <svg class="chev" width="14" height="14"><use href="#i-chev"/></svg></button>`;
+    if (!c.auto && st !== 'cancelled') acts += `<button class="btn small" type="button" data-act="edit" data-id="${c.id}">Edit</button>`;
+    if (st === 'paused') acts += `<button class="btn small primary" type="button" data-act="resume" data-id="${c.id}">Resume</button>`;
+    else if (act) acts += `<button class="btn small" type="button" data-act="pause" data-id="${c.id}">Pause</button>`;
+    if (!c.auto && act) acts += `<button class="btn small danger" type="button" data-act="end" data-id="${c.id}" data-confirm="End it now?">End now</button>`;
+    if (!c.auto) {
+      acts += `<details class="more"><summary class="btn small ghost" aria-label="More actions"><svg width="16" height="16"><use href="#i-dots"/></svg></summary><div class="menu">` +
+        `<button class="btn small" type="button" data-act="cancel" data-id="${c.id}" ${st === 'cancelled' ? '' : 'data-confirm="Sure? Cancel it"'}>${st === 'cancelled' ? 'Reopen cup' : 'Cancel cup (hide it)'}</button>` +
+        `<button class="btn small danger" type="button" data-act="delete" data-id="${c.id}" data-confirm="Delete for ever?">Delete cup and scores</button></div></details>`;
+    }
+    const info = [];
+    if (!c.auto) {
+      info.push('<span>Tries: <b>' + (c.tries || 'unlimited') + '</b></span>', '<span>Run length: <b>' + (c.shiftSecs ? c.shiftSecs / 60 + ' min' : 'no limit') + '</b></span>');
+      if (c.repeat) info.push('<span><b>Repeats weekly</b></span>');
+      if (c.endedEarly) info.push('<span><b>Ended early</b></span>');
+    }
+    if (c.prizes.length) info.push('<span>Prizes: <b>' + c.prizes.map(esc).join(' · ') + '</b></span>');
+    if (c.sponsor) info.push('<span>Sponsor: <b>' + esc(c.sponsor) + '</b></span>');
+    if (st === 'paused' && c.pausedAt) info.push('<span>Paused since <b>' + when(c.pausedAt) + '</b></span>');
+    return `<article class="cupbox ${c.game}" data-cup="${c.id}">
+      <div class="cb-head">
+        <span class="gtag" aria-hidden="true">${c.game === 'home' ? 'HW' : 'OW'}</span>
+        <div class="cb-title"><h3>${esc(c.name)} <span class="pill ${st}">${STATUS[st] || st}</span></h3><p class="sub">${meta}</p></div>
+        <div class="cb-acts">${acts}</div>
+      </div>
+      <div class="cb-body"${open ? '' : ' hidden'}>${info.length ? '<div class="info">' + info.join('') + '</div>' : ''}${boardTable(c)}</div>
+    </article>`;
   }
-  async function createCup(e) {
-    e.preventDefault();
-    const f = e.target, msg = $('cup-msg');
-    const cup = { name: f.name.value, game: f.game.value, start: new Date(f.start.value).getTime(), end: new Date(f.end.value).getTime(),
-      tries: +f.tries.value, shiftSecs: +f.shiftSecs.value, prizes: f.prizes.value.split('\n').map((x) => x.trim()).filter(Boolean),
-      sponsor: f.sponsor.value, sponsorUrl: f.sponsorUrl.value, note: f.note.value, repeat: f.repeat.checked };
-    msg.className = ''; msg.textContent = 'Creating…';
-    try { const r = await api('/api/cup/admin', { method: 'POST', body: JSON.stringify({ action: 'create', cup }) }); msg.className = 'ok'; msg.textContent = `Created ${r.cups.length === 2 ? 'two cups' : 'the cup'}. Players see it now.`; loadCups(); }
-    catch (err) { msg.className = 'err'; msg.textContent = err.message; }
+  function boardTable(c) {
+    if (!c.board.length) return '<p class="empty">No scores yet.</p>';
+    const done = c.status === 'ended';
+    const rows = c.board.map((r) => {
+      let prize = '';
+      if (r.prize && !r.rejected) prize = esc(r.prize) + (r.code ? ` <span class="code">${esc(r.code)}</span>` : '') + (done ? (r.paid ? ' <span class="pill paid">Paid</span>' : ' <span class="pill unpaid">To pay</span>') : '');
+      let a = r.rejected ? `<button class="btn small" type="button" data-act="restore" data-id="${c.id}" data-pid="${r.pid}">Restore</button>`
+        : `<button class="btn small danger" type="button" data-act="reject" data-id="${c.id}" data-pid="${r.pid}" data-confirm="Sure? Remove">Disqualify</button>`;
+      if (c.auto && !r.rejected) {
+        if ((c.credits || {})[r.pid]) a += `<button class="btn small" type="button" data-act="uncredit" data-id="${c.id}" data-pid="${r.pid}">Remove credit</button>`;
+        else if (!r.prize) a += `<button class="btn small" type="button" data-act="credit" data-id="${c.id}" data-pid="${r.pid}" data-name="${esc(r.name)}">Credit</button>`;
+      }
+      return `<tr class="${r.rejected ? 'rej' : ''} ${r.prize && !r.rejected ? 'prize' : ''}">
+        <td class="place">${r.place ? r.place : '–'}</td>
+        <td><span class="nm">${esc(r.name)}</span> <span class="muted">${esc(STATE_NAMES[r.state] || '')}</span>${(r.flags || []).map((f) => '<span class="flag">⚠ ' + esc(f) + '</span>').join('')}</td>
+        <td class="n">${fmt(r.score)}</td><td class="n">${dur(r.duration)}</td><td class="n">${r.level}</td><td class="n">${r.plays}</td>
+        <td>${prize}</td><td><div class="cb-acts" style="justify-content:flex-start">${a}</div></td></tr>`;
+    }).join('');
+    return `<div class="table-wrap"><table><thead><tr><th>#</th><th>Player</th><th class="n">Score</th><th class="n">Time</th><th class="n">Level</th><th class="n">Runs</th><th>Prize · claim code</th><th></th></tr></thead><tbody>${rows}</tbody></table></div>`;
   }
-  async function cupAction(body, btn) {
-    if (btn && btn.dataset.confirm && !btn.classList.contains('armed')) { btn.classList.add('armed'); btn.dataset.label = btn.textContent; btn.textContent = btn.dataset.confirm; setTimeout(() => { btn.classList.remove('armed'); btn.textContent = btn.dataset.label; }, 3000); return; }
-    try { await api('/api/cup/admin', { method: 'POST', body: JSON.stringify(body) }); loadCups(); }
-    catch (err) { alert(err.message); }
+
+  function payouts() {
+    const out = [];
+    for (const c of CUPS) {
+      if (c.status !== 'ended') continue;
+      for (const r of c.board) if (r.prize && !r.rejected) out.push({ c, r });
+    }
+    return out.sort((a, b) => b.c.end - a.c.end || a.r.place - b.r.place);
+  }
+  function renderPrizes() {
+    const order = { live: 0, paused: 1, upcoming: 2, ended: 3, cancelled: 4 };
+    const auto = CUPS.filter((c) => c.auto), cups = CUPS.filter((c) => !c.auto);
+    const wkNow = auto.filter((c) => c.status !== 'ended').sort((a, b) => (a.game === 'office' ? 0 : 1) - (b.game === 'office' ? 0 : 1));
+    const wkPast = auto.filter((c) => c.status === 'ended').sort((a, b) => b.start - a.start);
+    $('wk-list').innerHTML = wkNow.map(cupCard).join('') || '<p class="empty">The boards start with the first shift of the week.</p>';
+    $('wk-past').innerHTML = wkPast.map(cupCard).join('') || '<p class="empty">No earlier weeks yet.</p>';
+    const shown = cups.filter((c) => CUPF === 'all' || (CUPF === 'ended' ? c.status === 'ended' || c.status === 'cancelled' : c.status !== 'ended' && c.status !== 'cancelled'))
+      .sort((a, b) => order[a.status] - order[b.status] || (a.status === 'ended' ? b.end - a.end : a.start - b.start));
+    $('cup-list').innerHTML = shown.map(cupCard).join('') ||
+      `<div class="card w12" style="text-align:center;padding:34px 18px"><p class="muted" style="margin:0 0 12px">${CUPF === 'ended' ? 'No finished cups yet.' : 'No cups running. Start one for Office Wahala or Home Wahala.'}</p>${CUPF === 'ended' ? '' : '<button class="btn primary" type="button" data-act="new">New cup</button>'}</div>`;
+    const all = payouts(), unpaid = all.filter((p) => !p.r.paid);
+    const pc = $('pay-count'); pc.hidden = !unpaid.length; pc.textContent = unpaid.length;
+    const list = PAYF === 'all' ? all : PAYF === 'paid' ? all.filter((p) => p.r.paid) : unpaid;
+    $('payout-list').innerHTML = list.length ? '<table><thead><tr><th>Cup / week</th><th>#</th><th>Player</th><th>Prize</th><th>Claim code</th><th>Status</th><th></th></tr></thead><tbody>' +
+      list.map(({ c, r }) => `<tr><td><b>${esc(c.name)}</b><br><span class="muted">${GAME[c.game]} · ended ${day(c.end)}</span></td><td class="place">${r.place}</td>
+        <td>${esc(r.name)} <span class="muted">${esc(STATE_NAMES[r.state] || '')}</span></td><td>${esc(r.prize)}</td><td><span class="code">${esc(r.code)}</span></td>
+        <td>${r.paid ? '<span class="pill paid">Paid</span><br><span class="muted">' + esc(r.paid.method) + (r.paid.note ? ' · ' + esc(r.paid.note) : '') + '</span>' : '<span class="pill unpaid">To pay</span>'}</td>
+        <td>${r.paid ? `<button class="btn small" type="button" data-act="unpaid" data-id="${c.id}" data-pid="${r.pid}">Undo</button>` : `<button class="btn small primary" type="button" data-act="paid" data-id="${c.id}" data-pid="${r.pid}" data-name="${esc(r.name)}" data-prize="${esc(r.prize)}">Mark paid</button>`}</td></tr>`).join('') + '</tbody></table>'
+      : `<p class="empty">${PAYF === 'unpaid' ? 'All winners are paid. Nice one.' : 'Nothing here yet.'}</p>`;
   }
   async function loadCups() {
-    const box = $('cup-list');
     try {
       const j = await api('/api/cup/admin');
+      CUPS = j.cups || [];
       const wf = $('wk-form');
       if (j.autoset && !wf.dataset.filled) { wf.dataset.filled = '1'; wf.office.value = (j.autoset.office || []).join('\n'); wf.home.value = (j.autoset.home || []).join('\n'); wf.sponsor.value = j.autoset.sponsor || ''; wf.sponsorUrl.value = j.autoset.sponsorUrl || ''; }
-      j.cups.sort((a, b) => (b.auto ? 1 : 0) - (a.auto ? 1 : 0) || ({ live: 0, upcoming: 1, ended: 2, cancelled: 3 }[a.status] - { live: 0, upcoming: 1, ended: 2, cancelled: 3 }[b.status]) || b.start - a.start);
-      if (!j.cups.length) { box.innerHTML = '<p class="empty">No cups yet. Create one above.</p>'; return; }
-      box.innerHTML = j.cups.map((c) => {
-        const rows = c.board.map((r, i) => `<tr class="${r.rejected ? 'rej' : ''} ${r.prize ? 'prize' : ''}">
-          <td>${r.place ? '#' + r.place : '–'}</td><td>${esc(r.name)}<small style="color:var(--muted)"> ${esc(STATE_NAMES[r.state] || '')}</small>${(r.flags || []).map((f) => '<span class="flag">⚠ ' + esc(f) + '</span>').join('')}</td>
-          <td class="n">${fmt(r.score)}</td><td class="n">${dur(r.duration)}</td><td class="n">${r.level}</td><td class="n">${r.plays}</td>
-          <td>${esc(r.prize || '')}${r.code ? '<br><span class="code">' + esc(r.code) + '</span>' : ''}</td>
-          <td>${r.paid ? '<span class="ok">Paid</span><br><small style="color:var(--muted)">' + esc(r.paid.method) + (r.paid.note ? ' · ' + esc(r.paid.note) : '') + '</small>' : r.prize && c.status === 'ended' ? '<span class="err">Not paid</span>' : ''}</td>
-          <td><div class="acts">
-            ${r.rejected ? `<button class="btn small" data-act="restore" data-id="${c.id}" data-pid="${r.pid}">Restore</button>` : `<button class="btn small danger" data-act="reject" data-id="${c.id}" data-pid="${r.pid}" data-confirm="Sure? Reject">Disqualify</button>`}
-            ${c.auto && !r.rejected && !r.prize ? `<input data-credit placeholder="e.g. ₦2,000 airtime"><button class="btn small gold" data-act="credit" data-id="${c.id}" data-pid="${r.pid}">Credit</button>` : ''}
-            ${c.auto && (c.credits || {})[r.pid] ? `<button class="btn small" data-act="uncredit" data-id="${c.id}" data-pid="${r.pid}">Remove credit</button>` : ''}
-            ${r.prize && !r.rejected ? (r.paid ? `<button class="btn small" data-act="unpaid" data-id="${c.id}" data-pid="${r.pid}">Undo paid</button>`
-              : `<select data-method><option>Bank transfer</option><option>Airtime</option><option>Data</option><option>Gift card</option><option>Voucher / promo code</option><option>Supermarket voucher</option><option>Other</option></select><input data-note placeholder="Ref / note"><button class="btn small primary" data-act="paid" data-id="${c.id}" data-pid="${r.pid}">Mark paid</button>`) : ''}
-          </div></td></tr>`).join('');
-        return `<div class="cupbox ${c.game}">
-          <h3>${esc(c.name)} <span class="pill ${c.status}">${c.status}</span> <span class="pill">${c.game === 'home' ? 'Home Wahala' : 'Office Wahala'}</span>${c.auto ? ' <span class="pill live">weekly leaderboard · week ' + esc(c.week) + '</span>' : ''}${c.repeat ? ' <span class="pill">repeats weekly</span>' : ''}</h3>
-          <p class="sub">${when(c.start)} → ${when(c.end)} · ${fmt(c.players)} players · prizes: ${c.prizes.map(esc).join(' / ')}${c.sponsor ? ' · sponsor: ' + esc(c.sponsor) : ''}</p>
-          <div class="table-wrap"><table><thead><tr><th>Place</th><th>Player</th><th class="n">Score</th><th class="n">Time</th><th class="n">Level</th><th class="n">Runs</th><th>Prize · claim code</th><th>Payment</th><th></th></tr></thead>
-          <tbody>${rows || '<tr><td colspan="9" class="empty">No scores yet.</td></tr>'}</tbody></table></div>
-          <div class="acts" style="margin-top:8px">
-            ${c.auto ? '' : `<button class="btn small" data-act="cancel" data-id="${c.id}" ${c.status === 'cancelled' ? '' : 'data-confirm="Sure? Cancel cup"'}>${c.status === 'cancelled' ? 'Reopen' : 'Cancel cup'}</button>
-            <button class="btn small danger" data-act="delete" data-id="${c.id}" data-confirm="Delete for ever?">Delete</button>`}
-          </div></div>`;
-      }).join('');
-    } catch (err) { box.innerHTML = '<p class="err">' + esc(err.message) + '</p>'; }
+      renderPrizes();
+    } catch (err) { for (const id of ['wk-list', 'cup-list', 'payout-list']) $(id).innerHTML = '<p class="err">' + esc(err.message) + '</p>'; }
   }
-  $('cup-form').addEventListener('submit', createCup);
+  const cupById = (id) => CUPS.find((c) => c.id === id);
+
+  // ----- create / edit -----
+  function openCupDialog(c) {
+    const f = $('cup-form'), dlg = $('cup-dialog');
+    f.reset(); $('cup-form-msg').textContent = '';
+    f.id.value = c ? c.id : '';
+    $('cup-dialog-title').textContent = c ? 'Edit cup' : 'New cup';
+    $('cup-submit').textContent = c ? 'Save changes' : 'Create cup';
+    $('cup-dialog-lead').textContent = c ? 'Changes show in the game straight away. Scores so far are kept.' : 'Pick the game, the dates and the prizes. Times are your device\'s local time.';
+    const locked = !!(c && c.players > 0);
+    for (const r of f.querySelectorAll('[name=game]')) { r.checked = r.value === (c ? c.game : 'office'); r.disabled = locked; }
+    $('cup-game-hint').textContent = locked ? 'People have already played, so the game cannot change.' : 'Office cups close on Saturday and Sunday. Home cups run every day.';
+    if (c) {
+      f.name.value = c.name; f.start.value = toLocal(c.start); f.end.value = toLocal(c.end);
+      f.tries.value = String(c.tries || 0); f.shiftSecs.value = String(c.shiftSecs || 0);
+      f.prizes.value = c.prizes.join('\n'); f.sponsor.value = c.sponsor || ''; f.sponsorUrl.value = c.sponsorUrl || ''; f.note.value = c.note || ''; f.repeat.checked = !!c.repeat;
+    } else { fillThisWeek(); f.name.value = ''; }
+    dlg.showModal();
+    f.name.focus();
+  }
+  function fillThisWeek() { const [s, e] = thisWeek(); const f = $('cup-form'); f.start.value = toLocal(s); f.end.value = toLocal(e); }
+  async function saveCup(e) {
+    e.preventDefault();
+    const f = $('cup-form'), msg = $('cup-form-msg');
+    const g = f.querySelector('[name=game]:checked');
+    const cup = { name: f.name.value, game: g ? g.value : '', start: new Date(f.start.value).getTime(), end: new Date(f.end.value).getTime(),
+      tries: +f.tries.value, shiftSecs: +f.shiftSecs.value, prizes: lines(f.prizes.value), sponsor: f.sponsor.value, sponsorUrl: f.sponsorUrl.value, note: f.note.value, repeat: f.repeat.checked };
+    const id = f.id.value;
+    msg.className = 'muted'; msg.textContent = 'Saving…';
+    try {
+      await api('/api/cup/admin', { method: 'POST', body: JSON.stringify(id ? { action: 'update', id, cup } : { action: 'create', cup }) });
+      $('cup-dialog').close();
+      toast(id ? 'Cup updated.' : `${GAME[cup.game]} cup created. Players see it now.`);
+      $('cup-msg').textContent = id ? 'Saved changes to ' + cup.name + '.' : 'Created ' + cup.name + ' for ' + GAME[cup.game] + '.';
+      if (!id) { CUPF = 'active'; syncSeg('cup-filter', CUPF); }
+      loadCups();
+    } catch (err) { msg.className = 'err'; msg.textContent = err.message; }
+  }
+
+  // ----- credit & paid dialogs -----
+  let PENDING = null;
+  function openCredit(b) {
+    PENDING = { id: b.dataset.id, pid: b.dataset.pid };
+    const f = $('credit-form'); f.reset(); $('credit-msg').textContent = '';
+    $('credit-lead').textContent = `${b.dataset.name} gets a claim code in the game and can claim on WhatsApp once the week ends.`;
+    $('credit-dialog').showModal(); f.prize.focus();
+  }
+  function openPaid(b) {
+    PENDING = { id: b.dataset.id, pid: b.dataset.pid };
+    const f = $('paid-form'); f.reset(); $('paid-msg').textContent = '';
+    $('paid-lead').textContent = `${b.dataset.name} · ${b.dataset.prize}`;
+    $('paid-dialog').showModal();
+  }
+  $('credit-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    try { await api('/api/cup/admin', { method: 'POST', body: JSON.stringify(Object.assign({ action: 'credit', prize: $('credit-form').prize.value }, PENDING)) }); $('credit-dialog').close(); toast('Credit given.'); loadCups(); }
+    catch (err) { $('credit-msg').textContent = err.message; }
+  });
+  $('paid-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const f = $('paid-form');
+    try { await api('/api/cup/admin', { method: 'POST', body: JSON.stringify(Object.assign({ action: 'paid', method: f.method.value, note: f.note.value }, PENDING)) }); $('paid-dialog').close(); toast('Marked as paid.'); loadCups(); }
+    catch (err) { $('paid-msg').textContent = err.message; }
+  });
+  for (const d of document.querySelectorAll('dialog')) d.addEventListener('click', (e) => { if (e.target.closest('[data-close]') || e.target === d) d.close(); });
+
+  // ----- actions -----
+  const DONE = { pause: 'Paused. Players can look but not start new runs.', resume: 'Resumed. Players can play again.', end: 'Ended. Winners are on the Payouts page.',
+    cancel: 'Updated.', delete: 'Deleted.', reject: 'Player removed from the board.', restore: 'Player restored.', uncredit: 'Credit removed.', unpaid: 'Marked as not paid.' };
+  async function cupAction(b) {
+    if (b.dataset.confirm && !b.classList.contains('armed')) {
+      b.classList.add('armed'); b.dataset.label = b.innerHTML; b.textContent = b.dataset.confirm;
+      setTimeout(() => { if (b.isConnected && b.classList.contains('armed')) { b.classList.remove('armed'); b.innerHTML = b.dataset.label; } }, 3000);
+      return;
+    }
+    const act = b.dataset.act;
+    b.disabled = true;
+    try { await api('/api/cup/admin', { method: 'POST', body: JSON.stringify({ action: act, id: b.dataset.id, pid: b.dataset.pid }) }); toast(DONE[act] || 'Done.'); await loadCups(); }
+    catch (err) { toast(err.message, true); b.disabled = false; }
+  }
+  document.addEventListener('click', (e) => {
+    const b = e.target.closest('[data-act]'); if (!b || !$('app').contains(b)) return;
+    const act = b.dataset.act;
+    if (act === 'toggle') {
+      const box = b.closest('.cupbox'), body = box.querySelector('.cb-body'), open = body.hidden;
+      body.hidden = !open; b.setAttribute('aria-expanded', String(open));
+      if (open) OPEN.add(b.dataset.id); else OPEN.delete(b.dataset.id);
+      return;
+    }
+    const menu = b.closest('details.more'); if (menu && !b.dataset.confirm) menu.open = false;
+    if (act === 'new') return openCupDialog(null);
+    if (act === 'edit') return openCupDialog(cupById(b.dataset.id));
+    if (act === 'credit') return openCredit(b);
+    if (act === 'paid') return openPaid(b);
+    cupAction(b);
+  });
+  function syncSeg(id, v) { for (const x of $(id).querySelectorAll('button')) x.setAttribute('aria-pressed', String(x.dataset.f === v)); }
+  $('cup-filter').addEventListener('click', (e) => { const b = e.target.closest('button'); if (!b) return; CUPF = b.dataset.f; syncSeg('cup-filter', CUPF); renderPrizes(); });
+  $('pay-filter').addEventListener('click', (e) => { const b = e.target.closest('button'); if (!b) return; PAYF = b.dataset.f; syncSeg('pay-filter', PAYF); renderPrizes(); });
+  $('cup-form').addEventListener('submit', saveCup);
+  $('cup-thisweek').addEventListener('click', fillThisWeek);
+  $('cup-new').addEventListener('click', () => openCupDialog(null));
   $('wk-form').addEventListener('submit', async (e) => {
     e.preventDefault();
     const f = e.target, msg = $('wk-msg');
-    const lines = (s) => s.split('\n').map((x) => x.trim()).filter(Boolean);
-    msg.className = ''; msg.textContent = 'Saving…';
+    msg.className = 'muted'; msg.textContent = 'Saving…';
     try { await api('/api/cup/admin', { method: 'POST', body: JSON.stringify({ action: 'autoset', office: lines(f.office.value), home: lines(f.home.value), sponsor: f.sponsor.value, sponsorUrl: f.sponsorUrl.value, applyNow: f.applyNow.checked }) }); msg.className = 'ok'; msg.textContent = 'Saved.'; loadCups(); }
     catch (err) { msg.className = 'err'; msg.textContent = err.message; }
-  });
-  $('cup-thisweek').addEventListener('click', fillThisWeek);
-  $('cup-list').addEventListener('click', (e) => {
-    const b = e.target.closest('[data-act]'); if (!b) return;
-    const body = { action: b.dataset.act, id: b.dataset.id, pid: b.dataset.pid };
-    if (b.dataset.act === 'paid') { const row = b.closest('.acts'); body.method = row.querySelector('[data-method]').value; body.note = row.querySelector('[data-note]').value; }
-    if (b.dataset.act === 'credit') { body.prize = b.closest('.acts').querySelector('[data-credit]').value; }
-    cupAction(body, b);
   });
 
   /* ---------- export ---------- */
@@ -599,6 +956,8 @@
   }
 
   /* ---------- flow ---------- */
+  const ANALYTICS = ['overview', 'audience', 'gameplay', 'economy', 'health', 'ads'];
+  const PRIZES = ['weekly', 'cups', 'payouts'];
   async function load() {
     $('meta').textContent = 'Loading…';
     try {
@@ -606,10 +965,27 @@
       $('login').classList.add('hidden');
       $('app').classList.remove('hidden');
       render();
+      setMeta();
+      loadCups();
     } catch (e) {
       if (e.status === 401 || e.status === 503 || !KEY) { showLogin(e.message); return; }
       $('meta').textContent = 'Could not load stats: ' + e.message;
     }
+  }
+  function setMeta() {
+    if (PRIZES.includes(TAB)) $('meta').textContent = 'Weeks run Monday to Sunday, Lagos time';
+    else if (DATA) $('meta').textContent = `${DATA.from} → ${DATA.to} · updated ${new Date(DATA.generated).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}`;
+  }
+  function showTab(tab) {
+    TAB = tab;
+    for (const b of document.querySelectorAll('.tabs button')) b.setAttribute('aria-selected', String(b.dataset.tab === tab));
+    for (const s of document.querySelectorAll('main > section')) s.classList.toggle('hidden', s.id !== 'tab-' + tab);
+    $('page-title').innerHTML = $('tab-' + tab).dataset.title;
+    for (const el of document.querySelectorAll('[data-for]')) el.classList.toggle('hidden', !(el.dataset.for === 'analytics' ? ANALYTICS.includes(tab) && tab !== 'ads' : el.dataset.for === tab));
+    setMeta();
+    if (PRIZES.includes(tab)) loadCups();
+    try { sessionStorage.setItem('ow_dash_tab', tab); } catch (e) { /* private mode */ }
+    window.scrollTo(0, 0);
   }
   function showLogin(msg) {
     $('app').classList.add('hidden');
@@ -629,20 +1005,17 @@
     document.querySelectorAll('.range button').forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
     load();
   }));
-  document.querySelectorAll('.tabs button').forEach((b) => b.addEventListener('click', () => {
-    document.querySelectorAll('.tabs button').forEach((x) => x.setAttribute('aria-selected', String(x === b)));
-    $('tab-overview').classList.toggle('hidden', b.dataset.tab !== 'overview');
-    $('tab-ads').classList.toggle('hidden', b.dataset.tab !== 'ads');
-    $('tab-cups').classList.toggle('hidden', b.dataset.tab !== 'cups');
-    if (b.dataset.tab === 'cups') loadCups();
-  }));
-  $('refresh').addEventListener('click', load);
+  document.querySelectorAll('.tabs button').forEach((b) => b.addEventListener('click', () => showTab(b.dataset.tab)));
+  $('refresh').addEventListener('click', () => { if (PRIZES.includes(TAB)) loadCups(); else load(); });
   $('export').addEventListener('click', exportCsv);
   $('logout').addEventListener('click', () => { sessionStorage.removeItem('ow_dash_key'); KEY = ''; showLogin(''); });
   $('ad-add').addEventListener('click', () => { ADS.ads.push(blankAd()); renderAds(); });
   $('ad-save').addEventListener('click', saveAds);
-  setInterval(() => { if (!document.hidden && KEY && DATA) load(); }, 60000);
+  setInterval(() => { if (!document.hidden && KEY && DATA && !PRIZES.includes(TAB)) load(); }, 60000);
 
+  let first = 'overview';
+  try { first = sessionStorage.getItem('ow_dash_tab') || 'overview'; } catch (e) { /* private mode */ }
+  showTab($('tab-' + first) ? first : 'overview');
   if (KEY) { load(); loadAds(); } else showLogin('');
 })();
 </script>

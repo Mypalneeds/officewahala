@@ -1622,6 +1622,7 @@ body.is-home .row-score { background: #7c2d12; }
 .ch-dot { width: 9px; height: 9px; border-radius: 50%; background: #9ca3af; }
 .ch-dot.is-live { background: #19c37d; box-shadow: 0 0 0 3px rgba(25, 195, 125, 0.3); }
 .ch-dot.is-upcoming { background: var(--gold); }
+.ch-dot.is-paused { background: #f97316; }
 .ch-meta, .ch-sponsor { font-size: 0.78rem; color: #dbe2f0; }
 .ch-sponsor a { color: var(--gold); }
 .ch-note { margin: 4px 0 0; font-size: 0.82rem; color: #fff; }

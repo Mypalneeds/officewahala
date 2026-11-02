@@ -13,7 +13,8 @@
      POST /api/cup/<id>/score  { playerId, name, state, runId, score, duration, level }
    Routes (dashboard, header x-dashboard-key)
      GET  /api/cup/admin                    every cup with full boards, flags and claim codes
-     POST /api/cup/admin { action: create | update | cancel | delete | reject | restore | paid | unpaid, ... }
+     POST /api/cup/admin { action: create | update | pause | resume | end | cancel | delete | reject | restore | paid | unpaid | credit | uncredit | autoset, ... }
+     A cup is for one game (office or home). Paused cups stay on the board but nobody can start a new run until resumed.
 
    Weekly leaderboards (no joining needed): every normal Office or Home shift counts.
      GET  /api/cup/weekly?me=<playerId>     this week's Office and Home top players (+ last week's)
@@ -95,7 +96,7 @@ function flagsFor(score, duration, level) {
   if (duration < 20 && score > 3000) f.push('high score in a very short run');
   return f;
 }
-export const statusOf = (c, now = Date.now()) => (c.cancelled ? 'cancelled' : now < c.start ? 'upcoming' : now >= c.end ? 'ended' : 'live');
+export const statusOf = (c, now = Date.now()) => (c.cancelled ? 'cancelled' : now >= c.end ? 'ended' : c.paused ? 'paused' : now < c.start ? 'upcoming' : 'live');
 
 export function cleanCup(b, now = Date.now()) {
   const name = cleanText(b.name, 60);
@@ -186,9 +187,10 @@ async function rollRepeats(store, cups, now) {
   const out = [...cups];
   for (const c of cups) {
     if (!c.repeat || c.cancelled || now < c.end || c.next) continue;
-    const len = c.end - c.start;
-    let start = c.end; while (start + len <= now) start += 7 * DAY;
-    const nc = await createCup(store, { name: c.name, game: c.game, start, end: start + len, prizes: c.prizes, shiftSecs: c.shiftSecs, tries: c.tries,
+    // An early "End now" keeps the weekly rhythm: the next copy follows the original schedule.
+    const base = c.origEnd || c.end, slot = base - c.start;
+    let start = base; while (start + slot <= now) start += 7 * DAY;
+    const nc = await createCup(store, { name: c.name, game: c.game, start, end: start + slot, prizes: c.prizes, shiftSecs: c.shiftSecs, tries: c.tries,
       repeat: true, sponsor: c.sponsor, sponsorUrl: c.sponsorUrl, note: c.note }, now);
     c.next = nc.id; c.repeat = false;
     await saveCup(store, c);
@@ -260,7 +262,7 @@ export default async (req) => {
               flags: r.flags || [], runs: (r.runs || []).slice(-5), rejected: (c.rejected || []).includes(r.pid), place: place >= 0 ? place + 1 : 0, prize,
               code: prize ? await claimCode(c, r.pid) : '', paid: (c.paid || {})[r.pid] || null, first: r.first, bestAt: r.bestAt });
           }
-          out.push(Object.assign(publicCup(c, now), { repeat: !!c.repeat, players: rows.length, board, created: c.created, credits: c.credits || {} }));
+          out.push(Object.assign(publicCup(c, now), { repeat: !!c.repeat, players: rows.length, board, created: c.created, credits: c.credits || {}, pausedAt: c.pausedAt || 0, endedEarly: !!c.origEnd, next: c.next || '' }));
         }
         return json({ cups: out, now, autoset: await autoSettings(store) });
       }
@@ -277,21 +279,42 @@ export default async (req) => {
       if (act === 'create') {
         let data;
         try { data = cleanCup(b.cup || {}, now); } catch (e) { return fail(e.message); }
-        const games = b.cup && b.cup.game === 'both' ? ['office', 'home'] : [data.game];
-        const made = [];
-        for (const g of games) made.push(publicCup(await createCup(store, Object.assign({}, data, { game: g, name: games.length > 1 ? data.name + (g === 'home' ? ' (Home)' : ' (Office)') : data.name }), now), now));
-        return json({ ok: true, cups: made });
+        if (!b.cup || (b.cup.game !== 'office' && b.cup.game !== 'home')) return fail('Pick one game for the cup: Office Wahala or Home Wahala.');
+        const made = await createCup(store, data, now);
+        return json({ ok: true, cups: [publicCup(made, now)], cup: publicCup(made, now) });
       }
       const c = await readCup(store, b.id);
       if (!c) return fail('Cup not found.', 404);
       if (act === 'update') {
         let data;
-        try { data = cleanCup(Object.assign({}, c, b.cup || {}, { game: c.game }, c.auto ? { auto: true, start: c.start, end: c.end, name: c.name } : {}), now); } catch (e) { return fail(e.message); }
+        const want = b.cup && (b.cup.game === 'office' || b.cup.game === 'home') ? b.cup.game : c.game;
+        if (want !== c.game) {
+          if (c.auto) return fail('Weekly leaderboards keep their game.');
+          const { blobs } = await store.list({ prefix: `cupscores/${c.id}/` });
+          if (blobs.length) return fail('People have already played this cup, so its game cannot change. Create a new cup instead.');
+        }
+        try { data = cleanCup(Object.assign({}, c, b.cup || {}, { game: want }, c.auto ? { auto: true, start: c.start, end: c.end, name: c.name } : {}), now); } catch (e) { return fail(e.message); }
         Object.assign(c, data, { week: lagosWeek(data.start) });
+        if (c.end > now) delete c.origEnd;
         await saveCup(store, c);
         return json({ ok: true, cup: publicCup(c, now) });
       }
-      if (act === 'cancel') { c.cancelled = !c.cancelled; c.repeat = false; await saveCup(store, c); return json({ ok: true, cup: publicCup(c, now) }); }
+      if (act === 'pause' || act === 'resume') {
+        if (c.cancelled || now >= c.end) return fail('This cup has already finished.');
+        if (act === 'pause') { c.paused = true; c.pausedAt = now; } else { delete c.paused; delete c.pausedAt; }
+        await saveCup(store, c);
+        return json({ ok: true, cup: publicCup(c, now) });
+      }
+      if (act === 'end') {
+        if (c.auto) return fail('Weekly leaderboards end on their own every Monday.');
+        if (c.cancelled || now >= c.end) return fail('This cup has already finished.');
+        if (!c.origEnd) c.origEnd = c.end;
+        c.end = now; if (c.start > now) c.start = now - 1; delete c.paused; delete c.pausedAt;
+        await saveCup(store, c);
+        await getHall(store, now, true).catch(() => {});
+        return json({ ok: true, cup: publicCup(c, now) });
+      }
+      if (act === 'cancel') { c.cancelled = !c.cancelled; c.repeat = false; await saveCup(store, c); await getHall(store, now, true).catch(() => {}); return json({ ok: true, cup: publicCup(c, now) }); }
       if (act === 'delete') {
         const { blobs } = await store.list({ prefix: `cupscores/${c.id}/` });
         for (const bl of blobs) await store.delete(bl.key).catch(() => {});
@@ -364,6 +387,7 @@ export default async (req) => {
         if (await limited(store, 'wkstart', b.playerId, 3)) return fail('Slow down a little.', 429);
         const c = await ensureAuto(store, game, now);
         const pid = await pidOf(b.playerId);
+        if (c.paused) return fail('This week\'s board is paused.', 409);
         if ((c.rejected || []).includes(pid)) return fail('Removed from this week\'s board.', 403);
         const key = `cupscores/${c.id}/${b.playerId}`;
         const rec = (await store.get(key, { type: 'json' }).catch(() => null)) || { playerId: b.playerId, pid, name, best: 0, plays: 0, tries: 0, runs: [], first: now };
@@ -403,7 +427,8 @@ export default async (req) => {
           me: mine >= 0 ? { rank: mine + 1, score: rows[mine].best, triesLeft: c.tries ? Math.max(0, c.tries - (recMe ? recMe.tries || 0 : 0)) : null }
             : { rank: 0, score: 0, triesLeft: c.tries ? Math.max(0, c.tries - (recMe ? recMe.tries || 0 : 0)) : null } }));
       }
-      out.sort((a, b) => ({ live: 0, upcoming: 1, ended: 2 }[a.status] - { live: 0, upcoming: 1, ended: 2 }[b.status]) || a.end - b.end);
+      const ORD = { live: 0, paused: 1, upcoming: 2, ended: 3 };
+      out.sort((a, b) => ORD[a.status] - ORD[b.status] || a.end - b.end);
       return json({ cups: out, now });
     }
 
@@ -426,6 +451,7 @@ export default async (req) => {
       if (name.length < 1) return fail('Add your name first.');
       if (isRude(name)) return fail('Please choose a friendlier name.');
       const st = statusOf(c, now);
+      if (st === 'paused') return fail('This cup is paused for now. Check back soon.', 409);
       if (st === 'upcoming') return fail('This cup has not started yet.', 409);
       if (st !== 'live') return fail('This cup has ended.', 409);
       if (c.game !== 'home' && officeClosedNow(now)) return fail('Office is closed on Saturdays and Sundays. The Office Cup opens again on Monday.', 409);

@@ -39,7 +39,7 @@
    "about": {
     "@id": "https://officewahala.netlify.app/#game"
    },
-   "dateModified": "2026-10-30",
+   "dateModified": "2026-11-02",
    "breadcrumb": {
     "@id": "https://officewahala.netlify.app/winners/#crumbs"
    }
@@ -157,6 +157,7 @@
       <p><strong>How it works:</strong> tap the <strong>Weekly Cup</strong> card in the game and play. Your best single run counts. When the cup ends, winners see a private claim code and claim on WhatsApp. Prizes are paid by bank transfer, airtime, gift card or voucher, and marked <strong>Paid</strong> below. No sign-up needed. <a href="/cup-rules/">Read the cup rules</a>.</p>
     </div>
     <p>There are also <strong>weekly leaderboards</strong> for Office Wahala and Home Wahala: every normal shift you play counts, no joining needed. They reset every Monday, and the week's top players can be credited with prizes too.</p>
+    <p>A trophy next to a name means that player has won a prize before. A gold trophy with a number counts their first-place wins. If a cup shows <strong>Paused</strong>, the organiser has stopped it for a moment and it will continue soon.</p>
     <h2 id="live">This week's cups and leaderboards</h2>
     <div id="live-cups"></div>
     <h2 id="past">Past winners</h2>
@@ -203,7 +204,7 @@
         <a href="https://wa.me/2347066459689?text=I%20want%20to%20sponsor%20a%20Weekly%20Cup%20on%20Office%20Wahala" rel="noopener">Sponsor a Weekly Cup</a>
       </nav>
       <p>Built by <strong>Mmadubuko Micheal</strong>, CEO, <a href="https://www.analaize.com.ng" rel="noopener">Analaize Limited</a>, Lagos. Contact the developer: <a href="tel:+2347066459689">07066459689</a> · <a href="https://wa.me/2347066459689" rel="noopener">WhatsApp</a></p>
-      <p>Last updated 2026-10-30.</p>
+      <p>Last updated 2026-11-02.</p>
     </div>
   </footer>
   <script src="/analytics.js" defer></script>
@@ -230,7 +231,7 @@
       var L = document.getElementById('live-cups'), P = document.getElementById('past-cups');
       L.innerHTML = j.live.length ? j.live.map(function (c) {
         return '<section class="cupx ' + esc(c.game) + '"><h3>' + esc(c.name) + '</h3><p class="m">' + (c.game === 'home' ? 'Home Wahala' : 'Office Wahala') + ' · ' +
-          (c.status === 'live' ? 'Live, ends in ' + left(c.end - Date.now()) : 'Starts in ' + left(c.start - Date.now())) + ' · ' + fmt(c.players) + ' players' + (c.prizes[0] ? ' · 1st prize: ' + esc(c.prizes[0]) : '') + '</p>' + sp(c) + '<ol>' +
+          (c.status === 'live' ? 'Live, ends in ' + left(c.end - Date.now()) : c.status === 'paused' ? 'Paused for now, back soon' : 'Starts in ' + left(c.start - Date.now())) + ' · ' + fmt(c.players) + ' players' + (c.prizes[0] ? ' · 1st prize: ' + esc(c.prizes[0]) : '') + '</p>' + sp(c) + '<ol>' +
           (c.top.length ? c.top.map(function (r) { return '<li><b>#' + r.rank + '</b><span>' + esc(r.name) + tro(r) + (S[r.state] ? ' · ' + S[r.state] : '') + (c.prizes[r.rank - 1] ? ' · <small>' + esc(c.prizes[r.rank - 1]) + '</small>' : '') + '</span><span class="s">' + fmt(r.score) + '</span></li>'; }).join('') : '<li><span></span><span>No scores yet. Be the first!</span><span></span></li>') + '</ol>' + shareBtn(c, false) + '</section>';
       }).join('') : '<p>No cup is running right now. Check back on Monday.</p>';
       P.innerHTML = j.done.length ? j.done.map(function (c) {
