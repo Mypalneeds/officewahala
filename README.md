@@ -15,6 +15,21 @@ Built by **Mmadubuko Micheal**, CEO, [Analaize Limited](https://www.analaize.com
 
 Live: https://officewahala.netlify.app
 
+## What's in version 8.7: "make money" guides (SEO, AEO, GEO and programmatic pages)
+
+21 new guide pages that answer what people actually search for, honestly, and lead them to the free Weekly Cup:
+
+| Hub | Pages under it |
+|---|---|
+| `/make-money-playing-games/` (pillar) | win free airtime · win free data · games that pay to your bank · gift cards and vouchers · free games that pay real money · on your phone · no deposit · play-to-earn crypto · scam red flags · online tournaments · win prizes every day (weekends) · is Office Wahala legit? · skill games vs betting |
+| `/how-to-make-money-online-nigeria/` (pillar) | students · NYSC corps members · stay-at-home parents · side hustles for office workers · with no money to start · with just your phone |
+
+Every page has: a one-paragraph **short answer** at the top (what Google answers and AI assistants quote), **key facts**, a table of contents, the article, **steps**, **FAQs**, **sources** (SEC, EFCC/CBEX, Supreme Court lottery ruling), related guides, an honest note (we make the game; the in-game naira can't be cashed out; not financial or legal advice), the author and update date. Structured data: Article (with author, publisher, citations and speakable), FAQPage, HowTo, BreadcrumbList and, on hubs, ItemList.
+
+**Pages are generated.** Edit the words in `tools/seo-content.mjs`, then run `node tools/build-seo-pages.mjs`. It rewrites the HTML pages and refreshes the guide entries in `sitemap.xml` and `llms.txt` (between the `seo-pages` markers). To add a page, copy an entry, give it a new `path` and `parent`, and run the script. Keep the house rules at the top of the content file: no income promises, prizes only from the free cups, in-game naira is never cash.
+
+Every public page now links to the guides: a **Win prizes** link in the header, two links in every footer, the game's own footer, the 404 page, and links in context from the FAQ, how to play, Home Wahala and the winners page.
+
 ## What's in version 8.6: a cleaner dashboard and full cup controls
 
 The dashboard (`/dashboard/`) has a new calm, light look (it follows your phone or computer's dark mode too) with a sidebar and short pages instead of one long scroll:
