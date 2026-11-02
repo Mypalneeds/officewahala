@@ -15,6 +15,14 @@ Built by **Mmadubuko Micheal**, CEO, [Analaize Limited](https://www.analaize.com
 
 Live: https://officewahala.netlify.app
 
+## What's in version 8.4: weekly leaderboards you can credit
+
+Every normal Office or Home shift now goes on that week's public leaderboard automatically (no joining). Each game has its own board, Monday to Sunday (Lagos). At the start of a shift the game gets a one-time ticket from the server; at the end it submits the score with it (`/api/cup/weekly/start`, then `/api/cup/<id>/score`). Daily, career and league shifts don't count.
+
+- **Menu:** a "This week's top players" card for the game you're on (your rank, the leader, last week's winner) that opens the board; after each shift the appraisal shows your weekly rank.
+- **Dashboard → Weekly Cups tab → Weekly leaderboards:** set prizes for the top places (Office and Home separately, optional sponsor), now or from next Monday. On each board you can **Credit** any player (e.g. "₦2,000 airtime"), **Disqualify**, and **Mark paid**.
+- **Winners:** credited players get the same "You won!" card, private claim code and **Claim on WhatsApp** button as cup winners, and appear on `/winners/` with **Paid ✓**. Last week's winner shows on the menu card. Players without a name show as "Player ABCD" until they type one.
+
 ## What's in version 8.2: Weekly Cups (real prizes)
 
 Official public tournaments you run from the dashboard. Free to enter, highest single score wins, you check the top scores and pay the winners yourself.

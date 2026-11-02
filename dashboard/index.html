@@ -231,6 +231,18 @@
       <section id="tab-cups" class="hidden">
         <div class="grid">
           <div class="card w12">
+            <h2>Weekly leaderboards <small>Everyone who plays a normal Office or Home shift is on these boards. Reset every Monday (Lagos).</small></h2>
+            <p class="meta">Set prizes for the top places (line 1 = 1st place). Leave empty and just credit any player from the board below. Winners see a claim code in the game and claim on WhatsApp.</p>
+            <form id="wk-form" class="cup-form">
+              <label>Office prizes, one per line<textarea name="office" rows="3" placeholder="₦5,000 airtime&#10;₦2,000 airtime&#10;₦1,000 airtime"></textarea></label>
+              <label>Home prizes, one per line<textarea name="home" rows="3" placeholder="₦5,000 airtime&#10;₦2,000 airtime"></textarea></label>
+              <label>Sponsor (optional)<input name="sponsor" type="text" maxlength="40"></label>
+              <label>Sponsor link (https, optional)<input name="sponsorUrl" type="url" maxlength="200"></label>
+              <label class="row wide"><input name="applyNow" type="checkbox" checked> Also use these for this week's boards (otherwise from next Monday)</label>
+              <div class="wide acts"><button class="btn primary" type="submit">Save weekly prizes</button><span id="wk-msg" role="status"></span></div>
+            </form>
+          </div>
+          <div class="card w12">
             <h2>Create a Weekly Cup <small>Shows in the game right away · times are your browser's local time</small></h2>
             <form id="cup-form" class="cup-form">
               <label class="wide">Name<input name="name" type="text" maxlength="60" placeholder="e.g. Weekly Cup, week 45" required></label>
@@ -520,6 +532,9 @@
     const box = $('cup-list');
     try {
       const j = await api('/api/cup/admin');
+      const wf = $('wk-form');
+      if (j.autoset && !wf.dataset.filled) { wf.dataset.filled = '1'; wf.office.value = (j.autoset.office || []).join('\n'); wf.home.value = (j.autoset.home || []).join('\n'); wf.sponsor.value = j.autoset.sponsor || ''; wf.sponsorUrl.value = j.autoset.sponsorUrl || ''; }
+      j.cups.sort((a, b) => (b.auto ? 1 : 0) - (a.auto ? 1 : 0) || ({ live: 0, upcoming: 1, ended: 2, cancelled: 3 }[a.status] - { live: 0, upcoming: 1, ended: 2, cancelled: 3 }[b.status]) || b.start - a.start);
       if (!j.cups.length) { box.innerHTML = '<p class="empty">No cups yet. Create one above.</p>'; return; }
       box.innerHTML = j.cups.map((c) => {
         const rows = c.board.map((r, i) => `<tr class="${r.rejected ? 'rej' : ''} ${r.prize ? 'prize' : ''}">
@@ -529,27 +544,38 @@
           <td>${r.paid ? '<span class="ok">Paid</span><br><small style="color:var(--muted)">' + esc(r.paid.method) + (r.paid.note ? ' · ' + esc(r.paid.note) : '') + '</small>' : r.prize && c.status === 'ended' ? '<span class="err">Not paid</span>' : ''}</td>
           <td><div class="acts">
             ${r.rejected ? `<button class="btn small" data-act="restore" data-id="${c.id}" data-pid="${r.pid}">Restore</button>` : `<button class="btn small danger" data-act="reject" data-id="${c.id}" data-pid="${r.pid}" data-confirm="Sure? Reject">Disqualify</button>`}
+            ${c.auto && !r.rejected && !r.prize ? `<input data-credit placeholder="e.g. ₦2,000 airtime"><button class="btn small gold" data-act="credit" data-id="${c.id}" data-pid="${r.pid}">Credit</button>` : ''}
+            ${c.auto && (c.credits || {})[r.pid] ? `<button class="btn small" data-act="uncredit" data-id="${c.id}" data-pid="${r.pid}">Remove credit</button>` : ''}
             ${r.prize && !r.rejected ? (r.paid ? `<button class="btn small" data-act="unpaid" data-id="${c.id}" data-pid="${r.pid}">Undo paid</button>`
               : `<select data-method><option>Bank transfer</option><option>Airtime</option><option>Data</option><option>Gift card</option><option>Voucher / promo code</option><option>Supermarket voucher</option><option>Other</option></select><input data-note placeholder="Ref / note"><button class="btn small primary" data-act="paid" data-id="${c.id}" data-pid="${r.pid}">Mark paid</button>`) : ''}
           </div></td></tr>`).join('');
         return `<div class="cupbox ${c.game}">
-          <h3>${esc(c.name)} <span class="pill ${c.status}">${c.status}</span> <span class="pill">${c.game === 'home' ? 'Home Wahala' : 'Office Wahala'}</span>${c.repeat ? ' <span class="pill">repeats weekly</span>' : ''}</h3>
+          <h3>${esc(c.name)} <span class="pill ${c.status}">${c.status}</span> <span class="pill">${c.game === 'home' ? 'Home Wahala' : 'Office Wahala'}</span>${c.auto ? ' <span class="pill live">weekly leaderboard · week ' + esc(c.week) + '</span>' : ''}${c.repeat ? ' <span class="pill">repeats weekly</span>' : ''}</h3>
           <p class="sub">${when(c.start)} → ${when(c.end)} · ${fmt(c.players)} players · prizes: ${c.prizes.map(esc).join(' / ')}${c.sponsor ? ' · sponsor: ' + esc(c.sponsor) : ''}</p>
           <div class="table-wrap"><table><thead><tr><th>Place</th><th>Player</th><th class="n">Score</th><th class="n">Time</th><th class="n">Level</th><th class="n">Runs</th><th>Prize · claim code</th><th>Payment</th><th></th></tr></thead>
           <tbody>${rows || '<tr><td colspan="9" class="empty">No scores yet.</td></tr>'}</tbody></table></div>
           <div class="acts" style="margin-top:8px">
-            <button class="btn small" data-act="cancel" data-id="${c.id}" ${c.status === 'cancelled' ? '' : 'data-confirm="Sure? Cancel cup"'}>${c.status === 'cancelled' ? 'Reopen' : 'Cancel cup'}</button>
-            <button class="btn small danger" data-act="delete" data-id="${c.id}" data-confirm="Delete for ever?">Delete</button>
+            ${c.auto ? '' : `<button class="btn small" data-act="cancel" data-id="${c.id}" ${c.status === 'cancelled' ? '' : 'data-confirm="Sure? Cancel cup"'}>${c.status === 'cancelled' ? 'Reopen' : 'Cancel cup'}</button>
+            <button class="btn small danger" data-act="delete" data-id="${c.id}" data-confirm="Delete for ever?">Delete</button>`}
           </div></div>`;
       }).join('');
     } catch (err) { box.innerHTML = '<p class="err">' + esc(err.message) + '</p>'; }
   }
   $('cup-form').addEventListener('submit', createCup);
+  $('wk-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const f = e.target, msg = $('wk-msg');
+    const lines = (s) => s.split('\n').map((x) => x.trim()).filter(Boolean);
+    msg.className = ''; msg.textContent = 'Saving…';
+    try { await api('/api/cup/admin', { method: 'POST', body: JSON.stringify({ action: 'autoset', office: lines(f.office.value), home: lines(f.home.value), sponsor: f.sponsor.value, sponsorUrl: f.sponsorUrl.value, applyNow: f.applyNow.checked }) }); msg.className = 'ok'; msg.textContent = 'Saved.'; loadCups(); }
+    catch (err) { msg.className = 'err'; msg.textContent = err.message; }
+  });
   $('cup-thisweek').addEventListener('click', fillThisWeek);
   $('cup-list').addEventListener('click', (e) => {
     const b = e.target.closest('[data-act]'); if (!b) return;
     const body = { action: b.dataset.act, id: b.dataset.id, pid: b.dataset.pid };
     if (b.dataset.act === 'paid') { const row = b.closest('.acts'); body.method = row.querySelector('[data-method]').value; body.note = row.querySelector('[data-note]').value; }
+    if (b.dataset.act === 'credit') { body.prize = b.closest('.acts').querySelector('[data-credit]').value; }
     cupAction(body, b);
   });
 

@@ -1942,6 +1942,7 @@
     G.startedAt = performance.now();
     ADS.seen = new Set(); ADS.views = 0;
     T('game_start', { mode: G.mode, commute: G.phase === 'commute', held: G.held || '', office: G.office ? G.office.id : 'agency' });
+    weeklyTicket();
     if (G.world === 'home' && G.mode === 'league') toast(t('lgHomeStart')(G.league.name, G.limit), 'info', 2800);
     else if (G.world === 'home') toast(coarse ? t('hm_startTouch') : t('hm_start'), 'info', 2600);
     else if (G.phase === 'commute') { toast(t('commuteStart'), 'info', 2600); say('commute'); }
@@ -2060,7 +2061,7 @@
     if (G.mode === 'career') T('career_day', { day: careerWon ? (S.career.day + 4) % 5 : S.career.day, week: careerWon && S.career.day === 0 ? S.career.week - 1 : S.career.week, success: careerWon });
     $('btn-again').hidden = false;
     if (G.mode === 'league') submitLeagueRun({ score, duration: Math.max(1, Math.floor(G.time)), level: G.level });
-    else $('over-league').hidden = true;
+    else { $('over-league').hidden = true; submitWeeklyRun({ score, duration: Math.max(1, Math.floor(G.time)), level: G.level }); }
     stats.games++;
     liveStats();
     checkBadges(false);
@@ -6195,7 +6196,7 @@
   const cupWorld = () => (S.world === 'home' ? 'home' : 'office');
   function cupFor(world) {
     const order = { live: 0, upcoming: 1, ended: 2 };
-    return CUP.list.filter((c) => c.game === world).sort((a, b) => order[a.status] - order[b.status] || a.end - b.end)[0] || null;
+    return CUP.list.filter((c) => c.game === world && !c.auto).sort((a, b) => order[a.status] - order[b.status] || a.end - b.end)[0] || null;
   }
   function probeCups() {
     if (!/^https?:$/.test(location.protocol)) return;
@@ -6206,6 +6207,7 @@
       if (G.state === 'cup') renderCup();
       cupDeepLink();
     }).catch(() => {});
+    probeWeekly();
     cupApi('/claims?me=' + encodeURIComponent(S.playerId)).then((j) => { CUP.claims = j.claims || []; renderWinCard(); }).catch(() => {});
   }
   function refreshCupCard() {
@@ -6269,7 +6271,7 @@
     if (c.status === 'upcoming') return t('cup_not_live');
     if (c.status === 'ended') return t('cup_over');
     if (c.game !== 'home' && officeClosed()) return t('cup_sub_closed');
-    if (c.me && c.me.triesLeft === 0) return t('cup_no_tries');
+    if (!c.auto && c.me && c.me.triesLeft === 0) return t('cup_no_tries');
     return '';
   }
   async function renderCup() {
@@ -6305,7 +6307,8 @@
     c.prizes.forEach((p, i) => { const li = document.createElement('li'); li.innerHTML = `<b>${esc(t('cup_place')(i + 1))}</b><span></span>`; li.lastChild.textContent = p; pz.appendChild(li); });
     const why = cupBlock(c);
     const btn = $('btn-cup-play');
-    btn.disabled = !!why; btn.lastElementChild.textContent = t('cup_play');
+    btn.disabled = !!why; btn.lastElementChild.textContent = c.auto ? t('wk_play') : t('cup_play');
+    $('btn-cup-share').lastElementChild.textContent = c.auto ? t('wk_share') : t('cup_share');
     $('cup-why').hidden = !why; $('cup-why').textContent = why;
     const nameRow = $('cup-name-row');
     if (nameRow) nameRow.hidden = !!S.name;
@@ -6332,6 +6335,7 @@
   }
   async function playCup(id) {
     const c = CUP.list.find((x) => x.id === id);
+    if (c && c.auto) { if (!cupBlock(c)) startGame(c.game === 'home' ? 'home' : 'normal'); else toast(cupBlock(c), 'info', 2600); return; }
     const why = cupBlock(c);
     if (why) { if (G.state === 'cup') $('cup-status').textContent = why; else toast(why, 'info', 2600); return; }
     if (!S.name) {
@@ -6431,10 +6435,10 @@
         // title
         x.save(); x.translate(Wc / 2, 600); x.rotate(-0.03);
         x.font = `900 180px ${DISPLAY}`;
-        const TW = Wc - 110;
-        x.fillStyle = '#000'; x.fillText('WEEKLY CUP', 10, 10, TW);
-        x.fillStyle = '#f5b301'; x.fillText('WEEKLY CUP', 5, 5, TW);
-        x.fillStyle = ACC; x.fillText('WEEKLY CUP', 0, 0, TW);
+        const TW = Wc - 110, TT = c.auto ? 'TOP PLAYERS' : 'WEEKLY CUP';
+        x.fillStyle = '#000'; x.fillText(TT, 10, 10, TW);
+        x.fillStyle = '#f5b301'; x.fillText(TT, 5, 5, TW);
+        x.fillStyle = ACC; x.fillText(TT, 0, 0, TW);
         x.restore();
         x.fillStyle = '#ffffff'; x.font = `800 50px ${BODY}`;
         x.fillText(c.name, Wc / 2, 690, Wc - 120);
@@ -6513,7 +6517,7 @@
         // footer
         x.textAlign = 'center';
         x.fillStyle = '#ffffff'; x.font = `900 76px ${DISPLAY}`;
-        x.fillText(opts.win ? 'YOUR TURN THIS WEEK!' : 'FREE TO ENTER · PLAY NOW', Wc / 2, 1770, Wc - 80);
+        x.fillText(opts.win ? 'YOUR TURN THIS WEEK!' : c.auto ? 'EVERY SHIFT COUNTS · PLAY NOW' : 'FREE TO ENTER · PLAY NOW', Wc / 2, 1770, Wc - 80);
         const host = (shareBase() || CONFIG.SHARE_URL || '').replace(/^https?:\/\//, '').replace(/\/$/, '');
         x.fillStyle = '#f5b301'; x.font = `800 46px ${BODY}`;
         if (host) x.fillText(host + (opts.win || c.status === 'ended' ? '/winners' : ''), Wc / 2, 1840, Wc - 80);
@@ -6559,7 +6563,7 @@
       const url = c.status === 'ended' ? winnersLink() : cupLink(c.id);
       const text = c.status === 'ended' ? t('cup_share_ended')(c.name, url) : t('cup_share_text')(c.name, c.prizes[0], c.game, url);
       await shareImageAndText(blob, 'weekly-cup-' + c.id + '.png', text, url, 'cup');
-    } finally { if (btn) { btn.disabled = false; btn.lastElementChild.textContent = t('cup_share'); } }
+    } finally { if (btn) { btn.disabled = false; btn.lastElementChild.textContent = c.auto ? t('wk_share') : t('cup_share'); } }
   }
   async function shareWin(cl) {
     const c = CUP.list.find((x) => x.id === cl.cup) || { id: cl.cup, name: cl.name, game: cl.game, prizes: [cl.prize], status: 'ended' };
@@ -6579,6 +6583,70 @@
     if (c.game !== 'home' && S.world !== 'office' && !officeClosed()) setWorld('office', true);
     T('challenge_open', { kind: 'cup' });
     openCup(c.id);
+  }
+
+
+  /* ---------- Weekly leaderboards: every normal Office or Home shift counts ---------- */
+  Object.assign(STR.en, {
+    wk_kicker: "This week's top players", wk_sub: (me, n, lead) => (me ? `You: #${me} of ${n}` : 'Play a shift to get on the board') + (lead ? ` · Leader: ${lead}` : ''),
+    wk_prizes: (p) => ` · Top ${p.length} win prizes`, wk_view: 'Board', wk_title: (g) => `This week's top players (${g === 'home' ? 'Home' : 'Office'})`,
+    wk_over: (r, n, best) => `This week's top players: #${r} of ${n} · your best: ${best}`, wk_play: 'Play a shift', wk_note: 'Every shift you play counts. Resets every Monday.',
+    wk_last: (n, s) => `Last week's winner: ${n} (${s})`, wk_board: 'View the board', wk_share: 'Share this board',
+  });
+  Object.assign(STR.pcm, { wk_kicker: 'Top players this week', wk_play: 'Play one shift', wk_note: 'Every shift wey you play dey count. E dey reset every Monday.' });
+  const wkName = () => S.name || 'Player ' + String(S.playerId || '').slice(-4).toUpperCase();
+  function probeWeekly() {
+    if (!CUP.available) return;
+    cupApi('/weekly?me=' + encodeURIComponent(S.playerId)).then((j) => { CUP.weekly = j; refreshWeeklyCard(); }).catch(() => {});
+  }
+  function refreshWeeklyCard() {
+    const card = $('top-card');
+    if (!card) return;
+    const w = CUP.weekly && CUP.weekly[cupWorld()];
+    card.hidden = !w;
+    if (!w) return;
+    card.classList.toggle('is-home', w.game === 'home');
+    const lead = w.top && w.top[0] ? w.top[0].name + ' ' + fmtNum(w.top[0].score) : '';
+    $('top-card-kicker').textContent = t('wk_kicker') + (w.sponsor ? ' · ' + t('cup_sponsor')(w.sponsor) : '');
+    $('top-card-sub').textContent = t('wk_sub')(w.me && w.me.rank, w.players, lead) + (w.prizes && w.prizes.length ? t('wk_prizes')(w.prizes) : '');
+    const last = CUP.weekly[cupWorld() + 'Last'];
+    const lw = last && last.top && last.top[0];
+    $('top-card-last').textContent = lw ? t('wk_last')(lw.name, fmtNum(lw.score)) : '';
+    $('top-card-last').hidden = !lw;
+  }
+  function openWeekly() {
+    const w = CUP.weekly && CUP.weekly[cupWorld()];
+    if (!w) return;
+    if (!CUP.list.some((x) => x.id === w.id)) CUP.list.push(w);
+    openCup(w.id);
+  }
+  function weeklyTicket() {
+    G.wk = null;
+    if (!CUP.available || (G.mode !== 'normal' && G.mode !== 'home')) return;
+    const round = G.startedAt;
+    cupPost('/weekly/start', { playerId: S.playerId, name: wkName(), game: G.world === 'home' ? 'home' : 'office' })
+      .then((r) => { if (G.startedAt === round) G.wk = { cup: r.cupId, runId: r.runId }; }).catch(() => {});
+  }
+  async function submitWeeklyRun(run) {
+    const wk = G.wk;
+    G.wk = null;
+    if (!wk || run.score <= 0) return;
+    const box = $('over-league');
+    box.hidden = false; box.className = 'over-league is-weekly';
+    box.innerHTML = '<strong></strong><span class="ol-msg"></span><div class="ol-actions"></div>';
+    box.firstChild.textContent = t('wk_title')(G.world);
+    const msg = box.querySelector('.ol-msg');
+    msg.textContent = t('cup_submitting');
+    try {
+      const r = await cupPost('/' + wk.cup + '/score', { playerId: S.playerId, name: wkName(), state: S.state || '', score: run.score, duration: run.duration, level: run.level, runId: wk.runId });
+      msg.textContent = t('wk_over')(r.rank, r.players, fmtNum(r.best)) + (r.prizePlace ? t('cup_in_prizes')(r.prizePlace) : '');
+      box.classList.add(r.rank === 1 ? 'is-first' : 'is-ok');
+      probeWeekly();
+    } catch (e) { msg.textContent = e.message || t('leagueOffline'); box.classList.add('is-err'); }
+    const vb = document.createElement('button');
+    vb.type = 'button'; vb.className = 'btn btn-ghost btn-small'; vb.innerHTML = ico('rank') + '<span></span>'; vb.lastChild.textContent = t('wk_board');
+    vb.addEventListener('click', () => { toMenu(); openWeekly(); });
+    box.querySelector('.ol-actions').appendChild(vb);
   }
 
   /* ==================== Update ==================== */
@@ -7930,6 +7998,7 @@
   function refreshMenu() {
     if (S.world === 'office' && officeClosed()) { S.world = 'home'; applyWorldText(); }
     refreshCupCard();
+    refreshWeeklyCard();
     const HOMEW = S.world === 'home';
     document.body.classList.toggle('is-home', HOMEW);
     ui.menuBest.textContent = fmtNum(HOMEW ? homeBestV() : G.best);
@@ -8279,6 +8348,7 @@
   $('office-card').addEventListener('click', () => openSide('offices'));
   $('office-list').addEventListener('click', (e) => { const b = e.target.closest('[data-office]'); if (b && !b.disabled) setOffice(b.dataset.office); const h = e.target.closest('[data-house]'); if (h && !h.disabled) setHouse(h.dataset.house); });
   $('cup-card').addEventListener('click', () => openCup());
+  $('top-card').addEventListener('click', openWeekly);
   $('cup-tabs').addEventListener('click', (e) => { const b = e.target.closest('[data-cup]'); if (b) { CUP.view = b.dataset.cup; renderCup(); } });
   $('btn-cup-play').addEventListener('click', () => playCup(CUP.view));
   $('btn-cup-share').addEventListener('click', () => shareCup(CUP.view));
@@ -8431,6 +8501,7 @@
       SPRITES, officeClock, setQuality, get quality() { return quality; }, Sound, Music,
       OFFICES, officeUnlocked, setOffice, renderOffices, curOffice, spawnHazard, startMission, endMission, missionProgress, startMeeting, MISSIONS,
       attPreview, signRegister, renderRegister, get ATT() { return ATT; }, seasonXp, renderSeason, get SEASON() { return SEASON; }, grantSticker, STICKERS, MYSTICK, renderAlbum,
+      probeWeekly, openWeekly, refreshWeeklyCard,
       CUP, probeCups, playCup, openCup, renderCup, refreshCupCard, makeCupImage, shareCup, shareWin,
       HOMES, setWorld, setHouse, renderRulesFields, readRules, ruleChips, canPlay, spawnMum, spawnDad, spawnSister, spawnNeighbour, spawnVisitor, startHomeErrand, endHomeErrand, startHomeEvent, homeUnlocked, officeClosed, homeBestV, applyWorldText,
       DESK_ITEMS, deskData, renderDesk, viewDesk, HUB, setState, renderStates, myPid, inviteFriend, nudges, renderNudges, setReminders, syncReminderConfig,

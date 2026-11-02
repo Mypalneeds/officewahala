@@ -15,6 +15,11 @@
      GET  /api/cup/admin                    every cup with full boards, flags and claim codes
      POST /api/cup/admin { action: create | update | cancel | delete | reject | restore | paid | unpaid, ... }
 
+   Weekly leaderboards (no joining needed): every normal Office or Home shift counts.
+     GET  /api/cup/weekly?me=<playerId>     this week's Office and Home top players (+ last week's)
+     POST /api/cup/weekly/start { playerId, name, game }   ticket for a normal shift; score it with /api/cup/<id>/score
+   The organiser credits the week's top players from the dashboard (prizes for set places, or a credit for anyone).
+
    Data lives in the "office-wahala" blob store under cups/ and cupscores/.
 */
 import { getStore } from '@netlify/blobs';
@@ -101,7 +106,7 @@ export function cleanCup(b, now = Date.now()) {
   if (end <= start + 30 * 60 * 1000) throw new Error('A cup must run for at least 30 minutes.');
   if (end - start > 31 * DAY) throw new Error('A cup can run for at most 31 days.');
   const prizes = (Array.isArray(b.prizes) ? b.prizes : []).map((p) => cleanText(p, 60)).filter(Boolean).slice(0, 20);
-  if (!prizes.length) throw new Error('Add at least one prize (for 1st place).');
+  if (!prizes.length && !b.auto) throw new Error('Add at least one prize (for 1st place).');
   const secs = Math.floor(Number(b.shiftSecs) || 0);
   return {
     name, game, start, end, prizes,
@@ -114,7 +119,8 @@ export function cleanCup(b, now = Date.now()) {
   };
 }
 function publicCup(c, now) {
-  return { id: c.id, name: c.name, game: c.game, start: c.start, end: c.end, status: statusOf(c, now), prizes: c.prizes, shiftSecs: c.shiftSecs, tries: c.tries,
+  const nm = c.auto && now >= c.end ? `Top players (${c.game === 'home' ? 'Home' : 'Office'}), week of ${new Date(c.start + HOUR).toISOString().slice(0, 10)}` : c.name;
+  return { id: c.id, auto: !!c.auto, name: nm, game: c.game, start: c.start, end: c.end, status: statusOf(c, now), prizes: c.prizes, shiftSecs: c.shiftSecs, tries: c.tries,
     sponsor: c.sponsor || '', sponsorUrl: c.sponsorUrl || '', note: c.note || '', week: c.week || '' };
 }
 const lagosWeek = (t) => {
@@ -123,6 +129,45 @@ const lagosWeek = (t) => {
   const firstThu = new Date(Date.UTC(d.getUTCFullYear(), 0, 4));
   return d.getUTCFullYear() + '-W' + String(1 + Math.round(((d - firstThu) / DAY - 3 + ((firstThu.getUTCDay() + 6) % 7)) / 7)).padStart(2, '0');
 };
+
+// Lagos week: Monday 00:00 to the next Monday 00:00 (UTC+1)
+function weekBounds(now) {
+  const lag = new Date(now + HOUR);
+  const dow = (lag.getUTCDay() + 6) % 7;
+  const start = Date.UTC(lag.getUTCFullYear(), lag.getUTCMonth(), lag.getUTCDate() - dow) - HOUR;
+  return [start, start + 7 * DAY];
+}
+const AUTO_NAMES = { office: "This week's top players (Office)", home: "This week's top players (Home)" };
+async function autoSettings(store) { return (await store.get('cups/autoset', { type: 'json' }).catch(() => null)) || { office: [], home: [], sponsor: '', sponsorUrl: '' }; }
+// The weekly leaderboard for a game, created on first use each week.
+async function ensureAuto(store, game, now) {
+  const [start, end] = weekBounds(now);
+  const wk = lagosWeek(start);
+  const key = `cups/auto/${game}/${wk}`;
+  const ref = await store.get(key, { type: 'json' }).catch(() => null);
+  if (ref && ref.id) { const c = await readCup(store, ref.id); if (c) return c; }
+  const set = await autoSettings(store);
+  const c = await createCup(store, { auto: true, name: AUTO_NAMES[game], game, start, end, prizes: (set[game] || []).slice(0, 20), shiftSecs: 0, tries: 0, repeat: false,
+    sponsor: set.sponsor || '', sponsorUrl: set.sponsorUrl || '', note: 'Every shift you play counts. Resets every Monday.' }, now);
+  await store.setJSON(key, { id: c.id });
+  return c;
+}
+async function lastAuto(store, game, now) {
+  const [start] = weekBounds(now - 7 * DAY);
+  const ref = await store.get(`cups/auto/${game}/${lagosWeek(start)}`, { type: 'json' }).catch(() => null);
+  return ref && ref.id ? readCup(store, ref.id) : null;
+}
+// Prize or credit for a player: a set place (prizes[i]) or a credit the organiser gave.
+function awardsOf(c, rows) {
+  const out = [];
+  rows.slice(0, c.prizes.length).forEach((r, i) => out.push({ r, place: i + 1, prize: c.prizes[i] }));
+  for (const [pid, prize] of Object.entries(c.credits || {})) {
+    if (out.some((a) => a.r.pid === pid)) continue;
+    const i = rows.findIndex((r) => r.pid === pid);
+    if (i >= 0) out.push({ r: rows[i], place: i + 1, prize });
+  }
+  return out.sort((a, b) => a.place - b.place);
+}
 
 async function readIndex(store) { return (await store.get('cups/index', { type: 'json' }).catch(() => null)) || { ids: [] }; }
 async function readCup(store, id) { return validId(id) ? store.get('cups/c/' + id, { type: 'json' }).catch(() => null) : null; }
@@ -180,6 +225,7 @@ export default async (req) => {
       if (auth === 'not-configured') return fail('Set DASHBOARD_KEY in Netlify first.', 503);
       if (auth !== 'ok') return fail('Wrong dashboard key.', 401);
       if (req.method === 'GET') {
+        await ensureAuto(store, 'office', now); await ensureAuto(store, 'home', now);
         const cups = await allCups(store, now, 80);
         const out = [];
         for (const c of cups) {
@@ -188,18 +234,25 @@ export default async (req) => {
           const board = [];
           for (const r of rows.slice(0, 40)) {
             const place = live.indexOf(r);
-            const prize = place >= 0 && place < c.prizes.length ? c.prizes[place] : '';
+            const prize = place >= 0 && place < c.prizes.length ? c.prizes[place] : place >= 0 && (c.credits || {})[r.pid] ? c.credits[r.pid] : '';
             board.push({ pid: r.pid, name: r.name, state: r.state || '', score: r.best, duration: r.duration, level: r.level, plays: r.plays, tries: r.tries,
               flags: r.flags || [], runs: (r.runs || []).slice(-5), rejected: (c.rejected || []).includes(r.pid), place: place >= 0 ? place + 1 : 0, prize,
               code: prize ? await claimCode(c, r.pid) : '', paid: (c.paid || {})[r.pid] || null, first: r.first, bestAt: r.bestAt });
           }
-          out.push(Object.assign(publicCup(c, now), { repeat: !!c.repeat, players: rows.length, board, created: c.created }));
+          out.push(Object.assign(publicCup(c, now), { repeat: !!c.repeat, players: rows.length, board, created: c.created, credits: c.credits || {} }));
         }
-        return json({ cups: out, now });
+        return json({ cups: out, now, autoset: await autoSettings(store) });
       }
       if (req.method !== 'POST') return fail('Method not allowed.', 405);
       const b = await readBody(req, 20000);
       const act = b.action;
+      if (act === 'autoset') {
+        const clean = (a) => (Array.isArray(a) ? a : []).map((p) => cleanText(p, 60)).filter(Boolean).slice(0, 20);
+        const set = { office: clean(b.office), home: clean(b.home), sponsor: cleanText(b.sponsor, 40), sponsorUrl: /^https:\/\/[^\s"'<>]{3,200}$/.test(String(b.sponsorUrl || '')) ? String(b.sponsorUrl) : '' };
+        await store.setJSON('cups/autoset', set);
+        if (b.applyNow) for (const g of ['office', 'home']) { const c = await ensureAuto(store, g, now); c.prizes = set[g]; c.sponsor = set.sponsor; c.sponsorUrl = set.sponsorUrl; await saveCup(store, c); }
+        return json({ ok: true, autoset: set });
+      }
       if (act === 'create') {
         let data;
         try { data = cleanCup(b.cup || {}, now); } catch (e) { return fail(e.message); }
@@ -212,7 +265,7 @@ export default async (req) => {
       if (!c) return fail('Cup not found.', 404);
       if (act === 'update') {
         let data;
-        try { data = cleanCup(Object.assign({}, c, b.cup || {}, { game: c.game }), now); } catch (e) { return fail(e.message); }
+        try { data = cleanCup(Object.assign({}, c, b.cup || {}, { game: c.game }, c.auto ? { auto: true, start: c.start, end: c.end, name: c.name } : {}), now); } catch (e) { return fail(e.message); }
         Object.assign(c, data, { week: lagosWeek(data.start) });
         await saveCup(store, c);
         return json({ ok: true, cup: publicCup(c, now) });
@@ -232,6 +285,8 @@ export default async (req) => {
       else if (act === 'restore') c.rejected = c.rejected.filter((x) => x !== pid);
       else if (act === 'paid') c.paid[pid] = { t: now, method: cleanText(b.method, 40) || 'Paid', note: cleanText(b.note, 120) };
       else if (act === 'unpaid') delete c.paid[pid];
+      else if (act === 'credit') { const prize = cleanText(b.prize, 60); if (!prize) return fail('Type what you are giving (e.g. ₦2,000 airtime).'); c.credits = c.credits || {}; c.credits[pid] = prize; }
+      else if (act === 'uncredit') { if (c.credits) delete c.credits[pid]; delete c.paid[pid]; }
       else return fail('Unknown action.');
       await saveCup(store, c);
       return json({ ok: true });
@@ -247,10 +302,11 @@ export default async (req) => {
         const rows = ranked(c, await rowsOf(store, c));
         if (st === 'ended') {
           done.push(Object.assign(publicCup(c, now), { players: rows.length,
-            winners: c.prizes.map((prize, i) => (rows[i] ? { place: i + 1, name: rows[i].name, state: rows[i].state || '', score: rows[i].best, prize, paid: !!(c.paid || {})[rows[i].pid] } : null)).filter(Boolean) }));
+            winners: awardsOf(c, rows).map((a) => ({ place: a.place, name: a.r.name, state: a.r.state || '', score: a.r.best, prize: a.prize, paid: !!(c.paid || {})[a.r.pid] })) }));
         } else live.push(Object.assign(publicCup(c, now), { players: rows.length, top: rows.slice(0, 10).map(pubRow) }));
       }
-      return json({ live, done: done.slice(0, 52) }, 200, 'public, max-age=60');
+      for (const d of done) if (d.auto && !d.winners.length) d.skip = true;
+      return json({ live, done: done.filter((d) => !d.skip).slice(0, 52) }, 200, 'public, max-age=60');
     }
 
     // ---------- Your prizes ----------
@@ -265,12 +321,49 @@ export default async (req) => {
         const rec = await store.get(`cupscores/${c.id}/${me}`, { type: 'json' }).catch(() => null);
         if (!rec || !rec.plays) continue;
         const rows = ranked(c, await rowsOf(store, c));
-        const place = rows.findIndex((r) => r.pid === pid);
-        if (place < 0 || place >= c.prizes.length) continue;
-        claims.push({ cup: c.id, name: c.name, game: c.game, week: c.week, place: place + 1, prize: c.prizes[place], score: rec.best,
+        const aw = awardsOf(c, rows).find((a) => a.r.pid === pid);
+        if (!aw) continue;
+        const place = aw.place - 1;
+        claims.push({ cup: c.id, auto: !!c.auto, name: c.name, game: c.game, week: c.week, place: place + 1, prize: aw.prize, score: rec.best,
           code: await claimCode(c, pid), paid: !!(c.paid || {})[pid], paidAt: ((c.paid || {})[pid] || {}).t || 0, ended: c.end });
       }
       return json({ claims });
+    }
+
+    // ---------- Weekly leaderboards ----------
+    if (parts[0] === 'weekly') {
+      if (parts[1] === 'start' && req.method === 'POST') {
+        const b = await readBody(req);
+        if (!validPlayer(b.playerId)) return fail('Invalid player.');
+        const game = b.game === 'home' ? 'home' : 'office';
+        if (game === 'office' && officeClosedNow(now)) return fail('Office is closed on weekends.', 409);
+        const name = cleanName(b.name, 20) || 'Player';
+        if (isRude(name)) return fail('Please choose a friendlier name.');
+        if (await limited(store, 'wkstart', b.playerId, 3)) return fail('Slow down a little.', 429);
+        const c = await ensureAuto(store, game, now);
+        const pid = await pidOf(b.playerId);
+        if ((c.rejected || []).includes(pid)) return fail('Removed from this week\'s board.', 403);
+        const key = `cupscores/${c.id}/${b.playerId}`;
+        const rec = (await store.get(key, { type: 'json' }).catch(() => null)) || { playerId: b.playerId, pid, name, best: 0, plays: 0, tries: 0, runs: [], first: now };
+        rec.tries++; rec.name = name;
+        rec.run = { id: randId(12), t: now, used: false };
+        await store.setJSON(key, rec);
+        return json({ cupId: c.id, runId: rec.run.id });
+      }
+      if (req.method === 'GET') {
+        const me = url.searchParams.get('me') || '';
+        const out = {};
+        for (const g of ['office', 'home']) {
+          for (const [k, c] of [['now', await ensureAuto(store, g, now)], ['last', await lastAuto(store, g, now)]]) {
+            if (!c) continue;
+            const rows = ranked(c, await rowsOf(store, c));
+            const mine = validPlayer(me) ? rows.findIndex((r) => r.playerId === me) : -1;
+            out[g + (k === 'last' ? 'Last' : '')] = Object.assign(publicCup(c, now), { players: rows.length, top: rows.slice(0, 10).map(pubRow), me: { rank: mine + 1, score: mine >= 0 ? rows[mine].best : 0 },
+              awards: k === 'last' ? awardsOf(c, rows).map((a) => ({ place: a.place, name: a.r.name, state: a.r.state || '', score: a.r.best, prize: a.prize, paid: !!(c.paid || {})[a.r.pid] })) : [] });
+          }
+        }
+        return json(Object.assign(out, { now }));
+      }
     }
 
     // ---------- List ----------
